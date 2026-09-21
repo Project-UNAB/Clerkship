@@ -2,9 +2,9 @@
 Route and interactive testing console for ClinicAI UNAB Multi-Agent Simulator.
 
 Serves an interactive single-page application at `/simulador` allowing direct testing
-of the complete 3-step clinical reasoning workflow:
+of the complete 3-step clinical reasoning workflow (un único proveedor: Google Gemini):
 1. Agente 1 (Generador de Casos - Google Gemini)
-2. Agente 2 (Paciente Virtual - ChatGPT / OpenAI)
+2. Agente 2 (Paciente Virtual - Google Gemini)
 3. Agente 3 (Tutor Evaluador - Google Gemini)
 """
 
@@ -48,7 +48,7 @@ SIMULADOR_HTML = """<!DOCTYPE html>
         </div>
         <div>
           <h1 class="text-lg font-bold text-slate-900 leading-tight">ClinicAI UNAB <span class="text-xs px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200 font-semibold uppercase">Consola de Pruebas</span></h1>
-          <p class="text-xs text-slate-500">Simulación Clínica Multi-Agente (Gemini + ChatGPT)</p>
+          <p class="text-xs text-slate-500">Simulación Clínica Multi-Agente (Google Gemini)</p>
         </div>
       </div>
 
@@ -65,12 +65,12 @@ SIMULADOR_HTML = """<!DOCTYPE html>
           </span>
           {% endif %}
 
-          {% if openai_key %}
-          <span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium flex items-center gap-1.5" title="OpenAI ChatGPT configurado en .env">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Agente 2: ChatGPT ({{ openai_model }})
+          {% if gemini_key %}
+          <span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium flex items-center gap-1.5" title="Google Gemini configurado en .env">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Agente 2: Gemini ({{ gemini_model }})
           </span>
           {% else %}
-          <span class="px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-medium flex items-center gap-1.5" title="Sin clave OPENAI_API_KEY en .env">
+          <span class="px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-medium flex items-center gap-1.5" title="Sin clave GEMINI_API_KEY en .env">
             <span class="w-2 h-2 rounded-full bg-amber-500"></span> Agente 2: Mock (Sin Key)
           </span>
           {% endif %}
@@ -110,14 +110,6 @@ SIMULADOR_HTML = """<!DOCTYPE html>
           <span class="text-emerald-400 font-semibold font-mono">🟢 Key Detectada ({{ gemini_model }} ➔ auto 3.5-flash)</span>
           {% else %}
           <span class="text-amber-400 font-semibold font-mono">🟡 Key Vacía (Fallback a Mock)</span>
-          {% endif %}
-        </div>
-        <div>
-          <span class="text-slate-400">OpenAI:</span>
-          {% if openai_key %}
-          <span class="text-emerald-400 font-semibold font-mono">🟢 Key Detectada ({{ openai_model }})</span>
-          {% else %}
-          <span class="text-amber-400 font-semibold font-mono">🟡 Key Vacía en .env (Fallback a Mock)</span>
           {% endif %}
         </div>
       </div>
@@ -253,20 +245,20 @@ SIMULADOR_HTML = """<!DOCTYPE html>
               <p class="text-[11px] text-slate-500">Interrogatorio clínico en lenguaje natural coloquial</p>
             </div>
           </div>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">ChatGPT / OpenAI</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Google Gemini</span>
         </div>
 
-        <!-- OpenAI Key Status Warning / Telemetry -->
-        <div id="patientStatusBanner" class="mb-3 p-2.5 rounded-xl text-xs border {% if openai_key %}bg-emerald-50 border-emerald-200 text-emerald-900{% else %}bg-amber-50 border-amber-300 text-amber-900{% endif %}">
+        <!-- Gemini Key Status Warning / Telemetry -->
+        <div id="patientStatusBanner" class="mb-3 p-2.5 rounded-xl text-xs border {% if gemini_key %}bg-emerald-50 border-emerald-200 text-emerald-900{% else %}bg-amber-50 border-amber-300 text-amber-900{% endif %}">
           <div class="flex items-center justify-between font-bold">
             <span class="flex items-center gap-1.5">
-              <span>{% if openai_key %}🟢{% else %}⚠️{% endif %}</span>
-              <span id="patientStatusTitle">{% if openai_key %}ChatGPT Real Activo ({{ openai_model }}){% else %}Modo Fallback Mock Activo (OPENAI_API_KEY no configurada){% endif %}</span>
+              <span>{% if gemini_key %}🟢{% else %}⚠️{% endif %}</span>
+              <span id="patientStatusTitle">{% if gemini_key %}Gemini Real Activo ({{ gemini_model }}){% else %}Modo Fallback Mock Activo (GEMINI_API_KEY no configurada){% endif %}</span>
             </span>
-            <span id="patientLatencyBadge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/80 border border-slate-200">{% if openai_key %}Listo{% else %}Mock Local{% endif %}</span>
+            <span id="patientLatencyBadge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/80 border border-slate-200">{% if gemini_key %}Listo{% else %}Mock Local{% endif %}</span>
           </div>
           <p id="patientStatusDesc" class="text-[11px] mt-1 leading-snug text-slate-600">
-            {% if openai_key %}Las respuestas del paciente serán generadas dinámicamente por la API de ChatGPT ({{ openai_model }}).{% else %}Para que el paciente responda con ChatGPT real, configure su clave <code>OPENAI_API_KEY</code> en <code>backend/flask-api/.env</code>. Actualmente está respondiendo con el Mock determinista local.{% endif %}
+            {% if gemini_key %}Las respuestas del paciente serán generadas dinámicamente por la API de Gemini ({{ gemini_model }}), con guardrail anti-fuga de diagnóstico.{% else %}Para que el paciente responda con Gemini real, configure su clave <code>GEMINI_API_KEY</code> en <code>backend/flask-api/.env</code>. Actualmente está respondiendo con el Mock determinista local.{% endif %}
           </p>
         </div>
 
@@ -637,8 +629,8 @@ SIMULADOR_HTML = """<!DOCTYPE html>
           pLat.innerText = latency ? `${latency} (Mock)` : 'Mock Local';
         } else {
           pBanner.className = 'mb-3 p-2.5 rounded-xl text-xs border bg-emerald-50 border-emerald-200 text-emerald-900';
-          pTitle.innerText = `ChatGPT Real Activo: ${model}`;
-          pDesc.innerText = 'Respuesta generada en vivo por la API de OpenAI en lenguaje natural.';
+          pTitle.innerText = `Gemini Real Activo: ${model}`;
+          pDesc.innerText = 'Respuesta generada en vivo por la API de Gemini en lenguaje natural.';
           pLat.innerText = latency;
         }
 
@@ -814,15 +806,11 @@ SIMULADOR_HTML = """<!DOCTYPE html>
 def simulador_interfaz():
     """Renderiza la consola web interactiva para probar el simulador clínico con telemetría de desarrollador."""
     gemini_key = bool(os.getenv("GEMINI_API_KEY", "").strip())
-    openai_key = bool(os.getenv("OPENAI_API_KEY", "").strip())
     gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-    openai_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     return render_template_string(
         SIMULADOR_HTML,
         gemini_key=gemini_key,
-        openai_key=openai_key,
         gemini_model=gemini_model,
-        openai_model=openai_model,
     )
 
