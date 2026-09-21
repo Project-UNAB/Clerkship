@@ -38,14 +38,6 @@ const PANEL: Record<string, PanelSection> = {
     flat: [
       { label: 'Todos los casos', route: '/casos' },
     ],
-    groups: [
-      {
-        label: 'Por módulo',
-        items: [
-          { label: 'Gastroenterología', route: '/casos?modulo=Gastroenterología', dot: '#E11D48' },
-        ],
-      },
-    ],
   },
   historial: {
     flat: [

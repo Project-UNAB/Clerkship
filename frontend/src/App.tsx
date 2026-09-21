@@ -122,6 +122,7 @@ export default function App() {
         <Route path="/documentacion"          element={<ProtectedRoute><DocumentacionPage /></ProtectedRoute>} />
         <Route path="/biblioteca"             element={<ProtectedRoute><BibliotecaPage /></ProtectedRoute>} />
         <Route path="/simulacion"             element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
+        <Route path="/simulacion/:id"         element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
         <Route path="/casos"                  element={<ProtectedRoute><CasosPage /></ProtectedRoute>} />
         <Route path="/historial"              element={<ProtectedRoute><HistorialPage /></ProtectedRoute>} />
 

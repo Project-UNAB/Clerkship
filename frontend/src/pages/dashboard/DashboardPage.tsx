@@ -6,7 +6,7 @@ import {
   Presentation, Image as ImageIcon, FileCode, File,
   MoreVertical, Pencil, Trash2, ArrowLeft, FolderPlus, UploadCloud, Loader2, Download, Eye,
   LayoutGrid, List, Search, X, Folder, HardDrive, Check,
-  ClipboardList, GraduationCap, ChevronRight
+  ChevronRight
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import WelcomeOverlay from '../../components/shared/WelcomeOverlay';
@@ -21,7 +21,6 @@ import {
   type DocumentFolder, type DocumentSummary,
 } from '../../data/documentosApi';
 import { getStorageUsage, type StorageUsage } from '../../data/usuariosApi';
-import { MOCK_PENDING_CASES, MOCK_UNREVIEWED_GRADES } from '../../data/mockAcademicData';
 
 const SORT_OPTIONS = ['Más reciente', 'Más antiguo', 'Nombre A–Z', 'Tamaño (Mayor)'] as const;
 type SortOption = typeof SORT_OPTIONS[number];
@@ -255,10 +254,8 @@ export default function DashboardPage() {
 
   /* ── Datos de Almacenamiento, Trabajos y Calificaciones ── */
   const [storageUsage, setStorageUsage] = useState<StorageUsage | null>(null);
-  const [activeWidgetPopover, setActiveWidgetPopover] = useState<'trabajos' | 'calificaciones' | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
-  const widgetPopoverRef = useRef<HTMLDivElement>(null);
   const dragCounterRef = useRef(0);
 
   function handleWelcomeComplete() {
@@ -301,9 +298,9 @@ export default function DashboardPage() {
         setActiveWidgetPopover(null);
       }
     }
-    if (menuFor || activeWidgetPopover) document.addEventListener('mousedown', handleClickOutside);
+    if (menuFor) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuFor, activeWidgetPopover]);
+  }, [menuFor]);
 
   async function loadFolder(folder: DocumentFolder) {
     setOpenFolder(folder);
@@ -622,7 +619,7 @@ export default function DashboardPage() {
   }
 
   /* ── Cálculos de Almacenamiento ── */
-  const usedBytes = storageUsage?.used_bytes ?? 2.1 * 1024 * 1024;
+  const usedBytes = storageUsage?.used_bytes ?? 0;
   const limitBytes = storageUsage?.limit_bytes ?? 5 * 1024 * 1024 * 1024;
   const percentUsed = Math.min(100, Math.max(0.2, (usedBytes / limitBytes) * 100));
 
@@ -1148,142 +1145,9 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Derecha: Indicadores Interactivos (Trabajos, Calificaciones) */}
-                <div className="gdrive-bar-right" ref={widgetPopoverRef}>
-                  <div className="gdrive-quick-widgets">
-                    {/* Widget 1: Trabajos pendientes */}
-                    <div className="gdrive-widget-item-wrap">
-                      <button
-                        type="button"
-                        className={`gdrive-widget-chip gdrive-chip-trabajos ${activeWidgetPopover === 'trabajos' ? 'active' : ''}`}
-                        onClick={() => setActiveWidgetPopover(prev => prev === 'trabajos' ? null : 'trabajos')}
-                        title="Ver trabajos pendientes"
-                      >
-                        <ClipboardList size={15} className="gdrive-widget-icon icon-trabajos" />
-                        <span className="gdrive-widget-label">Trabajos:</span>
-                        <span className="gdrive-widget-badge badge-trabajos">{MOCK_PENDING_CASES.length}</span>
-                      </button>
-                    </div>
-
-                    {/* Widget 2: Calificaciones */}
-                    <div className="gdrive-widget-item-wrap">
-                      <button
-                        type="button"
-                        className={`gdrive-widget-chip gdrive-chip-calificaciones ${activeWidgetPopover === 'calificaciones' ? 'active' : ''}`}
-                        onClick={() => setActiveWidgetPopover(prev => prev === 'calificaciones' ? null : 'calificaciones')}
-                        title="Ver calificaciones sin revisar"
-                      >
-                        <GraduationCap size={15} className="gdrive-widget-icon icon-calificaciones" />
-                        <span className="gdrive-widget-label">Notas:</span>
-                        <span className="gdrive-widget-badge badge-calificaciones">{MOCK_UNREVIEWED_GRADES.length}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* ── MODAL / POPOVER CENTRADO EN LA PANTALLA PARA TRABAJOS Y NOTAS ── */}
-            <AnimatePresence>
-              {activeWidgetPopover && (
-                <div className="gdrive-popover-overlay" onClick={() => setActiveWidgetPopover(null)}>
-                  <motion.div
-                    className="gdrive-widget-popover-centered"
-                    initial={{ opacity: 0, scale: 0.92, y: 12 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.92, y: 12 }}
-                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                    onClick={e => e.stopPropagation()}
-                  >
-                    {activeWidgetPopover === 'trabajos' && (
-                      <>
-                        <div className="gdrive-popover-head">
-                          <div className="gdrive-popover-head-left">
-                            <ClipboardList size={18} className="icon-trabajos" />
-                            <span className="gdrive-popover-title">Trabajos pendientes</span>
-                            <span className="gdrive-popover-count badge-trabajos">{MOCK_PENDING_CASES.length}</span>
-                          </div>
-                          <button
-                            type="button"
-                            className="gdrive-popover-close-btn"
-                            onClick={() => setActiveWidgetPopover(null)}
-                            title="Cerrar"
-                            aria-label="Cerrar"
-                          >
-                            <X size={15} />
-                          </button>
-                        </div>
-
-                        <div className="gdrive-popover-list">
-                          {MOCK_PENDING_CASES.slice(0, 5).map(c => (
-                            <div
-                              key={c.id}
-                              className="gdrive-popover-item"
-                              onClick={() => { setActiveWidgetPopover(null); navigate('/casos'); }}
-                            >
-                              <span className={`gdrive-popover-dot ${c.status === 'en_progreso' ? 'in-progress' : 'pending'}`} />
-                              <span className="gdrive-popover-item-title">{c.title}</span>
-                              <ChevronRight size={14} className="gdrive-popover-item-arrow" />
-                            </div>
-                          ))}
-                        </div>
-
-                        <button
-                          type="button"
-                          className="gdrive-popover-footer-btn"
-                          onClick={() => { setActiveWidgetPopover(null); navigate('/casos'); }}
-                        >
-                          Ir a Casos clínicos <ChevronRight size={14} />
-                        </button>
-                      </>
-                    )}
-
-                    {activeWidgetPopover === 'calificaciones' && (
-                      <>
-                        <div className="gdrive-popover-head">
-                          <div className="gdrive-popover-head-left">
-                            <GraduationCap size={18} className="icon-calificaciones" />
-                            <span className="gdrive-popover-title">Calificaciones sin revisar</span>
-                            <span className="gdrive-popover-count badge-calificaciones">{MOCK_UNREVIEWED_GRADES.length}</span>
-                          </div>
-                          <button
-                            type="button"
-                            className="gdrive-popover-close-btn"
-                            onClick={() => setActiveWidgetPopover(null)}
-                            title="Cerrar"
-                            aria-label="Cerrar"
-                          >
-                            <X size={15} />
-                          </button>
-                        </div>
-
-                        <div className="gdrive-popover-list">
-                          {MOCK_UNREVIEWED_GRADES.map(g => (
-                            <div
-                              key={g.id}
-                              className="gdrive-popover-item"
-                              onClick={() => { setActiveWidgetPopover(null); navigate('/historial'); }}
-                            >
-                              <span className="gdrive-popover-score">{g.score}%</span>
-                              <span className="gdrive-popover-item-title">{g.caseTitle}</span>
-                              <ChevronRight size={14} className="gdrive-popover-item-arrow" />
-                            </div>
-                          ))}
-                        </div>
-
-                        <button
-                          type="button"
-                          className="gdrive-popover-footer-btn"
-                          onClick={() => { setActiveWidgetPopover(null); navigate('/historial'); }}
-                        >
-                          Ver historial completo <ChevronRight size={14} />
-                        </button>
-                      </>
-                    )}
-                  </motion.div>
-                </div>
-              )}
-            </AnimatePresence>
 
             {error && (
               <div className="gdrive-error-banner">

@@ -220,3 +220,33 @@ export interface Estadisticas {
 export function getEstadisticas(): Promise<Estadisticas> {
   return apiFetch('/api/historial/estadisticas');
 }
+
+/* ── Helpers de la simulación ───────────────────────────────────────── */
+
+/** Mismos 8 subtemas de gastroenterología que usa el Agente 1 en el backend. */
+export const GASTRO_SUBTEMAS = [
+  'Enfermedad por reflujo gastroesofágico (ERGE)',
+  'Gastritis y enfermedad ulcerosa péptica',
+  'Síndrome de intestino irritable (SII)',
+  'Enfermedad inflamatoria intestinal (Crohn / Colitis ulcerosa)',
+  'Pancreatitis aguda',
+  'Hepatitis / hepatopatía',
+  'Hemorragia digestiva alta o baja',
+  'Colelitiasis / colecistitis aguda',
+] as const;
+
+/** crear_consulta exige un course_id en el que el estudiante esté matriculado:
+ *  busca uno de Gastroenterología (o el primero) y matricula si hace falta. */
+export async function ensureCourseId(): Promise<string> {
+  const mine = await listMyCourses();
+  const mineMatch = mine.find(c => c.name.toLowerCase().includes('gastro')) || mine[0];
+  if (mineMatch) return mineMatch.id;
+
+  const all = await listAllCourses();
+  const candidate = all.find(c => c.name.toLowerCase().includes('gastro')) || all[0];
+  if (!candidate) {
+    throw new Error('No hay ningún curso creado todavía — pedile a un docente que cree uno.');
+  }
+  await enrollInCourse(candidate.id);
+  return candidate.id;
+}
