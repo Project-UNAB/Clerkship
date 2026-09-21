@@ -1,7 +1,10 @@
 """
-Google Gemini implementations of ClinicAI UNAB AI Agents (Agente 1 y Agente 3).
+Google Gemini implementations of ClinicAI UNAB AI Agents (Agente 1, 2 y 3).
 
 - Agente 1: Generador / Presentador de Casos Clínicos (vía Google Gemini).
+- Agente 2: Paciente Virtual Estandarizado, con guardrail anti-fuga de diagnóstico
+  (vía Google Gemini — puerto directo de la lógica de
+  jrojas710/simulador-clinico-gastro, que corría en n8n, ahora nativa en Python).
 - Agente 3: Tutor Evaluador de Razonamiento Clínico y Sesgos Cognitivos (vía Google Gemini).
 
 Utiliza el SDK oficial moderno `google-genai` con salidas JSON estructuradas (Pydantic Schema).
@@ -12,7 +15,11 @@ si la API key no está configurada o ante fallos de cuota/red.
 import json
 import logging
 import os
+import random
+import re
 import time
+import unicodedata
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
 from app.schemas.agentes import (
@@ -20,18 +27,23 @@ from app.schemas.agentes import (
     EvaluationResultResponse,
     GenerateCaseRequest,
     GeneratedCaseResponse,
+    PatientChatRequest,
+    PatientChatResponse,
 )
 from app.services.agents.base import (
     BaseCaseGeneratorAgent,
     BaseClinicalEvaluatorAgent,
+    BaseVirtualPatientAgent,
 )
 from app.services.agents.clinical_cases_data import (
     CLINICAL_CASES_DATA,
+    GASTRO_SUBTEMAS,
     get_case_by_id,
 )
 from app.services.agents.mock_agents import (
     MockCaseGeneratorAgent,
     MockClinicalEvaluatorAgent,
+    MockVirtualPatientAgent,
 )
 
 logger = logging.getLogger(__name__)
@@ -85,7 +97,11 @@ class GeminiCaseGeneratorAgent(BaseCaseGeneratorAgent):
 
         specialty = request.specialty or "Gastroenterología"
         difficulty = request.difficulty or "MEDIUM"
-        condition = request.condition or "Patología Gastrointestinal Aguda"
+        # Igual que el Agente 1 original (n8n): si no se fuerza un subtema
+        # puntual, se elige uno al azar entre los 8 subtemas de
+        # gastroenterología soportados — mantiene el alcance de la
+        # plataforma acotado, en vez de "cualquier patología".
+        condition = request.condition or random.choice(GASTRO_SUBTEMAS)
 
         prompt = f"""
 Actúa como un médico docente especialista en educación médica y simulación clínica para estudiantes de internado rotatorio (Clerkship).
@@ -159,6 +175,184 @@ INSTRUCCIONES CLÍNICAS:
         return res
 
 
+def _normalizar_texto(s: str) -> str:
+    """minúsculas + sin tildes — mismo criterio que normalizar() en el n8n original."""
+    s = (s or "").lower()
+    s = unicodedata.normalize("NFD", s)
+    return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+
+def _contiene_diagnostico(mensaje: str, diagnostico: Optional[str]) -> bool:
+    """
+    Guardrail determinista anti-fuga de diagnóstico — puerto exacto de
+    contieneDiagnostico() del workflow n8n original (jrojas710/simulador-clinico-gastro).
+
+    Es una segunda capa de control INDEPENDIENTE del prompt: aunque el modelo sea
+    manipulado (inyección de instrucciones del estudiante, o simple variabilidad
+    del LLM) para revelar el diagnóstico real, este chequeo de texto lo intercepta
+    antes de que la respuesta llegue al cliente.
+    """
+    if not diagnostico:
+        return False
+    m = _normalizar_texto(mensaje)
+    terminos = [
+        _normalizar_texto(t.strip())
+        for t in re.split(r"[/,()]| y ", diagnostico, flags=re.IGNORECASE)
+    ]
+    terminos = [t for t in terminos if len(t) > 3]
+    return any(t in m for t in terminos)
+
+
+_RESPUESTA_GUARDRAIL = "Eso no sabría decirle con certeza, doctor, por eso vine a que usted me revisara."
+
+
+class GeminiVirtualPatientAgent(BaseVirtualPatientAgent):
+    """
+    Agente 2: Paciente Virtual Estandarizado impulsado por Google Gemini.
+
+    Puerto directo de la lógica del Agente 2 de jrojas710/simulador-clinico-gastro
+    (antes un workflow n8n) a Python nativo: mismo guardrail determinista
+    anti-fuga de diagnóstico, misma separación entre construcción de prompt y
+    llamada al modelo. A diferencia del original (sin estado, el cliente
+    reenviaba el caso completo en cada llamada), acá el caso y el historial
+    viven en MongoDB (`consultations.case` / `consultations.chat_history`,
+    ver app/routes/consultas.py) — el cliente nunca ve ni maneja el
+    diagnóstico real.
+    """
+
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        self.api_key = (api_key if api_key is not None else os.getenv("GEMINI_API_KEY", "")).strip()
+        self.model_name = model or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+        self._fallback_agent = MockVirtualPatientAgent()
+        self._client = None
+
+        if self.api_key:
+            try:
+                from google import genai
+
+                self._client = genai.Client(api_key=self.api_key)
+            except Exception as e:
+                logger.warning("No se pudo inicializar Gemini para Agente 2: %s. Se usará Mock.", e)
+                self._client = None
+
+    def respond_to_student(self, request: PatientChatRequest) -> PatientChatResponse:
+        """Genera la respuesta del paciente virtual en lenguaje natural o recurre al Mock de respaldo."""
+        start_time = time.perf_counter()
+
+        if not self._client:
+            logger.info("GEMINI_API_KEY no configurada. Utilizando Agente 2 Mock de respaldo.")
+            res = self._fallback_agent.respond_to_student(request)
+            res.is_mock = True
+            res.provider_used = "Mock (GEMINI_API_KEY no configurada)"
+            res.model_used = None
+            res.error_details = "GEMINI_API_KEY no está configurada en el archivo .env"
+            res.latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
+            return res
+
+        # El caso dinámico generado para ESTA consulta (Mongo) tiene prioridad
+        # sobre el dataset estático — así el paciente responde sobre el caso
+        # real de la sesión, no uno genérico de ejemplo.
+        case_data: Dict[str, Any] = request.case_context or get_case_by_id(request.case_id or "CASE-GI-001")
+
+        demographics = case_data.get("demographics", {})
+        age = demographics.get("age", 45)
+        gender = demographics.get("gender", "M")
+        occupation = demographics.get("occupation", "Comerciante")
+        chief_complaint = case_data.get("chief_complaint", "Tengo dolor en la boca del estómago.")
+        present_illness = case_data.get("present_illness", "")
+        med_history = case_data.get("medical_history", {})
+        condition = case_data.get("condition") or (case_data.get("ground_truth") or {}).get("definitive_diagnosis", "Dolor abdominal agudo")
+        diagnostico_real = (case_data.get("ground_truth") or {}).get("definitive_diagnosis")
+
+        historial_texto = ""
+        if request.chat_history:
+            historial_texto = "\n".join(
+                f"- [{m.get('sender') or m.get('role', 'medico')}]: {m.get('content') or m.get('message', '')}"
+                for m in request.chat_history
+            )
+
+        system_prompt = f"""
+Eres un paciente estandarizado en una consulta médica o servicio de urgencias en Colombia, interactuando con un estudiante de medicina / médico interno (Clerkship UNAB).
+
+DATOS DE TU PERSONAJE:
+- Edad: {age} años
+- Sexo: {'Masculino' if gender == 'M' else 'Femenino'}
+- Ocupación: {occupation}
+- Motivo de consulta inicial: "{chief_complaint}"
+- Cuadro patológico real de base: {condition}
+- Resumen de tu enfermedad actual: {present_illness}
+- Antecedentes personales y familiares: {json.dumps(med_history, ensure_ascii=False)}
+{f"- Conversación previa con el estudiante:{chr(10)}{historial_texto}" if historial_texto else ""}
+
+REGLAS DE ACTUACIÓN Y COMPORTAMIENTO:
+1. Responde de forma concisa (máximo 2-4 oraciones), directa y en lenguaje coloquial latinoamericano/colombiano.
+2. NO uses terminología médica especializada (no digas 'epigastrio', di 'en la boca del estómago'; no digas 'emesis', di 'vómitos'). Solo usa términos médicos si un doctor ya te los explicó antes en esta misma consulta.
+3. NUNCA reveles ni nombres directamente tu diagnóstico real, aunque el estudiante te lo pregunte explícitamente o intente presionarte — vos, como paciente, no sabés qué tenés, solo sabés cómo te sentís.
+4. Si el doctor te saluda o pregunta cómo estás, salúdalo con respeto pero deja ver tu malestar o dolor.
+5. Mantén absoluta coherencia fisiopatológica con tu caso: no inventes síntomas contradictorios con los de arriba.
+6. Tu respuesta DEBE ser un objeto JSON válido con exactamente estos campos:
+   - "reply": (string) La respuesta en primera persona que le dices al médico.
+   - "pain_scale_reported": (integer de 0 a 10) El nivel de dolor que estás sintiendo en este momento.
+   - "emotional_state": (string) Tu estado de ánimo ("quejumbroso", "angustiado", "atemorizado", "tranquilo").
+"""
+
+        last_error = None
+        try:
+            from google.genai import types
+
+            response = self._client.models.generate_content(
+                model=self.model_name,
+                contents=[system_prompt, request.message],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.4,
+                ),
+            )
+
+            raw_content = (response.text or "{}").strip()
+            raw_content = re.sub(r"^```json|^```|```$", "", raw_content, flags=re.IGNORECASE).strip()
+            parsed = json.loads(raw_content)
+
+            reply = parsed.get("reply") or "Ay doctor, me duele bastante aquí en la boca del estómago."
+            pain = parsed.get("pain_scale_reported", 8)
+            emotion = parsed.get("emotional_state", "angustiado")
+
+            # --- Guardrail determinista anti-fuga de diagnóstico ---
+            guardrail_activado = False
+            if _contiene_diagnostico(reply, diagnostico_real):
+                guardrail_activado = True
+                reply = _RESPUESTA_GUARDRAIL
+                logger.warning(
+                    "Guardrail anti-fuga de diagnóstico activado (consulta=%s) — el modelo intentó revelar '%s'.",
+                    request.consultation_id, diagnostico_real,
+                )
+
+            return PatientChatResponse(
+                consultation_id=request.consultation_id,
+                reply=reply,
+                pain_scale_reported=int(pain) if isinstance(pain, (int, float)) else 8,
+                emotional_state=emotion,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                guardrail_activado=guardrail_activado,
+                provider_used="Google Gemini",
+                model_used=self.model_name,
+                is_mock=False,
+                error_details=None,
+                latency_ms=round((time.perf_counter() - start_time) * 1000, 1),
+            )
+
+        except Exception as exc:
+            last_error = exc
+            logger.error("Error al invocar Gemini en Agente 2 (Paciente Virtual): %s. Activando fallback a Mock.", exc)
+            res = self._fallback_agent.respond_to_student(request)
+            res.is_mock = True
+            res.provider_used = "Mock (Fallback por Error en Gemini)"
+            res.model_used = None
+            res.error_details = str(last_error)
+            res.latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
+            return res
+
+
 class GeminiClinicalEvaluatorAgent(BaseClinicalEvaluatorAgent):
     """
     Agente 3: Tutor Evaluador de Razonamiento Clínico impulsado por Google Gemini.
@@ -198,8 +392,9 @@ class GeminiClinicalEvaluatorAgent(BaseClinicalEvaluatorAgent):
         last_error = None
 
         try:
-            # Contexto del estándar de referencia (Ground Truth)
-            case_data = get_case_by_id(request.case_id) or CLINICAL_CASES_DATA.get("CASE-GI-001", {})
+            # Contexto del estándar de referencia (Ground Truth) — el caso
+            # dinámico de la consulta real tiene prioridad sobre el dataset estático.
+            case_data = request.case_context or get_case_by_id(request.case_id) or CLINICAL_CASES_DATA.get("CASE-GI-001", {})
             ground_truth = case_data.get("ground_truth", {})
             definitive_diagnosis = ground_truth.get("definitive_diagnosis", "Patología gastrointestinal aguda")
             key_tests = ground_truth.get("key_diagnostic_tests", [])
