@@ -4,10 +4,16 @@ import {
   FileText, CheckCircle, Plus, Trash2, Send,
   Clock, ChevronRight,
   Info, BookOpen, BarChart2, ArrowLeft, LogOut, Paperclip,
-  Stethoscope, FlaskConical, MessageSquare,
+  Stethoscope, FlaskConical, MessageSquare, Loader2, AlertTriangle,
+  TrendingUp, Award, XCircle,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoUrl from '../../assets/Logo Clerkship.svg';
+import {
+  listMyCourses, listAllCourses, enrollInCourse,
+  createConsultation, sendMessage as sendPatientMessage, finishConsultation,
+  type PublicCase, type EvaluationResult,
+} from '../../data/consultasApi';
 
 /* ═══════════════════════════════════════════════════════════
    Types
@@ -22,47 +28,13 @@ interface DiagTest {
   id: string; name: string; category: string;
   justification: string; result: string | null; justified: boolean;
 }
-type Stage = 1 | 2 | 3 | 4 | 5 | 6;
+type Stage = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 /* ═══════════════════════════════════════════════════════════
-   Static data
+   Static data — examen físico y paraclínicos siguen siendo un
+   catálogo fijo de interacción (no dependen de IA): el caso real
+   (motivo de consulta, viñeta, antecedentes) sí viene del Agente 1.
    ═══════════════════════════════════════════════════════════ */
-const CASE = {
-  name: 'Carlos Mendoza', age: 42, sex: 'Masculino', occupation: 'Contador',
-  motivo: 'Dolor abdominal agudo en paciente joven',
-  vignette: `Paciente masculino de 42 años, contador, que consulta por dolor abdominal de 3 semanas de evolución localizado en epigastrio, de carácter urente, asociado a náuseas postprandiales. Refiere pérdida de peso no intencional de aproximadamente 4 kg en el último mes. No refiere vómito ni cambios en el hábito intestinal.`,
-};
-
-const MOCK_RESPONSES: [string[], string][] = [
-  [['dolor','duele','molestia','siente'],
-    'El dolor es como una quemazón, aquí en la boca del estómago. Aparece especialmente después de comer, pero a veces también en ayunas de madrugada. Le daré un valor de 6 sobre 10.'],
-  [['irradia','espalda','hacia'],
-    'Sí, a veces siento que el dolor se va un poco hacia la espalda, aunque no siempre.'],
-  [['medicamento','pastilla','ibuprofeno','antiinflamatorio'],
-    'Solo tomo ibuprofeno cuando el dolor es muy fuerte. Llevo casi dos meses tomándolo casi todos los días.'],
-  [['comer','comida','alimento'],
-    'El dolor empeora después de comer, sobre todo con comidas grasosas o picantes. A veces también en la madrugada.'],
-  [['náusea','nausea','vómito','vomito'],
-    'Sí, tengo náuseas seguido, especialmente después de las comidas más grandes. Vomitar no he vomitado.'],
-  [['peso','adelgaz','kilos'],
-    'Sí, he perdido como cuatro kilos en el último mes. No estoy a dieta, simplemente no tengo apetito.'],
-  [['antecedente','enfermedad','historia'],
-    'No tengo enfermedades conocidas. Nunca me han operado. No tomo otro medicamento aparte del ibuprofeno.'],
-  [['fiebre','temperatura'],
-    'No, no he tenido fiebre ni escalofríos.'],
-  [['alcohol','bebida'],
-    'Tomo algo ocasionalmente en reuniones de trabajo, una cerveza cada dos semanas.'],
-  [['familiar','familia','padre','madre'],
-    'Mi padre tuvo algo en el estómago hace años, creo que lo trataron con antibióticos.'],
-  [['estrés','trabajo','tensión'],
-    'Sí, estoy bajo mucha presión en el trabajo. Es temporada de impuestos y los clientes me llaman a todas horas.'],
-  [['cuánto','tiempo','empezó','inicio'],
-    'Esto empezó hace como tres semanas. Al principio era leve y lo ignoré, pero fue empeorando.'],
-  [['sangre','heces','negro'],
-    'No he notado sangre. Aunque... sí he notado que a veces están un poco más oscuras de lo normal.'],
-  [['alergia'],
-    'No conozco ninguna alergia a medicamentos.'],
-];
 
 const PHYSICAL_EXAMS = [
   { id: 'inspeccion', label: 'Inspección abdominal', cat: 'Inspección',
@@ -111,18 +83,29 @@ function fmtTime(ts: number) {
   const d = new Date(ts);
   return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
 }
-function getPatientReply(msg: string): string {
-  const m = msg.toLowerCase();
-  for (const [keys, reply] of MOCK_RESPONSES)
-    if (keys.some(k => m.includes(k))) return reply;
-  return 'No entiendo muy bien a qué se refiere. ¿Puede explicarme de otra manera?';
-}
 function wordCount(t: string) { return t.trim() ? t.trim().split(/\s+/).length : 0; }
+
+/** Encuentra (o matricula al estudiante en) un curso de Gastroenterología
+ *  real para poder crear la consulta — crear_consulta exige un course_id
+ *  válido en el que el estudiante esté matriculado. */
+async function ensureGastroCourseId(): Promise<string> {
+  const mine = await listMyCourses();
+  const mineMatch = mine.find(c => c.name.toLowerCase().includes('gastro')) || mine[0];
+  if (mineMatch) return mineMatch.id;
+
+  const all = await listAllCourses();
+  const candidate = all.find(c => c.name.toLowerCase().includes('gastro')) || all[0];
+  if (!candidate) {
+    throw new Error('No hay ningún curso de Gastroenterología creado todavía — pedile a un docente que cree uno.');
+  }
+  await enrollInCourse(candidate.id);
+  return candidate.id;
+}
 
 /* ═══════════════════════════════════════════════════════════
    Top bar
    ═══════════════════════════════════════════════════════════ */
-function SimTopbar({ onBack, onExit }: { onBack: () => void; onExit: () => void }) {
+function SimTopbar({ onBack, onExit, caseTitle }: { onBack: () => void; onExit: () => void; caseTitle: string }) {
   return (
     <header className="sim-topbar">
       <div className="sim-tb-left">
@@ -133,7 +116,7 @@ function SimTopbar({ onBack, onExit }: { onBack: () => void; onExit: () => void 
       </div>
       <div className="sim-tb-center">
         <span className="sim-tb-case-ico"><Stethoscope size={16} /></span>
-        <span className="sim-tb-case-title">Caso: {CASE.motivo}</span>
+        <span className="sim-tb-case-title">Caso: {caseTitle}</span>
       </div>
       <div className="sim-tb-right">
         <button className="sim-tb-exit" onClick={onExit}>
@@ -310,7 +293,7 @@ function HistoriaClinica({ messages, examsDone, testsDone }: {
 /* ═══════════════════════════════════════════════════════════
    Stage 1 — Presentación (full width)
    ═══════════════════════════════════════════════════════════ */
-function Stage1Content({ onNext }: { onNext: () => void }) {
+function Stage1Content({ onNext, vignette, difficulty }: { onNext: () => void; vignette: string; difficulty: string }) {
   return (
     <div className="sim-stage1-wrap">
       <motion.div
@@ -329,14 +312,14 @@ function Stage1Content({ onNext }: { onNext: () => void }) {
           <div className="sim-vignette-bar" />
           <div>
             <p className="sim-vignette-label">Viñeta clínica generada por IA</p>
-            <p className="sim-vignette-text">{CASE.vignette}</p>
+            <p className="sim-vignette-text">{vignette}</p>
           </div>
         </div>
 
         <div className="sim-info-cards">
           {[
             { Icon: BookOpen,  label: 'Dominio',         value: 'Sistema gastrointestinal' },
-            { Icon: BarChart2, label: 'Dificultad',      value: 'Moderada (Nivel 2)'       },
+            { Icon: BarChart2, label: 'Dificultad',      value: difficulty       },
             { Icon: Clock,     label: 'Tiempo estimado', value: '25–35 minutos'             },
           ].map(({ Icon, label, value }) => (
             <div key={label} className="sim-info-chip">
@@ -359,14 +342,15 @@ function Stage1Content({ onNext }: { onNext: () => void }) {
    Stage 2 — Entrevista (chat)
    ═══════════════════════════════════════════════════════════ */
 function Stage2Chat({
-  messages, onSend, onNext,
+  messages, onSend, onNext, sending,
 }: {
   messages: ChatMsg[];
   onSend: (text: string) => void;
   onNext: () => void;
+  sending: boolean;
 }) {
   const [input, setInput]   = useState('');
-  const [typing, setTyping] = useState(false);
+  const typing = sending;
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -378,8 +362,6 @@ function Stage2Chat({
     if (!text || typing) return;
     setInput('');
     onSend(text);
-    setTyping(true);
-    setTimeout(() => setTyping(false), 1200 + Math.random() * 800);
   }, [input, typing, onSend]);
 
   return (
@@ -711,7 +693,7 @@ function Stage5Content({ hypotheses, onUpdate, onNext }: {
 /* ═══════════════════════════════════════════════════════════
    Stage 6 — Diagnóstico final
    ═══════════════════════════════════════════════════════════ */
-function Stage6Content({ onSubmit }: { onSubmit: () => void }) {
+function Stage6Content({ onSubmit, submitting }: { onSubmit: (dx: string, arg: string) => void; submitting: boolean }) {
   const [dx, setDx] = useState('');
   const [arg, setArg] = useState('');
   const wc = wordCount(arg);
@@ -742,13 +724,91 @@ function Stage6Content({ onSubmit }: { onSubmit: () => void }) {
         </div>
       </div>
       <div className="sim-stage-footer">
-        {!ready && (
+        {!ready && !submitting && (
           <p className="sim-footer-hint">
             {!dx.trim() ? 'Escribe tu diagnóstico principal.' : `Faltan ${100 - wc} palabras.`}
           </p>
         )}
-        <button className="sim-btn-submit" disabled={!ready} onClick={onSubmit}>
-          <CheckCircle size={16} /> Enviar y recibir retroalimentación
+        <button className="sim-btn-submit" disabled={!ready || submitting} onClick={() => onSubmit(dx.trim(), arg.trim())}>
+          {submitting
+            ? <><Loader2 size={16} className="sim-spin" /> Evaluando con IA...</>
+            : <><CheckCircle size={16} /> Enviar y recibir retroalimentación</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Stage 7 — Resultado de la evaluación (Agente 3, real)
+   ═══════════════════════════════════════════════════════════ */
+function EvaluationResultView({ evaluation, onFinish }: { evaluation: EvaluationResult; onFinish: () => void }) {
+  const domains: [string, number][] = [
+    ['Anamnesis', evaluation.domain_scores.anamnesis],
+    ['Exámenes solicitados', evaluation.domain_scores.diagnostic_tests],
+    ['Hipótesis diferenciales', evaluation.domain_scores.differential_hypotheses],
+    ['Diagnóstico final', evaluation.domain_scores.final_diagnosis],
+  ];
+  return (
+    <div className="sim-stage-body">
+      <div className="sim-stage-header">
+        <p className="sim-stage-eyebrow">Retroalimentación · Agente Evaluador</p>
+        <h2 className="sim-stage-title">
+          Puntaje final: {evaluation.final_score.toFixed(0)} / 100
+          {evaluation.is_mock && <span className="sim-eval-mock-badge"> (modo demo, sin IA real)</span>}
+        </h2>
+      </div>
+
+      <div className="sim-eval-domains">
+        {domains.map(([label, val]) => (
+          <div key={label} className="sim-eval-domain">
+            <span className="sim-eval-domain-label">{label}</span>
+            <div className="sim-eval-domain-track">
+              <div className="sim-eval-domain-fill" style={{ width: `${Math.max(0, Math.min(100, val))}%` }} />
+            </div>
+            <span className="sim-eval-domain-val">{val.toFixed(0)}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="sim-eval-feedback">
+        <p className="sim-eval-feedback-title"><Info size={14} /> Retroalimentación</p>
+        <p className="sim-eval-feedback-text">{evaluation.feedback_summary}</p>
+      </div>
+
+      <div className="sim-eval-cols">
+        <div className="sim-eval-col">
+          <p className="sim-eval-col-title"><TrendingUp size={14} /> Fortalezas</p>
+          <ul className="sim-eval-list">
+            {evaluation.strengths.map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
+        </div>
+        <div className="sim-eval-col">
+          <p className="sim-eval-col-title"><Award size={14} /> Áreas de mejora</p>
+          <ul className="sim-eval-list">
+            {evaluation.areas_for_improvement.map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
+        </div>
+      </div>
+
+      {evaluation.detected_biases.length > 0 && (
+        <div className="sim-eval-biases">
+          <p className="sim-eval-col-title"><AlertTriangle size={14} /> Sesgos cognitivos evaluados</p>
+          {evaluation.detected_biases.map((b, i) => (
+            <div key={i} className={`sim-eval-bias${b.detected ? ' sim-eval-bias-active' : ''}`}>
+              {b.detected ? <AlertTriangle size={13} /> : <XCircle size={13} />}
+              <div>
+                <strong>{b.bias_name}</strong>
+                {b.explanation && <p>{b.explanation}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="sim-stage-footer">
+        <button className="sim-btn-submit" onClick={onFinish}>
+          Volver al Dashboard <ChevronRight size={16} />
         </button>
       </div>
     </div>
@@ -830,13 +890,48 @@ export default function SimulacionPage() {
   const navigate = useNavigate();
   const [stage, setStage]         = useState<Stage>(1);
   const [hypotheses, setHypotheses] = useState<Hypothesis[]>([]);
-  const [messages, setMessages]   = useState<ChatMsg[]>([
-    { role: 'patient',
-      text: 'Buenos días, doctor. Vengo porque llevo unas semanas con un dolor en el estómago que no se me quita.',
-      ts: Date.now() },
-  ]);
+  const [messages, setMessages]   = useState<ChatMsg[]>([]);
   const [examsDone, setExamsDone] = useState<string[]>([]);
   const [testsDone, setTestsDone] = useState<string[]>([]);
+
+  // --- Caso real (Agente 1) ---
+  const [consultationId, setConsultationId] = useState<string | null>(null);
+  const [caseDetails, setCaseDetails] = useState<PublicCase | null>(null);
+  const [loadingCase, setLoadingCase] = useState(true);
+  const [caseError, setCaseError] = useState<string | null>(null);
+
+  // --- Chat con el paciente (Agente 2) ---
+  const [sendingMsg, setSendingMsg] = useState(false);
+
+  // --- Evaluación final (Agente 3) ---
+  const [submittingEval, setSubmittingEval] = useState(false);
+  const [evalError, setEvalError] = useState<string | null>(null);
+  const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
+
+  // Al entrar: matricula (si hace falta) en un curso de Gastroenterología y
+  // dispara al Agente 1 para generar un caso clínico real de verdad.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const courseId = await ensureGastroCourseId();
+        const consultation = await createConsultation({ course_id: courseId });
+        if (cancelled) return;
+        setConsultationId(consultation.id);
+        setCaseDetails((consultation.case_details as PublicCase) || null);
+        setMessages((consultation.chat_history || []).map(m => ({
+          role: m.sender === 'STUDENT' ? 'student' : 'patient',
+          text: m.content,
+          ts: m.timestamp ? new Date(m.timestamp).getTime() : Date.now(),
+        })));
+      } catch (err) {
+        if (!cancelled) setCaseError(err instanceof Error ? err.message : 'No se pudo generar el caso clínico.');
+      } finally {
+        if (!cancelled) setLoadingCase(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const addHyp    = useCallback((text: string) =>
     setHypotheses(h => [...h, { id: uid(), text, probability: 50, argument: '', status: 'active' }]), []);
@@ -846,13 +941,51 @@ export default function SimulacionPage() {
     setHypotheses(h => h.map(x => x.id === id ? { ...x, ...patch } : x)), []);
   const next      = useCallback(() => setStage(s => Math.min(s + 1, 6) as Stage), []);
 
-  const handleSend = useCallback((text: string) => {
+  const handleSend = useCallback(async (text: string) => {
+    if (!consultationId) return;
     const ts = Date.now();
     setMessages(m => [...m, { role: 'student', text, ts }]);
-    setTimeout(() => {
-      setMessages(m => [...m, { role: 'patient', text: getPatientReply(text), ts: Date.now() }]);
-    }, 1200 + Math.random() * 800);
-  }, []);
+    setSendingMsg(true);
+    try {
+      const res = await sendPatientMessage(consultationId, text);
+      setMessages(m => [...m, {
+        role: 'patient',
+        text: res.reply.content,
+        ts: res.reply.timestamp ? new Date(res.reply.timestamp).getTime() : Date.now(),
+      }]);
+    } catch (err) {
+      setMessages(m => [...m, {
+        role: 'patient',
+        text: err instanceof Error ? `(No se pudo obtener respuesta: ${err.message})` : 'No se pudo obtener respuesta del paciente.',
+        ts: Date.now(),
+      }]);
+    } finally {
+      setSendingMsg(false);
+    }
+  }, [consultationId]);
+
+  const handleFinalSubmit = useCallback(async (dx: string, arg: string) => {
+    if (!consultationId) return;
+    setSubmittingEval(true);
+    setEvalError(null);
+    try {
+      const activeHyp = hypotheses.filter(h => h.status === 'active').map(h => `${h.text} (${h.probability}%): ${h.argument}`.trim());
+      const requestedTests = testsDone
+        .map(id => ALL_TESTS.find(t => t.id === id)?.name)
+        .filter((n): n is string => !!n);
+      const result = await finishConsultation(consultationId, {
+        final_diagnosis: arg ? `${dx} — ${arg}` : dx,
+        differential_diagnoses: activeHyp,
+        requested_tests: requestedTests,
+      });
+      setEvaluation(result.evaluation);
+      setStage(7);
+    } catch (err) {
+      setEvalError(err instanceof Error ? err.message : 'No se pudo evaluar la consulta.');
+    } finally {
+      setSubmittingEval(false);
+    }
+  }, [consultationId, hypotheses, testsDone]);
 
   // Progress per tab
   const studentMsgs = messages.filter(m => m.role === 'student').length;
@@ -864,23 +997,54 @@ export default function SimulacionPage() {
   const showTabs = stage >= 2 && stage <= 4;
   const show2col = stage >= 2 && stage <= 4;
 
+  const caseTitle = caseDetails?.chief_complaint?.slice(0, 60) || 'Generando caso clínico...';
+  const vignette = caseDetails?.present_illness || '';
+  const difficultyLabel = caseDetails?.difficulty === 'EASY' ? 'Básica (Nivel 1)'
+    : caseDetails?.difficulty === 'HARD' ? 'Avanzada (Nivel 3)'
+    : 'Moderada (Nivel 2)';
+
+  if (loadingCase) {
+    return (
+      <div className="sim-root sim-loading-root">
+        <div className="sim-loading-box">
+          <Loader2 size={28} className="sim-spin" />
+          <p>El Agente 1 está generando tu caso clínico de gastroenterología...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (caseError || !consultationId) {
+    return (
+      <div className="sim-root sim-loading-root">
+        <div className="sim-loading-box sim-error-box">
+          <AlertTriangle size={28} />
+          <p>{caseError || 'No se pudo iniciar la consulta.'}</p>
+          <button className="sim-btn-next sim-btn-next-sm" onClick={() => navigate('/casos')}>
+            Volver a Casos clínicos
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="sim-root">
 
       {/* Top bar */}
-      <SimTopbar onBack={() => navigate(-1)} onExit={() => navigate(-1)} />
+      <SimTopbar onBack={() => navigate(-1)} onExit={() => navigate(-1)} caseTitle={caseTitle} />
 
       {/* Tab stepper */}
       {showTabs && <SimTabs stage={stage} progress={progress} />}
 
       {/* Stage 1 — Presentación */}
-      {stage === 1 && <Stage1Content onNext={next} />}
+      {stage === 1 && <Stage1Content onNext={next} vignette={vignette} difficulty={difficultyLabel} />}
 
       {/* Stages 2-4 — Two column */}
       {show2col && (
         <div className="sim-2col">
           {stage === 2 && (
-            <Stage2Chat messages={messages} onSend={handleSend} onNext={next} />
+            <Stage2Chat messages={messages} onSend={handleSend} onNext={next} sending={sendingMsg} />
           )}
           {stage === 3 && (
             <Stage3Exam onDone={id => setExamsDone(p => [...p, id])} onNext={next} />
@@ -898,8 +1062,8 @@ export default function SimulacionPage() {
         </div>
       )}
 
-      {/* Stages 5-6 — Full-width forms */}
-      {(stage === 5 || stage === 6) && (
+      {/* Stages 5-7 — Full-width forms */}
+      {(stage === 5 || stage === 6 || stage === 7) && (
         <div className="sim-body-full">
           <AnimatePresence mode="wait">
             <motion.div key={stage}
@@ -909,7 +1073,13 @@ export default function SimulacionPage() {
                 <Stage5Content hypotheses={hypotheses} onUpdate={updateHyp} onNext={next} />
               )}
               {stage === 6 && (
-                <Stage6Content onSubmit={() => navigate('/dashboard')} />
+                <>
+                  {evalError && <p className="sim-footer-hint sim-error-text">{evalError}</p>}
+                  <Stage6Content onSubmit={handleFinalSubmit} submitting={submittingEval} />
+                </>
+              )}
+              {stage === 7 && evaluation && (
+                <EvaluationResultView evaluation={evaluation} onFinish={() => navigate('/historial')} />
               )}
             </motion.div>
           </AnimatePresence>

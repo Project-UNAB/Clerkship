@@ -2553,6 +2553,41 @@
 .sim-btn-submit:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
 .sim-btn-submit:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
 
+/* ── Carga inicial / error al crear la consulta (Agente 1) ── */
+.sim-loading-root { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); }
+.sim-loading-box {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  text-align: center; max-width: 380px; color: var(--ink2); font-size: 0.92rem;
+}
+.sim-error-box { color: #EF4444; }
+.sim-error-text { color: #EF4444; }
+.sim-spin { animation: sim-spin-rotate 0.9s linear infinite; color: var(--p); }
+.sim-error-box .sim-spin { color: #EF4444; }
+@keyframes sim-spin-rotate { to { transform: rotate(360deg); } }
+
+/* ── Stage 7: Resultado de la evaluación (Agente 3) ── */
+.sim-eval-mock-badge { font-size: 0.7rem; font-weight: 600; color: var(--ink3); }
+.sim-eval-domains { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+.sim-eval-domain { display: grid; grid-template-columns: 170px 1fr 36px; align-items: center; gap: 10px; }
+.sim-eval-domain-label { font-size: 0.82rem; color: var(--ink2); font-weight: 600; }
+.sim-eval-domain-track { height: 8px; border-radius: 999px; background: var(--surface2); overflow: hidden; }
+.sim-eval-domain-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--p) 0%, var(--p-dk) 100%); transition: width 0.4s ease; }
+.sim-eval-domain-val { font-size: 0.82rem; font-weight: 700; color: var(--ink); text-align: right; }
+
+.sim-eval-feedback { background: var(--surface2); border-radius: var(--r-md); padding: 16px; margin-bottom: 18px; }
+.sim-eval-feedback-title { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: var(--ink2); margin: 0 0 8px; }
+.sim-eval-feedback-text { font-size: 0.85rem; color: var(--ink); line-height: 1.5; margin: 0; }
+
+.sim-eval-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+.sim-eval-col-title { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: var(--ink2); margin: 0 0 8px; }
+.sim-eval-list { margin: 0; padding-left: 18px; font-size: 0.83rem; color: var(--ink2); line-height: 1.6; }
+
+.sim-eval-biases { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.sim-eval-bias { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface2); font-size: 0.82rem; color: var(--ink2); }
+.sim-eval-bias p { margin: 2px 0 0; color: var(--ink3); font-size: 0.78rem; }
+.sim-eval-bias-active { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
+.sim-eval-bias-active p { color: #EF4444; opacity: 0.85; }
+
 /* ── Stage 2: Chat ── */
 .sim-chat-area {
   flex: 1;
@@ -6308,6 +6343,32 @@
   align-items: center;
   justify-content: space-between;
 }
+
+/* ── Modal de retroalimentación real (Agente 3) ── */
+.hist-modal-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.hist-modal {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--r-md, 12px);
+  padding: 28px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+}
+.hist-modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: var(--surface2); color: var(--ink2);
+  border: none; border-radius: 8px; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.hist-modal-loading { display: flex; align-items: center; justify-content: center; padding: 40px 0; }
 
 .hist-fb-left {
   display: flex;

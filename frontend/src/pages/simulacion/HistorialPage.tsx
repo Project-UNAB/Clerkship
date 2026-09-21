@@ -3,9 +3,14 @@ import { motion } from 'framer-motion';
 import {
   Search, Clock, Info,
   ChevronRight, ChevronDown, Download, BarChart2,
-  Check, AlertCircle, Target, Star, ClipboardCheck
+  Check, AlertCircle, Target, Star, ClipboardCheck, Loader2, X, TrendingUp, Award,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
+import {
+  listHistorial, getEstadisticas, getRetroalimentacion,
+  type Consultation, type Estadisticas, type EvaluationResult,
+} from '../../data/consultasApi';
+import { mainAuthErrorMessage } from '../../data/mainAuth';
 
 /* ── Custom Select Component ───────────────────────────── */
 function CustomSelect({
@@ -62,132 +67,12 @@ function CustomSelect({
   );
 }
 
-/* ── Types ─────────────────────────────────────────────── */
-interface Session {
-  id: number;
-  caseTitle: string;
-  specialty: string;
-  difficulty: 1 | 2 | 3;
-  date: string;
-  timeStr: string;
-  score: number;
-  timeMin: number;
-  biases: number;
-  stage: 1 | 2 | 3 | 4 | 5 | 6;
-  completed: boolean;
+/* ── Difficulty helpers (el backend maneja EASY/MEDIUM/HARD) ─── */
+function difficultyToNum(d: string): 1 | 2 | 3 {
+  if (d === 'EASY') return 1;
+  if (d === 'HARD') return 3;
+  return 2;
 }
-
-/* ── Data: 12 Sesiones de Gastroenterología ───────────────────── */
-const SESSIONS: Session[] = [
-  {
-    id: 1,
-    caseTitle: 'Úlcera péptica por uso de AINEs',
-    specialty: 'Gastroenterología',
-    difficulty: 1,
-    date: '2025-05-18T11:32:00',
-    timeStr: '11:32 a. m.',
-    score: 87, timeMin: 16, biases: 0, stage: 6, completed: true,
-  },
-  {
-    id: 2,
-    caseTitle: 'Enfermedad por reflujo gastroesofágico (ERGE)',
-    specialty: 'Gastroenterología',
-    difficulty: 1,
-    date: '2025-05-16T09:15:00',
-    timeStr: '09:15 a. m.',
-    score: 82, timeMin: 22, biases: 1, stage: 6, completed: true,
-  },
-  {
-    id: 3,
-    caseTitle: 'Apendicitis aguda típica',
-    specialty: 'Gastroenterología',
-    difficulty: 1,
-    date: '2025-05-14T16:47:00',
-    timeStr: '04:47 p. m.',
-    score: 91, timeMin: 28, biases: 0, stage: 6, completed: true,
-  },
-  {
-    id: 4,
-    caseTitle: 'Síndrome de intestino irritable (SII)',
-    specialty: 'Gastroenterología',
-    difficulty: 2,
-    date: '2025-05-12T14:03:00',
-    timeStr: '02:03 p. m.',
-    score: 65, timeMin: 24, biases: 2, stage: 6, completed: true,
-  },
-  {
-    id: 5,
-    caseTitle: 'Colecistitis aguda calculosa',
-    specialty: 'Gastroenterología',
-    difficulty: 2,
-    date: '2025-05-10T10:11:00',
-    timeStr: '10:11 a. m.',
-    score: 90, timeMin: 14, biases: 0, stage: 6, completed: true,
-  },
-  {
-    id: 6,
-    caseTitle: 'Pancreatitis aguda leve',
-    specialty: 'Gastroenterología',
-    difficulty: 2,
-    date: '2025-05-08T08:50:00',
-    timeStr: '08:50 a. m.',
-    score: 75, timeMin: 19, biases: 1, stage: 6, completed: true,
-  },
-  {
-    id: 7,
-    caseTitle: 'Hepatitis viral aguda tipo A',
-    specialty: 'Gastroenterología',
-    difficulty: 2,
-    date: '2025-05-01T15:30:00',
-    timeStr: '03:30 p. m.',
-    score: 85, timeMin: 32, biases: 0, stage: 6, completed: true,
-  },
-  {
-    id: 8,
-    caseTitle: 'Hemorragia digestiva alta no variceal',
-    specialty: 'Gastroenterología',
-    difficulty: 2,
-    date: '2025-04-28T10:00:00',
-    timeStr: '10:00 a. m.',
-    score: 95, timeMin: 20, biases: 0, stage: 6, completed: true,
-  },
-  {
-    id: 9,
-    caseTitle: 'Enfermedad de Crohn ileal',
-    specialty: 'Gastroenterología',
-    difficulty: 3,
-    date: '2025-04-20T14:20:00',
-    timeStr: '02:20 p. m.',
-    score: 68, timeMin: 35, biases: 1, stage: 6, completed: true,
-  },
-  {
-    id: 10,
-    caseTitle: 'Adenocarcinoma gástrico avanzado',
-    specialty: 'Gastroenterología',
-    difficulty: 3,
-    date: '2025-04-15T09:45:00',
-    timeStr: '09:45 a. m.',
-    score: 72, timeMin: 40, biases: 2, stage: 6, completed: true,
-  },
-  {
-    id: 11,
-    caseTitle: 'Diverticulitis aguda no complicada',
-    specialty: 'Gastroenterología',
-    difficulty: 2,
-    date: '2025-04-10T11:15:00',
-    timeStr: '11:15 a. m.',
-    score: 80, timeMin: 25, biases: 1, stage: 6, completed: true,
-  },
-  {
-    id: 12,
-    caseTitle: 'Cirrosis hepática descompensada',
-    specialty: 'Gastroenterología',
-    difficulty: 3,
-    date: '2025-04-05T16:00:00',
-    timeStr: '04:00 p. m.',
-    score: 88, timeMin: 30, biases: 0, stage: 6, completed: true,
-  }
-];
 
 const SPECIALTIES = ['Todos', 'Gastroenterología'];
 const STATUS_OPTIONS = ['Todos', 'Completados', 'En progreso'];
@@ -222,11 +107,14 @@ const StomachIcon = () => (
 );
 
 /* ── Session row ────────────────────────────────────────── */
-function SessionRow({ s, delay }: { s: Session; delay: number }) {
-  const dc = DIFFICULTY_COLOR[s.difficulty];
+function SessionRow({ s, delay, onVerDetalle }: { s: Consultation; delay: number; onVerDetalle: (id: string) => void }) {
+  const difficulty = difficultyToNum(s.difficulty);
+  const dc = DIFFICULTY_COLOR[difficulty];
   const spC = SPEC_COLORS[s.specialty] || SPEC_COLORS['Gastroenterología'];
-  
-  const isCorrect = s.score >= 70;
+  const score = s.score ?? 0;
+  const isCorrect = score >= 70;
+  const finished = s.finished_at || s.started_at || new Date().toISOString();
+  const timeStr = new Date(finished).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <motion.div
@@ -239,48 +127,52 @@ function SessionRow({ s, delay }: { s: Session; delay: number }) {
         <div className="hist-td-icon" style={{ background: spC.bg, color: spC.color }}>
           <StomachIcon />
         </div>
-        <span className="hist-td-title">{s.caseTitle}</span>
+        <span className="hist-td-title">{s.title}</span>
       </div>
-      
+
       <div className="hist-td hist-td-mod">
         <span className="hist-td-tag" data-spec={s.specialty} style={{ color: spC.color, background: spC.bg }}>
           {s.specialty}
         </span>
       </div>
-      
+
       <div className="hist-td hist-td-diff">
-        <span className="hist-td-tag" data-diff={s.difficulty} style={{ color: dc.color, background: dc.bg }}>
-          {DIFFICULTY_LABEL[s.difficulty]}
+        <span className="hist-td-tag" data-diff={difficulty} style={{ color: dc.color, background: dc.bg }}>
+          {DIFFICULTY_LABEL[difficulty]}
         </span>
       </div>
-      
+
       <div className="hist-td hist-td-date">
-        <span>{fmtDate(s.date)}</span>
-        <span className="hist-td-time-sub">{s.timeStr}</span>
+        <span>{fmtDate(finished)}</span>
+        <span className="hist-td-time-sub">{timeStr}</span>
       </div>
-      
+
       <div className="hist-td hist-td-time">
-        {s.timeMin} min
+        {s.status === 'IN_PROGRESS' ? 'En curso' : '—'}
       </div>
-      
+
       <div className="hist-td hist-td-acc">
-        <span className="hist-acc-val">{s.score}%</span>
+        <span className="hist-acc-val">{score}%</span>
         <div className="hist-acc-track">
-          <motion.div 
-            className="hist-acc-fill" 
-            style={{ 
-              width: `${s.score}%`, 
-              background: isCorrect ? '#10B981' : '#F59E0B' 
-            }} 
+          <motion.div
+            className="hist-acc-fill"
+            style={{
+              width: `${score}%`,
+              background: isCorrect ? '#10B981' : '#F59E0B'
+            }}
             initial={{ width: 0 }}
-            animate={{ width: `${s.score}%` }}
+            animate={{ width: `${score}%` }}
             transition={{ duration: 0.6, delay: delay + 0.1 }}
           />
         </div>
       </div>
-      
+
       <div className="hist-td hist-td-res">
-        {isCorrect ? (
+        {s.status !== 'COMPLETED' ? (
+          <div className="hist-res-badge hist-res-warn">
+            <Clock size={14} strokeWidth={2.5} /> En progreso
+          </div>
+        ) : isCorrect ? (
           <div className="hist-res-badge hist-res-ok">
             <Check size={14} strokeWidth={3} /> Correcto
           </div>
@@ -290,32 +182,132 @@ function SessionRow({ s, delay }: { s: Session; delay: number }) {
           </div>
         )}
       </div>
-      
+
       <div className="hist-td hist-td-act">
-        <button className="hist-act-btn-text">Ver detalle</button>
-        <button className="hist-act-btn-icon"><BarChart2 size={16} /></button>
+        <button
+          className="hist-act-btn-text"
+          onClick={() => onVerDetalle(s.id)}
+          disabled={s.status !== 'COMPLETED'}
+        >
+          Ver detalle
+        </button>
+        <button className="hist-act-btn-icon" onClick={() => onVerDetalle(s.id)} disabled={s.status !== 'COMPLETED'}>
+          <BarChart2 size={16} />
+        </button>
       </div>
     </motion.div>
+  );
+}
+
+/* ── Modal de retroalimentación real (Agente 3) ────────────── */
+function RetroalimentacionModal({ consultationId, onClose }: { consultationId: string; onClose: () => void }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<{ consultation: Consultation; evaluation: EvaluationResult } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getRetroalimentacion(consultationId)
+      .then(res => { if (!cancelled) setData(res); })
+      .catch(err => { if (!cancelled) setError(mainAuthErrorMessage(err)); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [consultationId]);
+
+  return (
+    <div className="hist-modal-backdrop" onClick={onClose}>
+      <motion.div
+        className="hist-modal"
+        initial={{ opacity: 0, y: 16, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        onClick={e => e.stopPropagation()}
+      >
+        <button className="hist-modal-close" onClick={onClose}><X size={16} /></button>
+
+        {loading && <div className="hist-modal-loading"><Loader2 size={24} className="sim-spin" /></div>}
+        {error && <p className="sim-error-text">{error}</p>}
+
+        {data && (
+          <>
+            <p className="sim-eval-mock-badge">{data.consultation.title}</p>
+            <h2 className="sim-stage-title">Puntaje: {data.evaluation.final_score.toFixed(0)} / 100</h2>
+
+            <div className="sim-eval-domains">
+              {([
+                ['Anamnesis', data.evaluation.domain_scores.anamnesis],
+                ['Exámenes solicitados', data.evaluation.domain_scores.diagnostic_tests],
+                ['Hipótesis diferenciales', data.evaluation.domain_scores.differential_hypotheses],
+                ['Diagnóstico final', data.evaluation.domain_scores.final_diagnosis],
+              ] as [string, number][]).map(([label, val]) => (
+                <div key={label} className="sim-eval-domain">
+                  <span className="sim-eval-domain-label">{label}</span>
+                  <div className="sim-eval-domain-track">
+                    <div className="sim-eval-domain-fill" style={{ width: `${Math.max(0, Math.min(100, val))}%` }} />
+                  </div>
+                  <span className="sim-eval-domain-val">{val.toFixed(0)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="sim-eval-feedback">
+              <p className="sim-eval-feedback-title"><Info size={14} /> Retroalimentación</p>
+              <p className="sim-eval-feedback-text">{data.evaluation.feedback_summary}</p>
+            </div>
+
+            <div className="sim-eval-cols">
+              <div className="sim-eval-col">
+                <p className="sim-eval-col-title"><TrendingUp size={14} /> Fortalezas</p>
+                <ul className="sim-eval-list">{data.evaluation.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
+              </div>
+              <div className="sim-eval-col">
+                <p className="sim-eval-col-title"><Award size={14} /> Áreas de mejora</p>
+                <ul className="sim-eval-list">{data.evaluation.areas_for_improvement.map((s, i) => <li key={i}>{s}</li>)}</ul>
+              </div>
+            </div>
+          </>
+        )}
+      </motion.div>
+    </div>
   );
 }
 
 /* ── Page ───────────────────────────────────────────────── */
 export default function HistorialPage() {
   const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Completados');
+  const [statusFilter, setStatusFilter] = useState('Todos');
   const [specFilter, setSpecFilter] = useState('Todos');
   const [diffFilter, setDiffFilter] = useState('Todos');
   const [dateFilter, setDateFilter] = useState('Últimos 3 meses');
 
-  const filtered = useMemo(() => SESSIONS.filter(s => {
+  const [sessions, setSessions] = useState<Consultation[]>([]);
+  const [stats, setStats] = useState<Estadisticas | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [detalleId, setDetalleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([listHistorial(), getEstadisticas()])
+      .then(([hist, est]) => {
+        if (cancelled) return;
+        setSessions(hist);
+        setStats(est);
+      })
+      .catch(err => { if (!cancelled) setLoadError(mainAuthErrorMessage(err)); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const filtered = useMemo(() => sessions.filter(s => {
     const q = query.toLowerCase();
-    const matchQ    = !q || s.caseTitle.toLowerCase().includes(q) || s.specialty.toLowerCase().includes(q);
+    const matchQ    = !q || s.title.toLowerCase().includes(q) || s.specialty.toLowerCase().includes(q);
     const matchSpec = specFilter === 'Todos' || s.specialty === specFilter;
-    const matchStatus = statusFilter === 'Todos' || (statusFilter === 'Completados' ? s.completed : !s.completed);
-    const matchDiff = diffFilter === 'Todos' || DIFFICULTY_LABEL[s.difficulty] === diffFilter;
+    const matchStatus = statusFilter === 'Todos'
+      || (statusFilter === 'Completados' ? s.status === 'COMPLETED' : s.status === 'IN_PROGRESS');
+    const matchDiff = diffFilter === 'Todos' || DIFFICULTY_LABEL[difficultyToNum(s.difficulty)] === diffFilter;
     return matchQ && matchSpec && matchStatus && matchDiff;
-  }), [query, specFilter, statusFilter, diffFilter]);
-  
+  }), [sessions, query, specFilter, statusFilter, diffFilter]);
+
   const displayed = filtered.slice(0, 6);
 
   return (
@@ -338,41 +330,43 @@ export default function HistorialPage() {
               </div>
               <div className="hist-pg-stat-info">
                 <span className="hist-pg-stat-lbl">Casos completados</span>
-                <span className="hist-pg-stat-val">12</span>
+                <span className="hist-pg-stat-val">{stats ? stats.completadas : '—'}</span>
               </div>
             </div>
-            
+
             <div className="hist-pg-stat-card">
               <div className="hist-pg-stat-icon" data-stat-type="sky">
                 <Target size={20} />
               </div>
               <div className="hist-pg-stat-info">
-                <span className="hist-pg-stat-lbl">Accuracy diagnóstica</span>
-                <span className="hist-pg-stat-val">82%</span>
+                <span className="hist-pg-stat-lbl">Puntaje promedio</span>
+                <span className="hist-pg-stat-val">{stats ? `${Math.round(stats.promedio_score)}%` : '—'}</span>
               </div>
             </div>
-            
+
             <div className="hist-pg-stat-card">
               <div className="hist-pg-stat-icon" data-stat-type="indigo">
                 <Clock size={20} />
               </div>
               <div className="hist-pg-stat-info">
-                <span className="hist-pg-stat-lbl">Tiempo promedio</span>
-                <span className="hist-pg-stat-val">24 min</span>
+                <span className="hist-pg-stat-lbl">En progreso</span>
+                <span className="hist-pg-stat-val">{stats ? stats.en_progreso : '—'}</span>
               </div>
             </div>
-            
+
             <div className="hist-pg-stat-card">
               <div className="hist-pg-stat-icon" data-stat-type="emerald">
                 <Star size={20} />
               </div>
               <div className="hist-pg-stat-info">
-                <span className="hist-pg-stat-lbl">Racha actual</span>
-                <span className="hist-pg-stat-val">5 casos</span>
+                <span className="hist-pg-stat-lbl">Mejor puntaje</span>
+                <span className="hist-pg-stat-val">{stats ? `${Math.round(stats.puntaje_maximo)}%` : '—'}</span>
               </div>
             </div>
           </div>
         </div>
+
+        {loadError && <p className="sim-error-text" style={{ margin: '0 0 12px' }}>{loadError}</p>}
 
         {/* ── Custom Filters ── */}
         <div className="hist-pg-filters">
@@ -441,15 +435,21 @@ export default function HistorialPage() {
           </div>
           
           <div className="hist-table-body">
-            {displayed.length > 0 ? (
-              displayed.map((s, i) => <SessionRow key={s.id} s={s} delay={i * 0.05} />)
+            {loading ? (
+              <div className="hist-empty-state"><Loader2 size={22} className="sim-spin" /></div>
+            ) : displayed.length > 0 ? (
+              displayed.map((s, i) => <SessionRow key={s.id} s={s} delay={i * 0.05} onVerDetalle={setDetalleId} />)
             ) : (
               <div className="hist-empty-state">
-                <p>No hay sesiones con esos filtros.</p>
+                <p>Todavía no completaste ninguna simulación clínica — andá a "Casos" para empezar una.</p>
               </div>
             )}
           </div>
         </div>
+
+        {detalleId && (
+          <RetroalimentacionModal consultationId={detalleId} onClose={() => setDetalleId(null)} />
+        )}
 
         {/* ── Pagination ── */}
         <div className="hist-pagination-bar">
