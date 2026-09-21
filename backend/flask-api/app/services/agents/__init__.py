@@ -9,8 +9,8 @@ Provides singleton factory accessors for:
 Los 3 agentes están adoptados de jrojas710/simulador-clinico-gastro (antes un
 workflow n8n, un único proveedor Gemini) — portados a clases Python nativas
 en gemini_agents.py, con persistencia real en Postgres/Mongo en vez del
-diseño original sin estado. Un solo proveedor real (Gemini) para los 3
-agentes — no se usa OpenAI/ChatGPT en ningún lado.
+diseño original sin estado. Proveedor principal: Gemini; si está saturado se usa
+OpenRouter (openrouter_fallback.py) como respaldo antes de caer al mock.
 """
 
 import os

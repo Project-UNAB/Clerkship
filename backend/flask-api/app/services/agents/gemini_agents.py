@@ -40,6 +40,7 @@ from app.services.agents.clinical_cases_data import (
     GASTRO_SUBTEMAS,
     get_case_by_id,
 )
+from app.services.agents import openrouter_fallback as openrouter
 from app.services.agents.mock_agents import (
     MockCaseGeneratorAgent,
     MockClinicalEvaluatorAgent,
@@ -111,7 +112,7 @@ class GeminiCaseGeneratorAgent(BaseCaseGeneratorAgent):
         """Genera una viñeta clínica estructurada utilizando Gemini o recurre al Mock de respaldo."""
         start_time = time.perf_counter()
 
-        if not self._client:
+        if not self._client and not openrouter.is_configured():
             logger.info("GEMINI_API_KEY no configurada. Utilizando Agente 1 Mock de respaldo.")
             res = self._fallback_agent.generate_case(request)
             res.is_mock = True
@@ -150,7 +151,7 @@ INSTRUCCIONES CLÍNICAS:
 """
 
         # Jerarquía de modelos: intentar primero el configurado, con fallback automático a gemini-3.5-flash
-        models_to_try = _model_chain(self.model_name)
+        models_to_try = _model_chain(self.model_name) if self._client else []
 
         last_error = None
 
@@ -184,6 +185,21 @@ INSTRUCCIONES CLÍNICAS:
                     model_candidate,
                     exc,
                 )
+
+        if openrouter.is_configured():
+            try:
+                data, or_model = openrouter.generate_json(
+                    prompt, GeneratedCaseResponse.model_json_schema(), temperature=0.3)
+                parsed = GeneratedCaseResponse.model_validate(data)
+                parsed.provider_used = "OpenRouter"
+                parsed.model_used = or_model
+                parsed.is_mock = False
+                parsed.error_details = None
+                parsed.latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
+                return parsed
+            except Exception as exc:  # noqa: BLE001
+                last_error = exc
+                logger.warning("Respaldo OpenRouter falló en Agente 1: %s", exc)
 
         # Fallback a Mock si todos los modelos de Gemini fallaron
         logger.error(
@@ -263,7 +279,7 @@ class GeminiVirtualPatientAgent(BaseVirtualPatientAgent):
         """Genera la respuesta del paciente virtual en lenguaje natural o recurre al Mock de respaldo."""
         start_time = time.perf_counter()
 
-        if not self._client:
+        if not self._client and not openrouter.is_configured():
             logger.info("GEMINI_API_KEY no configurada. Utilizando Agente 2 Mock de respaldo.")
             res = self._fallback_agent.respond_to_student(request)
             res.is_mock = True
@@ -322,31 +338,38 @@ REGLAS DE ACTUACIÓN Y COMPORTAMIENTO:
 
         last_error = None
         try:
-            from google.genai import types
-
-            models_to_try = _model_chain(self.model_name)
             response, used_model, model_err = None, self.model_name, None
-            for cand in models_to_try:
-                try:
-                    response = _generate_with_retry(
-                        self._client,
-                        model=cand,
-                        contents=[system_prompt, request.message],
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json",
-                            temperature=0.4,
-                        ),
-                    )
-                    used_model = cand
-                    break
-                except Exception as exc:  # noqa: BLE001
-                    model_err = exc
-            if response is None:
-                raise model_err
+            provider = "Google Gemini"
+            if self._client:
+                from google.genai import types
 
-            raw_content = (response.text or "{}").strip()
-            raw_content = re.sub(r"^```json|^```|```$", "", raw_content, flags=re.IGNORECASE).strip()
-            parsed = json.loads(raw_content)
+                for cand in _model_chain(self.model_name):
+                    try:
+                        response = _generate_with_retry(
+                            self._client,
+                            model=cand,
+                            contents=[system_prompt, request.message],
+                            config=types.GenerateContentConfig(
+                                response_mime_type="application/json",
+                                temperature=0.4,
+                            ),
+                        )
+                        used_model = cand
+                        break
+                    except Exception as exc:  # noqa: BLE001
+                        model_err = exc
+
+            if response is not None:
+                raw_content = (response.text or "{}").strip()
+                raw_content = re.sub(r"^```json|^```|```$", "", raw_content, flags=re.IGNORECASE).strip()
+                parsed = json.loads(raw_content)
+            elif openrouter.is_configured():
+                logger.warning("Gemini no respondió en Agente 2 (%s). Probando OpenRouter.", model_err)
+                parsed, used_model = openrouter.generate_json(
+                    system_prompt, temperature=0.4, user_message=request.message)
+                provider = "OpenRouter"
+            else:
+                raise model_err
 
             reply = parsed.get("reply") or "Ay doctor, me duele bastante aquí en la boca del estómago."
             pain = parsed.get("pain_scale_reported", 8)
@@ -369,7 +392,7 @@ REGLAS DE ACTUACIÓN Y COMPORTAMIENTO:
                 emotional_state=emotion,
                 timestamp=datetime.now(timezone.utc).isoformat(),
                 guardrail_activado=guardrail_activado,
-                provider_used="Google Gemini",
+                provider_used=provider,
                 model_used=used_model,
                 is_mock=False,
                 error_details=None,
@@ -414,7 +437,7 @@ class GeminiClinicalEvaluatorAgent(BaseClinicalEvaluatorAgent):
         """Evalúa el desempeño del estudiante con Gemini o recurre al Mock de respaldo."""
         start_time = time.perf_counter()
 
-        if not self._client:
+        if not self._client and not openrouter.is_configured():
             logger.info("GEMINI_API_KEY no configurada. Utilizando Agente 3 Mock de respaldo.")
             res = self._fallback_agent.evaluate_session(request)
             res.is_mock = True
@@ -477,7 +500,7 @@ TAREAS DE EVALUACIÓN:
 """
 
             # Jerarquía de modelos: intentar el configurado, con respaldo a gemini-3.5-flash
-            models_to_try = _model_chain(self.model_name)
+            models_to_try = _model_chain(self.model_name) if self._client else []
 
             for model_candidate in models_to_try:
                 try:
@@ -512,6 +535,23 @@ TAREAS DE EVALUACIÓN:
                         model_candidate,
                         exc,
                     )
+
+            if openrouter.is_configured():
+                try:
+                    data, or_model = openrouter.generate_json(
+                        prompt, EvaluationResultResponse.model_json_schema(), temperature=0.2)
+                    parsed = EvaluationResultResponse.model_validate(data)
+                    if request.consultation_id and not parsed.consultation_id:
+                        parsed.consultation_id = request.consultation_id
+                    parsed.provider_used = "OpenRouter"
+                    parsed.model_used = or_model
+                    parsed.is_mock = False
+                    parsed.error_details = None
+                    parsed.latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
+                    return parsed
+                except Exception as exc:  # noqa: BLE001
+                    last_error = exc
+                    logger.warning("Respaldo OpenRouter falló en Agente 3: %s", exc)
 
         except Exception as outer_exc:
             last_error = outer_exc

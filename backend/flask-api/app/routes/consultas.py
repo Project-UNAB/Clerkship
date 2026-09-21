@@ -36,7 +36,7 @@ def _real_ai_expected() -> bool:
     guarda nada y se devuelve 503 para que el cliente reintente hasta que responda."""
     return (
         os.getenv("AI_AGENT_PROVIDER", "gemini").lower() != "mock"
-        and bool(os.getenv("GEMINI_API_KEY", "").strip())
+        and bool(os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("OPENROUTER_API_KEY", "").strip())
     )
 
 
