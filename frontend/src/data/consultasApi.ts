@@ -31,6 +31,28 @@ function refreshAccessTokenOnce(): Promise<string> {
   return refreshInFlight;
 }
 
+export type RetryableError = Error & { retryable?: boolean };
+
+/** Reintenta fn mientras el backend diga que Gemini no respondió (503), con
+ *  espera creciente, hasta que responda o isCancelled() sea true. */
+export async function retryUntilGemini<T>(
+  fn: () => Promise<T>,
+  onRetry: (attempt: number) => void,
+  isCancelled: () => boolean = () => false,
+): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const retryable = (err as RetryableError).retryable || err instanceof TypeError;
+      if (!retryable || isCancelled()) throw err;
+      onRetry(attempt);
+      await new Promise(r => setTimeout(r, Math.min(2000 + attempt * 1000, 8000)));
+      if (isCancelled()) throw err;
+    }
+  }
+}
+
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   let token = getAccessToken();
   let res = await fetch(`${SIMULACION_API_BASE_URL}${path}`, {
@@ -54,7 +76,10 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     // backend/flask-api manda {error, message, status_code} — message trae el detalle real.
-    throw new Error(data?.message || data?.error || 'No se pudo conectar con el servidor de simulación clínica.');
+    const err = new Error(data?.message || data?.error || 'No se pudo conectar con el servidor de simulación clínica.') as RetryableError;
+    // 503 = Gemini no respondió (el backend no guardó nada): se puede reintentar sin riesgo.
+    err.retryable = res.status === 503;
+    throw err;
   }
   return data as T;
 }

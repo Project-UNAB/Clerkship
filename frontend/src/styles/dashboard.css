@@ -2565,6 +2565,19 @@
 .sim-error-box .sim-spin { color: #EF4444; }
 @keyframes sim-spin-rotate { to { transform: rotate(360deg); } }
 
+/* ── Aviso flotante: Gemini ocupado, reintentando ── */
+.sim-toast {
+  position: fixed; right: 20px; bottom: 20px; z-index: 300;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px;
+  background: var(--surface); color: var(--ink2);
+  border: 1px solid var(--border2, var(--border));
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  font-size: 0.78rem; font-weight: 600;
+  animation: sim-toast-in 0.25s ease;
+}
+@keyframes sim-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
 /* ── Stage 7: Resultado de la evaluación (Agente 3) ── */
 .sim-eval-mock-badge { font-size: 0.7rem; font-weight: 600; color: var(--ink3); }
 .sim-eval-domains { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }

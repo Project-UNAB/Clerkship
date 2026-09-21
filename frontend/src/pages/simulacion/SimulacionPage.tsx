@@ -7,7 +7,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import logoUrl from '../../assets/Logo Clerkship.svg';
 import {
-  ensureCourseId, createConsultation, getConsultation,
+  ensureCourseId, createConsultation, retryUntilGemini, getConsultation,
   sendMessage as sendPatientMessage, finishConsultation,
   type PublicCase, type EvaluationResult, type Difficulty,
 } from '../../data/consultasApi';
@@ -303,7 +303,7 @@ export default function SimulacionPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
-  const [usingMock, setUsingMock] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0); // >0 = esperando a que Gemini responda
 
   useEffect(() => {
     let cancelled = false;
@@ -318,11 +318,13 @@ export default function SimulacionPage() {
           const difficulty = (params.get('dificultad') as Difficulty) || 'MEDIUM';
           const subtema = params.get('subtema') || undefined;
           const courseId = await ensureCourseId();
-          detail = await createConsultation({ course_id: courseId, difficulty, condition: subtema });
+          detail = await retryUntilGemini(
+            () => createConsultation({ course_id: courseId, difficulty, condition: subtema }),
+            setRetryAttempt, () => cancelled,
+          );
         }
         if (cancelled) return;
         setConsultationId(detail.id);
-        if (detail.is_mock) setUsingMock(true);
         setCaseDetails((detail.case_details as PublicCase) || null);
         setMessages((detail.chat_history || []).map(m => ({
           role: m.sender === 'STUDENT' ? 'student' : 'patient',
@@ -333,7 +335,7 @@ export default function SimulacionPage() {
       } catch (err) {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : 'No se pudo iniciar la consulta.');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) { setLoading(false); setRetryAttempt(0); }
       }
     })();
     return () => { cancelled = true; };
@@ -345,8 +347,10 @@ export default function SimulacionPage() {
     setMessages(m => [...m, { role: 'student', text, ts: Date.now() }]);
     setSending(true);
     try {
-      const res = await sendPatientMessage(consultationId, text);
-      if (res.is_mock) setUsingMock(true);
+      const res = await retryUntilGemini(
+        () => sendPatientMessage(consultationId, text), setRetryAttempt,
+      );
+      setRetryAttempt(0);
       setMessages(m => [...m, {
         role: 'patient', text: res.reply.content,
         ts: res.reply.timestamp ? new Date(res.reply.timestamp).getTime() : Date.now(),
@@ -359,6 +363,7 @@ export default function SimulacionPage() {
       }]);
     } finally {
       setSending(false);
+      setRetryAttempt(0);
     }
   }, [consultationId]);
 
@@ -367,15 +372,17 @@ export default function SimulacionPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await finishConsultation(consultationId, {
+      const res = await retryUntilGemini(() => finishConsultation(consultationId, {
         final_diagnosis: dx, differential_diagnoses: differentials, requested_tests: tests,
-      });
+      }), setRetryAttempt);
+      setRetryAttempt(0);
       setEvaluation(res.evaluation);
       setPhase('result');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'No se pudo evaluar la consulta.');
     } finally {
       setSubmitting(false);
+      setRetryAttempt(0);
     }
   }, [consultationId]);
 
@@ -386,6 +393,12 @@ export default function SimulacionPage() {
           <Loader2 size={28} className="sim-spin" />
           <p>El agente generador está preparando tu caso clínico...</p>
         </div>
+        {retryAttempt > 0 && (
+          <div className="sim-toast" role="status">
+            <Loader2 size={14} className="sim-spin" />
+            <span>Gemini está ocupado, reintentando… ({retryAttempt})</span>
+          </div>
+        )}
       </div>
     );
   }
@@ -420,10 +433,11 @@ export default function SimulacionPage() {
         <div className="sim-tb-right" />
       </header>
 
-      {usingMock && (
-        <p className="sim-footer-hint sim-error-text" style={{ textAlign: 'center', margin: '6px 0' }}>
-          Gemini no respondió (alta demanda o sin conexión): algunas respuestas vienen del modo demo, no de la IA real. Podés reintentar en unos minutos.
-        </p>
+      {retryAttempt > 0 && (
+        <div className="sim-toast" role="status">
+          <Loader2 size={14} className="sim-spin" />
+          <span>Gemini está ocupado, reintentando… ({retryAttempt})</span>
+        </div>
       )}
 
       {phase === 'interview' && (

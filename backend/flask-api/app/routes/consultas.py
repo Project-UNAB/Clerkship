@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import os
 import uuid
 
 from flask import Blueprint, jsonify, request
@@ -27,6 +28,25 @@ from app.services.agents import (
 from app.utils import get_current_user, role_required
 
 consultas_bp = Blueprint("consultas", __name__)
+
+
+def _real_ai_expected() -> bool:
+    """True si se espera IA real (Gemini configurado y AI_AGENT_PROVIDER != mock).
+    En ese caso una respuesta del mock significa que Gemini no respondió: no se
+    guarda nada y se devuelve 503 para que el cliente reintente hasta que responda."""
+    return (
+        os.getenv("AI_AGENT_PROVIDER", "gemini").lower() != "mock"
+        and bool(os.getenv("GEMINI_API_KEY", "").strip())
+    )
+
+
+def _gemini_unavailable(what: str):
+    return jsonify({
+        "error": "Service Unavailable",
+        "message": f"Gemini no respondió al {what}. Reintentá en unos segundos.",
+        "status_code": 503,
+        "retry": True,
+    }), 503
 
 
 def _public_case_view(case_dict: dict) -> dict:
@@ -108,6 +128,8 @@ def crear_consulta(validated_body: CreateConsultationRequest):
         difficulty=difficulty,
         condition=validated_body.condition,
     ))
+    if case_response.is_mock and _real_ai_expected():
+        return _gemini_unavailable("generar el caso")
     case_dict = case_response.model_dump()
     title = validated_body.title or case_dict.get("title") or "Simulación de Caso Clínico"
 
@@ -270,6 +292,9 @@ def enviar_mensaje(consultation_id, validated_body: SendMessageRequest):
         )
     )
 
+    if simulated_resp.is_mock and _real_ai_expected():
+        return _gemini_unavailable("responder")
+
     patient_reply = {
         "sender": "PATIENT",
         "content": simulated_resp.reply,
@@ -355,6 +380,8 @@ def finalizar_consulta(consultation_id, validated_body: FinishConsultationReques
         differential_diagnoses=validated_body.differential_diagnoses,
         final_diagnosis=final_diagnosis,
     ))
+    if evaluation.is_mock and _real_ai_expected():
+        return _gemini_unavailable("evaluar")
     eval_dict = evaluation.model_dump()
 
     consultation.status = "COMPLETED"
