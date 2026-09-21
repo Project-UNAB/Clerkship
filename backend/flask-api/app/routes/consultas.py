@@ -187,13 +187,14 @@ def obtener_consulta(consultation_id):
 
     res_data = consultation.to_dict()
 
-    # Obtener historial de chat desde MongoDB
+    # Obtener historial de chat desde MongoDB — igual que en crear_consulta,
+    # nunca se manda el ground_truth (diagnostico real) al cliente aca.
     try:
         mongo_db = get_mongo_db()
         doc = mongo_db.consultations.find_one({"consultation_id": str(consultation.id)}, {"_id": 0})
         if doc:
             res_data["chat_history"] = doc.get("chat_history", [])
-            res_data["case_details"] = doc.get("case", {})
+            res_data["case_details"] = _public_case_view(doc.get("case", {}))
     except Exception:
         res_data["chat_history"] = []
         res_data["case_details"] = {}
