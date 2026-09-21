@@ -11,7 +11,7 @@ class CreateConsultationRequest(BaseSchema):
     """Payload to start a simulated clinical consultation."""
 
     course_id: str = Field(..., description="ID del curso al cual pertenece la simulación")
-    title: Optional[str] = Field("Simulación de Caso Clínico", max_length=150)
+    title: Optional[str] = Field(None, max_length=150)
     specialty: Optional[str] = Field("Gastroenterología", max_length=100)
     difficulty: Optional[Literal["EASY", "MEDIUM", "HARD"]] = "MEDIUM"
     condition: Optional[str] = Field(

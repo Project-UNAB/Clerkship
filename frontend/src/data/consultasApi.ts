@@ -126,6 +126,8 @@ export interface PublicCase {
 }
 
 export interface ConsultationDetail extends Consultation {
+  /** true si el caso lo generó el mock (Gemini no respondió) en vez del agente real */
+  is_mock?: boolean;
   chat_history: ChatMessage[];
   case_details: PublicCase | Record<string, never>;
 }
@@ -156,6 +158,7 @@ export function sendMessage(id: string, content: string): Promise<{
   sent: ChatMessage;
   reply: ChatMessage;
   guardrail_activado: boolean;
+  is_mock: boolean;
 }> {
   return apiFetch(`/api/consultas/${id}/mensajes`, { method: 'POST', body: JSON.stringify({ content }) });
 }

@@ -147,6 +147,7 @@ def crear_consulta(validated_body: CreateConsultationRequest):
 
     result = consultation.to_dict()
     result["case_details"] = _public_case_view(case_dict)
+    result["is_mock"] = bool(case_dict.get("is_mock"))
     result["chat_history"] = [{
         "sender": "PATIENT",
         "content": chief_complaint,
@@ -287,6 +288,7 @@ def enviar_mensaje(consultation_id, validated_body: SendMessageRequest):
         "sent": user_msg,
         "reply": patient_reply,
         "guardrail_activado": simulated_resp.guardrail_activado,
+        "is_mock": simulated_resp.is_mock,
     }), 200
 
 

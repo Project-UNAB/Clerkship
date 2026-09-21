@@ -303,6 +303,7 @@ export default function SimulacionPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
+  const [usingMock, setUsingMock] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -321,6 +322,7 @@ export default function SimulacionPage() {
         }
         if (cancelled) return;
         setConsultationId(detail.id);
+        if (detail.is_mock) setUsingMock(true);
         setCaseDetails((detail.case_details as PublicCase) || null);
         setMessages((detail.chat_history || []).map(m => ({
           role: m.sender === 'STUDENT' ? 'student' : 'patient',
@@ -344,6 +346,7 @@ export default function SimulacionPage() {
     setSending(true);
     try {
       const res = await sendPatientMessage(consultationId, text);
+      if (res.is_mock) setUsingMock(true);
       setMessages(m => [...m, {
         role: 'patient', text: res.reply.content,
         ts: res.reply.timestamp ? new Date(res.reply.timestamp).getTime() : Date.now(),
@@ -416,6 +419,12 @@ export default function SimulacionPage() {
         </div>
         <div className="sim-tb-right" />
       </header>
+
+      {usingMock && (
+        <p className="sim-footer-hint sim-error-text" style={{ textAlign: 'center', margin: '6px 0' }}>
+          Gemini no respondió (alta demanda o sin conexión): algunas respuestas vienen del modo demo, no de la IA real. Podés reintentar en unos minutos.
+        </p>
+      )}
 
       {phase === 'interview' && (
         <div className="sim-2col">

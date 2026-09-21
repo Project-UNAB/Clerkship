@@ -49,6 +49,32 @@ from app.services.agents.mock_agents import (
 logger = logging.getLogger(__name__)
 
 
+# Cadena de modelos: el configurado en GEMINI_MODEL y, si Google lo tiene saturado
+# (503), se prueban estos de respaldo antes de caer al modo demo (mock).
+_FALLBACK_MODELS = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite']
+
+
+def _model_chain(primary: str) -> List[str]:
+    return [primary] + [m for m in _FALLBACK_MODELS if m != primary]
+
+
+def _generate_with_retry(client, attempts: int = 4, **kwargs):
+    """generate_content con reintentos ante errores transitorios de Google
+    (503 alta demanda / 429 cuota por minuto) antes de rendirse al fallback Mock."""
+    last = None
+    for i in range(attempts):
+        try:
+            return client.models.generate_content(**kwargs)
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+            msg = str(exc)
+            transient = any(t in msg for t in ('503', '429', 'UNAVAILABLE', 'RESOURCE_EXHAUSTED', 'overloaded'))
+            if not transient or i == attempts - 1:
+                raise
+            time.sleep(2 * (i + 1))
+    raise last
+
+
 def _format_chat_item(m: Union[Dict[str, Any], Any]) -> str:
     """Safely format a chat message dictionary or object into a dialogue line."""
     if isinstance(m, dict):
@@ -124,9 +150,7 @@ INSTRUCCIONES CLÍNICAS:
 """
 
         # Jerarquía de modelos: intentar primero el configurado, con fallback automático a gemini-3.5-flash
-        models_to_try = [self.model_name]
-        if "3.5-flash" not in self.model_name:
-            models_to_try.append("gemini-3.5-flash")
+        models_to_try = _model_chain(self.model_name)
 
         last_error = None
 
@@ -134,7 +158,7 @@ INSTRUCCIONES CLÍNICAS:
             try:
                 from google.genai import types
 
-                response = self._client.models.generate_content(
+                response = _generate_with_retry(self._client, 
                     model=model_candidate,
                     contents=prompt,
                     config=types.GenerateContentConfig(
@@ -300,14 +324,25 @@ REGLAS DE ACTUACIÓN Y COMPORTAMIENTO:
         try:
             from google.genai import types
 
-            response = self._client.models.generate_content(
-                model=self.model_name,
-                contents=[system_prompt, request.message],
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.4,
-                ),
-            )
+            models_to_try = _model_chain(self.model_name)
+            response, used_model, model_err = None, self.model_name, None
+            for cand in models_to_try:
+                try:
+                    response = _generate_with_retry(
+                        self._client,
+                        model=cand,
+                        contents=[system_prompt, request.message],
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            temperature=0.4,
+                        ),
+                    )
+                    used_model = cand
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    model_err = exc
+            if response is None:
+                raise model_err
 
             raw_content = (response.text or "{}").strip()
             raw_content = re.sub(r"^```json|^```|```$", "", raw_content, flags=re.IGNORECASE).strip()
@@ -335,7 +370,7 @@ REGLAS DE ACTUACIÓN Y COMPORTAMIENTO:
                 timestamp=datetime.now(timezone.utc).isoformat(),
                 guardrail_activado=guardrail_activado,
                 provider_used="Google Gemini",
-                model_used=self.model_name,
+                model_used=used_model,
                 is_mock=False,
                 error_details=None,
                 latency_ms=round((time.perf_counter() - start_time) * 1000, 1),
@@ -442,15 +477,13 @@ TAREAS DE EVALUACIÓN:
 """
 
             # Jerarquía de modelos: intentar el configurado, con respaldo a gemini-3.5-flash
-            models_to_try = [self.model_name]
-            if "3.5-flash" not in self.model_name:
-                models_to_try.append("gemini-3.5-flash")
+            models_to_try = _model_chain(self.model_name)
 
             for model_candidate in models_to_try:
                 try:
                     from google.genai import types
 
-                    response = self._client.models.generate_content(
+                    response = _generate_with_retry(self._client, 
                         model=model_candidate,
                         contents=prompt,
                         config=types.GenerateContentConfig(
