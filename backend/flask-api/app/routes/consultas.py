@@ -6,7 +6,7 @@ from flask_jwt_extended import jwt_required
 from sqlalchemy.sql import func
 
 from app import db, get_mongo_db
-from app.models import Consultation, Course, StudentCourse
+from app.models import AiEvaluation, Consultation, Course, StudentCourse
 from app.schemas import (
     ConsultationDetailResponse,
     ConsultationResponse,
@@ -18,10 +18,24 @@ from app.schemas import (
     SendMessageResponse,
     validate_body,
 )
-from app.services.agents import get_virtual_patient_agent
+from app.schemas.agentes import EvaluateSessionRequest, GenerateCaseRequest
+from app.services.agents import (
+    get_case_generator_agent,
+    get_clinical_evaluator_agent,
+    get_virtual_patient_agent,
+)
 from app.utils import get_current_user, role_required
 
 consultas_bp = Blueprint("consultas", __name__)
+
+
+def _public_case_view(case_dict: dict) -> dict:
+    """Versión del caso segura para el cliente — nunca incluye ground_truth
+    (diagnóstico real, paraclínicos clave, diferenciales esperados): eso
+    solo lo usan los Agentes 2 y 3 del lado del servidor."""
+    safe = dict(case_dict or {})
+    safe.pop("ground_truth", None)
+    return safe
 
 
 @consultas_bp.route("", methods=["GET"])
@@ -67,13 +81,14 @@ def listar_consultas():
 @role_required("STUDENT")
 @validate_body(CreateConsultationRequest)
 def crear_consulta(validated_body: CreateConsultationRequest):
-    """Iniciar una nueva consulta clínica simulada."""
+    """Iniciar una nueva consulta clínica simulada — invoca al Agente 1
+    (Generador de Casos) para crear una viñeta real y la deja lista en
+    Mongo para que el Agente 2 (Paciente) la use en los próximos mensajes."""
     current_user = get_current_user()
 
     course_id = validated_body.course_id
-    title = validated_body.title or "Simulación de Caso Clínico"
-    specialty = validated_body.specialty or "Medicina Interna"
     difficulty = validated_body.difficulty or "MEDIUM"
+    specialty = validated_body.specialty or "Gastroenterología"
 
     # Validar que el estudiante esté matriculado en el curso
     enrollment = StudentCourse.query.filter_by(student_id=current_user.id, course_id=course_id).first()
@@ -84,7 +99,19 @@ def crear_consulta(validated_body: CreateConsultationRequest):
             "status_code": 403
         }), 403
 
-    # 1. Crear registro relacional en PostgreSQL
+    # 1. Agente 1 — genera el caso clínico real de esta sesión (elige uno de
+    # los 8 subtemas de gastroenterología al azar si no se fuerza `condition`).
+    case_agent = get_case_generator_agent()
+    case_response = case_agent.generate_case(GenerateCaseRequest(
+        course_id=course_id,
+        specialty=specialty,
+        difficulty=difficulty,
+        condition=validated_body.condition,
+    ))
+    case_dict = case_response.model_dump()
+    title = validated_body.title or case_dict.get("title") or "Simulación de Caso Clínico"
+
+    # 2. Crear registro relacional en PostgreSQL
     consultation = Consultation(
         student_id=current_user.id,
         course_id=course_id,
@@ -96,21 +123,19 @@ def crear_consulta(validated_body: CreateConsultationRequest):
     db.session.add(consultation)
     db.session.commit()
 
-    # 2. Inicializar documento de la consulta en MongoDB (si está conectado)
+    # 3. Guardar el caso COMPLETO (con ground_truth) en Mongo — el cliente
+    # nunca lo recibe entero, solo la versión pública sin diagnóstico.
+    chief_complaint = case_dict.get("chief_complaint") or "Buenos días doctor(a), he venido a consulta porque no me he sentido bien últimamente."
     try:
         mongo_db = get_mongo_db()
         mongo_db.consultations.insert_one({
             "consultation_id": str(consultation.id),
             "status": "IN_PROGRESS",
-            "case": {
-                "title": title,
-                "specialty": specialty,
-                "difficulty": difficulty,
-            },
+            "case": case_dict,
             "chat_history": [
                 {
                     "sender": "PATIENT",
-                    "content": "Buenos días doctor(a), he venido a consulta porque no me he sentido bien últimamente.",
+                    "content": chief_complaint,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             ],
@@ -120,7 +145,14 @@ def crear_consulta(validated_body: CreateConsultationRequest):
         # No bloquear la creación si Mongo opera en modo desconectado
         pass
 
-    return jsonify(consultation.to_dict()), 201
+    result = consultation.to_dict()
+    result["case_details"] = _public_case_view(case_dict)
+    result["chat_history"] = [{
+        "sender": "PATIENT",
+        "content": chief_complaint,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }]
+    return jsonify(result), 201
 
 
 @consultas_bp.route("/<string:consultation_id>", methods=["GET"])
@@ -214,12 +246,25 @@ def enviar_mensaje(consultation_id, validated_body: SendMessageRequest):
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
+    # Traer el caso real (con ground_truth) y el historial previo desde
+    # Mongo — sin esto el Agente 2 no tiene contexto de qué paciente es ni
+    # el guardrail anti-fuga de diagnóstico tiene nada contra qué comparar.
+    mongo_db = get_mongo_db()
+    try:
+        mongo_doc = mongo_db.consultations.find_one({"consultation_id": str(consultation.id)}) or {}
+    except Exception:
+        mongo_doc = {}
+    case_context = mongo_doc.get("case") or {}
+    chat_history = mongo_doc.get("chat_history") or []
+
     # Generar respuesta dinámica del Agente 2 (Paciente Virtual)
     patient_agent = get_virtual_patient_agent()
     simulated_resp = patient_agent.respond_to_student(
         PatientChatRequest(
             consultation_id=str(consultation.id),
+            case_context=case_context,
             message=content,
+            chat_history=chat_history,
         )
     )
 
@@ -230,7 +275,6 @@ def enviar_mensaje(consultation_id, validated_body: SendMessageRequest):
     }
 
     try:
-        mongo_db = get_mongo_db()
         mongo_db.consultations.update_one(
             {"consultation_id": str(consultation.id)},
             {"$push": {"chat_history": {"$each": [user_msg, patient_reply]}}}
@@ -241,6 +285,7 @@ def enviar_mensaje(consultation_id, validated_body: SendMessageRequest):
     return jsonify({
         "sent": user_msg,
         "reply": patient_reply,
+        "guardrail_activado": simulated_resp.guardrail_activado,
     }), 200
 
 
@@ -280,17 +325,58 @@ def finalizar_consulta(consultation_id, validated_body: FinishConsultationReques
             "consultation": consultation.to_dict()
         }), 200
 
+    final_diagnosis = (validated_body.final_diagnosis or "").strip()
+    if not final_diagnosis:
+        return jsonify({
+            "error": "Bad Request",
+            "message": "final_diagnosis es requerido para poder evaluar la consulta",
+            "status_code": 400
+        }), 400
+
+    mongo_db = get_mongo_db()
+    try:
+        mongo_doc = mongo_db.consultations.find_one({"consultation_id": str(consultation.id)}) or {}
+    except Exception:
+        mongo_doc = {}
+    case_context = mongo_doc.get("case") or {}
+    chat_history = mongo_doc.get("chat_history") or []
+
+    # Agente 3 — evalúa la sesión completa contra la rúbrica/ground_truth
+    # del caso real generado al abrir la consulta (Agente 1).
+    evaluator_agent = get_clinical_evaluator_agent()
+    evaluation = evaluator_agent.evaluate_session(EvaluateSessionRequest(
+        consultation_id=str(consultation.id),
+        case_context=case_context,
+        chat_history=chat_history,
+        requested_tests=validated_body.requested_tests,
+        differential_diagnoses=validated_body.differential_diagnoses,
+        final_diagnosis=final_diagnosis,
+    ))
+    eval_dict = evaluation.model_dump()
+
     consultation.status = "COMPLETED"
     consultation.finished_at = func.now()
-    # Calificación preliminar o calculada
-    consultation.score = 85.0
+    consultation.score = evaluation.final_score
+    db.session.commit()
+
+    # Persistir la evaluación resumida en Postgres (ai_evaluations, 1:1 con la consulta)
+    ai_eval_row = AiEvaluation.query.filter_by(consultation_id=cons_uuid).first()
+    if ai_eval_row is None:
+        ai_eval_row = AiEvaluation(consultation_id=cons_uuid)
+        db.session.add(ai_eval_row)
+    ai_eval_row.final_score = evaluation.final_score
+    ai_eval_row.feedback_summary = evaluation.feedback_summary
+    ai_eval_row.execution_time_seconds = (evaluation.latency_ms or 0) / 1000
     db.session.commit()
 
     try:
-        mongo_db = get_mongo_db()
         mongo_db.consultations.update_one(
             {"consultation_id": str(consultation.id)},
-            {"$set": {"status": "COMPLETED", "finished_at": datetime.now(timezone.utc).isoformat()}}
+            {"$set": {
+                "status": "COMPLETED",
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "ai_evaluation": eval_dict,
+            }}
         )
     except Exception:
         pass
@@ -298,4 +384,5 @@ def finalizar_consulta(consultation_id, validated_body: FinishConsultationReques
     return jsonify({
         "message": "Consulta finalizada con éxito",
         "consultation": consultation.to_dict(),
+        "evaluation": eval_dict,
     }), 200

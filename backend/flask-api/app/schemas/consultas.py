@@ -12,8 +12,13 @@ class CreateConsultationRequest(BaseSchema):
 
     course_id: str = Field(..., description="ID del curso al cual pertenece la simulación")
     title: Optional[str] = Field("Simulación de Caso Clínico", max_length=150)
-    specialty: Optional[str] = Field("Medicina Interna", max_length=100)
+    specialty: Optional[str] = Field("Gastroenterología", max_length=100)
     difficulty: Optional[Literal["EASY", "MEDIUM", "HARD"]] = "MEDIUM"
+    condition: Optional[str] = Field(
+        None,
+        max_length=150,
+        description="Subtema clínico especifico a forzar (ej. 'Pancreatitis Aguda'). Si se omite, el Agente 1 elige uno al azar entre los subtemas de gastroenterología soportados.",
+    )
 
 
 class ConsultationResponse(BaseSchema):
@@ -60,10 +65,12 @@ class ConsultationDetailResponse(ConsultationResponse):
 
 
 class FinishConsultationRequest(BaseSchema):
-    """Optional payload to conclude a clinical consultation with diagnosis."""
+    """Payload to conclude a clinical consultation and trigger the Agente 3 evaluator."""
 
     final_diagnosis: Optional[str] = None
     treatment_plan: Optional[str] = None
+    differential_diagnoses: List[str] = Field(default_factory=list, description="Diagnósticos diferenciales planteados por el estudiante")
+    requested_tests: List[str] = Field(default_factory=list, description="Paraclínicos/exámenes solicitados durante la consulta")
 
 
 class FinishConsultationResponse(BaseSchema):
