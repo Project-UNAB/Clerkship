@@ -69,8 +69,10 @@ def _generate_with_retry(client, attempts: int = 4, **kwargs):
         except Exception as exc:  # noqa: BLE001
             last = exc
             msg = str(exc)
-            transient = any(t in msg for t in ('503', '429', 'UNAVAILABLE', 'RESOURCE_EXHAUSTED', 'overloaded'))
-            if not transient or i == attempts - 1:
+            # 429/RESOURCE_EXHAUSTED es cuota agotada: esperar no sirve, se pasa al siguiente modelo.
+            quota = '429' in msg or 'RESOURCE_EXHAUSTED' in msg
+            transient = any(t in msg for t in ('503', 'UNAVAILABLE', 'overloaded'))
+            if quota or not transient or i == attempts - 1:
                 raise
             time.sleep(2 * (i + 1))
     raise last
