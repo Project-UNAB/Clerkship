@@ -152,10 +152,23 @@ export async function refreshAccessToken(): Promise<string> {
   return data.access_token as string;
 }
 
+/**
+ * Limpia TODA la sesión, no solo los tokens: también las claves de
+ * utils/authConsent.ts (clerkship_auth / clerkship_user_email) que usa
+ * ProtectedRoute en App.tsx para decidir si dejar pasar a /dashboard.
+ * Sin esto, cuando el refresh_token falla (ver apiClient.ts/consultasApi.ts)
+ * quedaban sueltas: ProtectedRoute seguía viendo sesión "activa" y dejaba
+ * entrar al dashboard sin access_token real — cada pedido salía sin
+ * Authorization y daba 401 para siempre, sin redirigir nunca a /login.
+ * No se importa authConsent.ts para evitar un ciclo de imports; son las
+ * mismas claves literales que usa logoutUserSession() ahí.
+ */
 export function clearMainAuthSession() {
   localStorage.removeItem(STORAGE_KEYS.accessToken);
   localStorage.removeItem(STORAGE_KEYS.refreshToken);
   localStorage.removeItem(STORAGE_KEYS.user);
+  localStorage.removeItem('clerkship_auth');
+  localStorage.removeItem('clerkship_user_email');
   window.dispatchEvent(new Event(MAIN_AUTH_CHANGED_EVENT));
 }
 
