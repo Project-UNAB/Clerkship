@@ -417,7 +417,9 @@ export default function SimulacionPage() {
           if (detail.status === 'COMPLETED') { navigate('/historial', { replace: true }); return; }
         } else {
           const params = new URLSearchParams(window.location.search);
-          const difficulty = (params.get('dificultad') as Difficulty) || 'MEDIUM';
+          // Sin "dificultad" en la URL = automática: la elige el backend
+          // según el desempeño histórico del estudiante en el subtema.
+          const difficulty = (params.get('dificultad') as Difficulty) || undefined;
           const subtema = params.get('subtema') || undefined;
           const courseId = await ensureCourseId();
           detail = await retryUntilGemini(

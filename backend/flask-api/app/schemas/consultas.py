@@ -13,7 +13,10 @@ class CreateConsultationRequest(BaseSchema):
     course_id: str = Field(..., description="ID del curso al cual pertenece la simulación")
     title: Optional[str] = Field(None, max_length=150)
     specialty: Optional[str] = Field("Gastroenterología", max_length=100)
-    difficulty: Optional[Literal["EASY", "MEDIUM", "HARD"]] = "MEDIUM"
+    difficulty: Optional[Literal["EASY", "MEDIUM", "HARD"]] = Field(
+        None,
+        description="Si se omite, el backend ajusta la dificultad según el desempeño histórico del estudiante en el subtema elegido (selección adaptativa).",
+    )
     condition: Optional[str] = Field(
         None,
         max_length=150,

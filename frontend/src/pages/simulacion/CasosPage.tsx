@@ -8,7 +8,10 @@ import {
 } from '../../data/consultasApi';
 import { mainAuthErrorMessage } from '../../data/mainAuth';
 
-const DIFFICULTIES: { id: Difficulty; label: string }[] = [
+type DifficultyChoice = Difficulty | 'AUTO';
+
+const DIFFICULTIES: { id: DifficultyChoice; label: string }[] = [
+  { id: 'AUTO', label: 'Automática' },
   { id: 'EASY', label: 'Básico' },
   { id: 'MEDIUM', label: 'Intermedio' },
   { id: 'HARD', label: 'Avanzado' },
@@ -23,7 +26,7 @@ function fmtDate(iso: string | null) {
  * acá solo se elige (o no) subtema y dificultad, y se ven las consultas del usuario. */
 export default function CasosPage() {
   const navigate = useNavigate();
-  const [difficulty, setDifficulty] = useState<Difficulty>('MEDIUM');
+  const [difficulty, setDifficulty] = useState<DifficultyChoice>('AUTO');
   const [subtema, setSubtema] = useState('');
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,9 +45,13 @@ export default function CasosPage() {
   const completed = consultations.filter(c => c.status === 'COMPLETED');
 
   function startNew() {
-    const qs = new URLSearchParams({ dificultad: difficulty });
+    const qs = new URLSearchParams();
+    // Sin "dificultad" en la URL = automática: el backend la ajusta según tu
+    // desempeño histórico en el subtema (selección adaptativa).
+    if (difficulty !== 'AUTO') qs.set('dificultad', difficulty);
     if (subtema) qs.set('subtema', subtema);
-    navigate(`/simulacion?${qs.toString()}`);
+    const suffix = qs.toString();
+    navigate(`/simulacion${suffix ? `?${suffix}` : ''}`);
   }
 
   return (

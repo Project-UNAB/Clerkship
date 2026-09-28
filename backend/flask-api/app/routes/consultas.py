@@ -170,16 +170,18 @@ def crear_consulta(validated_body: CreateConsultationRequest):
     current_user = get_current_user()
 
     course_id = validated_body.course_id
-    difficulty_ui = validated_body.difficulty or "MEDIUM"
 
     enrollment = StudentCourse.query.filter_by(student_id=current_user.id, course_id=course_id).first()
     if not enrollment:
         return jsonify({"error": "Forbidden", "message": "El estudiante no está matriculado en este curso", "status_code": 403}), 403
 
+    # Sin difficulty explícito (UI "Automática") -> selección adaptativa decide
+    # según el desempeño histórico del estudiante en el subtema elegido.
+    dificultad_pedida = _DIFICULTAD_UI_A_CATALOGO.get(validated_body.difficulty) if validated_body.difficulty else None
     seleccion = elegir_subtema_y_dificultad(
         current_user.id,
         subtema_pedido=validated_body.condition,
-        dificultad_pedida=_DIFICULTAD_UI_A_CATALOGO.get(difficulty_ui),
+        dificultad_pedida=dificultad_pedida,
     )
     referencias = obtener_referencias(seleccion["subtema"])
     resultado = agentes.generar_caso(seleccion["subtema"], seleccion["dificultad"], referencias)
