@@ -39,6 +39,7 @@ from app.services.simulador import agentes
 from app.services.simulador.adaptativo import elegir_subtema_y_dificultad
 from app.services.simulador.catalogo import PERFILES_DIFICULTAD
 from app.services.simulador.rag import obtener_referencias
+from app.services.simulador import supabase_externo
 from app.utils import get_current_user, role_required
 
 consultas_bp = Blueprint("consultas", __name__)
@@ -213,6 +214,8 @@ def crear_consulta(validated_body: CreateConsultationRequest):
     )
     db.session.add(consultation)
     db.session.commit()
+
+    supabase_externo.registrar_caso_generado(seleccion["subtema"], seleccion["dificultad"])
 
     chief_complaint = caso["presentacion_inicial"]
     try:
@@ -439,6 +442,9 @@ def finalizar_consulta(consultation_id, validated_body: FinishConsultationReques
         )
     except Exception:  # noqa: BLE001
         pass
+
+    num_turnos = sum(1 for m in chat_history if m.get("sender") == "STUDENT" and not m.get("es_exploracion"))
+    supabase_externo.registrar_sesion_evaluada(evaluacion, num_turnos, len(acciones_clinicas))
 
     return jsonify({
         "message": "Consulta finalizada con éxito",
