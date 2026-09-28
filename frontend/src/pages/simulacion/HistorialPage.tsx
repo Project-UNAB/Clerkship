@@ -3,12 +3,12 @@ import { motion } from 'framer-motion';
 import {
   Search, Clock, Info,
   ChevronRight, ChevronDown, Download, BarChart2,
-  Check, AlertCircle, Target, Star, ClipboardCheck, Loader2, X, TrendingUp, Award,
+  Check, AlertCircle, Target, Star, ClipboardCheck, Loader2, X, TrendingUp, Award, Eye,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import {
   listHistorial, getEstadisticas, getRetroalimentacion,
-  type Consultation, type Estadisticas, type EvaluationResult,
+  type Consultation, type Estadisticas, type EvaluationResult, type RetroalimentacionResponse,
 } from '../../data/consultasApi';
 import { mainAuthErrorMessage } from '../../data/mainAuth';
 
@@ -199,11 +199,64 @@ function SessionRow({ s, delay, onVerDetalle }: { s: Consultation; delay: number
   );
 }
 
+/* ── Desglose completo de la evaluación (EvaluationResult, cuando viene detailed_rubric) ── */
+function EvaluationBreakdown({ ev }: { ev: EvaluationResult }) {
+  return (
+    <>
+      <h2 className="sim-stage-title">Puntaje: {ev.puntaje_global.toFixed(0)} / 100</h2>
+
+      <div className="sim-eval-domains">
+        {ev.desglose.map(d => (
+          <div key={d.dimension} className="sim-eval-domain">
+            <span className="sim-eval-domain-label">
+              {d.etiqueta}<em className="sim-eval-domain-weight">({d.peso}%)</em>
+            </span>
+            <div className="sim-eval-domain-track">
+              <div className="sim-eval-domain-fill" style={{ width: `${Math.max(0, Math.min(100, d.puntaje))}%` }} />
+            </div>
+            <span className="sim-eval-domain-val">{d.puntaje.toFixed(0)}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="sim-eval-feedback">
+        <p className="sim-eval-feedback-title"><Info size={14} /> Retroalimentación</p>
+        <p className="sim-eval-feedback-text">{ev.retroalimentacion_formativa}</p>
+      </div>
+
+      <div className="sim-eval-cols">
+        <div className="sim-eval-col">
+          <p className="sim-eval-col-title"><TrendingUp size={14} /> Fortalezas</p>
+          <ul className="sim-eval-list">{ev.fortalezas.map((s, i) => <li key={i}>{s}</li>)}</ul>
+        </div>
+        <div className="sim-eval-col">
+          <p className="sim-eval-col-title"><Award size={14} /> Áreas de mejora</p>
+          <ul className="sim-eval-list">{ev.aspectos_a_mejorar.map((s, i) => <li key={i}>{s}</li>)}</ul>
+        </div>
+      </div>
+
+      <div className="sim-eval-reveal">
+        <p className="sim-eval-reveal-title"><Eye size={14} /> Diagnóstico real revelado</p>
+        <p className="sim-eval-reveal-dx">{ev.revelacion.diagnostico_real}</p>
+        <p className="sim-eval-reveal-sub">{ev.revelacion.subtema} · dificultad {ev.revelacion.dificultad}</p>
+        {ev.revelacion.diferenciales_esperados.length > 0 && (
+          <div className="sim-eval-reveal-diff">
+            <span>Diferenciales esperados:</span>
+            <ul className="sim-eval-list">
+              {ev.revelacion.diferenciales_esperados.map((s, i) => <li key={i}>{s}</li>)}
+            </ul>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 /* ── Modal de retroalimentación real (Agente 3) ────────────── */
 function RetroalimentacionModal({ consultationId, onClose }: { consultationId: string; onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<{ consultation: Consultation; evaluation: EvaluationResult } | null>(null);
+  const [data, setData] = useState<RetroalimentacionResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -213,6 +266,8 @@ function RetroalimentacionModal({ consultationId, onClose }: { consultationId: s
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [consultationId]);
+
+  const rubric = data?.evaluation.detailed_rubric;
 
   return (
     <div className="hist-modal-backdrop" onClick={onClose}>
@@ -230,40 +285,19 @@ function RetroalimentacionModal({ consultationId, onClose }: { consultationId: s
         {data && (
           <>
             <p className="sim-eval-mock-badge">{data.consultation.title}</p>
-            <h2 className="sim-stage-title">Puntaje: {data.evaluation.final_score.toFixed(0)} / 100</h2>
-
-            <div className="sim-eval-domains">
-              {([
-                ['Anamnesis', data.evaluation.domain_scores.anamnesis],
-                ['Exámenes solicitados', data.evaluation.domain_scores.diagnostic_tests],
-                ['Hipótesis diferenciales', data.evaluation.domain_scores.differential_hypotheses],
-                ['Diagnóstico final', data.evaluation.domain_scores.final_diagnosis],
-              ] as [string, number][]).map(([label, val]) => (
-                <div key={label} className="sim-eval-domain">
-                  <span className="sim-eval-domain-label">{label}</span>
-                  <div className="sim-eval-domain-track">
-                    <div className="sim-eval-domain-fill" style={{ width: `${Math.max(0, Math.min(100, val))}%` }} />
-                  </div>
-                  <span className="sim-eval-domain-val">{val.toFixed(0)}</span>
+            {rubric ? (
+              <EvaluationBreakdown ev={rubric} />
+            ) : (
+              <>
+                <h2 className="sim-stage-title">Puntaje: {data.evaluation.final_score.toFixed(0)} / 100</h2>
+                <div className="sim-eval-feedback">
+                  <p className="sim-eval-feedback-title"><Info size={14} /> Retroalimentación</p>
+                  <p className="sim-eval-feedback-text">
+                    {data.evaluation.feedback_summary || 'No hay retroalimentación detallada disponible para esta consulta.'}
+                  </p>
                 </div>
-              ))}
-            </div>
-
-            <div className="sim-eval-feedback">
-              <p className="sim-eval-feedback-title"><Info size={14} /> Retroalimentación</p>
-              <p className="sim-eval-feedback-text">{data.evaluation.feedback_summary}</p>
-            </div>
-
-            <div className="sim-eval-cols">
-              <div className="sim-eval-col">
-                <p className="sim-eval-col-title"><TrendingUp size={14} /> Fortalezas</p>
-                <ul className="sim-eval-list">{data.evaluation.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
-              </div>
-              <div className="sim-eval-col">
-                <p className="sim-eval-col-title"><Award size={14} /> Áreas de mejora</p>
-                <ul className="sim-eval-list">{data.evaluation.areas_for_improvement.map((s, i) => <li key={i}>{s}</li>)}</ul>
-              </div>
-            </div>
+              </>
+            )}
           </>
         )}
       </motion.div>

@@ -12592,6 +12592,92 @@
   }
 }
 
+/* ── Simulación: panel de exploración clínica (examen físico / paraclínicos) ── */
+.sim-explora-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 2px 4px 4px;
+}
+.sim-explora-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink3);
+  cursor: pointer;
+  transition: all 0.14s;
+}
+.sim-explora-tab.active {
+  background: var(--p);
+  border-color: var(--p);
+  color: #fff;
+}
+.sim-explora-tab:hover:not(.active) { color: var(--ink2); border-color: var(--ink3); }
+
+/* Nota centrada en el chat (acción de exploración, no es una burbuja) */
+.sim-explora-nota {
+  align-self: center;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ink3);
+  background: var(--surface2);
+  border-radius: var(--r-ful);
+  padding: 5px 14px;
+  margin: 2px auto;
+}
+
+/* Badge de estado emocional en vivo (header del chat) */
+.sim-emo-badge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--p-dk);
+  background: rgba(0,179,248,0.12);
+  border-radius: var(--r-ful);
+  padding: 4px 10px;
+  text-transform: capitalize;
+}
+
+/* Aviso de consulta terminada por el paciente (reemplaza el input) */
+.sim-chat-ended-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin: 0 16px 12px;
+  background: #FFF7E6;
+  border: 1px solid #FCD34D;
+  border-radius: var(--r-md);
+  color: #92400E;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* Peso de cada dimensión del desglose de evaluación */
+.sim-eval-domain-weight { font-style: normal; font-weight: 500; color: var(--ink3); margin-left: 3px; }
+
+/* Tarjeta de revelación del diagnóstico real (solo tras finalizar) */
+.sim-eval-reveal {
+  background: linear-gradient(135deg, rgba(0,179,248,0.08), rgba(0,179,248,0.02));
+  border: 1px solid rgba(0,179,248,0.35);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+.sim-eval-reveal-title { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: var(--p-dk); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; }
+.sim-eval-reveal-dx { font-size: 1.1rem; font-weight: 800; color: var(--ink); margin: 0 0 4px; letter-spacing: -0.01em; }
+.sim-eval-reveal-sub { font-size: 0.8rem; color: var(--ink2); margin: 0 0 10px; text-transform: capitalize; }
+.sim-eval-reveal-diff { font-size: 0.82rem; color: var(--ink2); }
+.sim-eval-reveal-diff > span { font-weight: 600; color: var(--ink); }
+
 
 
 
