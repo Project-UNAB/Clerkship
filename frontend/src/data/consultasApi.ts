@@ -6,10 +6,15 @@
  * el mismo JWT_SECRET_KEY, así que el access_token que ya entrega el login
  * (mainAuth.ts) sirve tal cual acá — no hace falta un segundo login.
  *
- * "Consultas" = una sesión de simulación clínica de principio a fin:
- * crear_consulta llama al Agente 1 (genera el caso), enviar_mensaje habla
- * con el Agente 2 (paciente virtual), finalizar_consulta llama al Agente 3
- * (evaluador) y deja la nota real en Historial.
+ * "Consultas" = una sesión de simulación clínica de principio a fin, con el
+ * simulador de gastroenterología adoptado de jrojas710/proyectodegrado2 (ver
+ * backend/flask-api/app/services/simulador/): crear_consulta genera el caso
+ * (Agente Generador, con selección adaptativa de subtema/dificultad y RAG),
+ * enviar_mensaje habla con el paciente virtual (Agente Paciente, con
+ * guardrails), explorar hace una maniobra de examen físico o pide un
+ * paraclínico (determinista, sin IA), finalizar_consulta evalúa la sesión
+ * (Agente Evaluador — el puntaje lo calcula el backend con una fórmula
+ * ponderada, nunca el modelo) y deja la nota real en Historial.
  */
 import { getAccessToken, refreshAccessToken, clearMainAuthSession } from './mainAuth';
 
@@ -33,8 +38,8 @@ function refreshAccessTokenOnce(): Promise<string> {
 
 export type RetryableError = Error & { retryable?: boolean };
 
-/** Reintenta fn mientras el backend diga que Gemini no respondió (503), con
- *  espera creciente, hasta que responda o isCancelled() sea true. */
+/** Reintenta fn mientras el backend diga que ningún proveedor de IA respondió
+ *  (503), con espera creciente, hasta que responda o isCancelled() sea true. */
 export async function retryUntilGemini<T>(
   fn: () => Promise<T>,
   onRetry: (attempt: number) => void,
@@ -77,7 +82,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   if (!res.ok) {
     // backend/flask-api manda {error, message, status_code} — message trae el detalle real.
     const err = new Error(data?.message || data?.error || 'No se pudo conectar con el servidor de simulación clínica.') as RetryableError;
-    // 503 = Gemini no respondió (el backend no guardó nada): se puede reintentar sin riesgo.
+    // 503 = ningún proveedor de IA respondió (el backend no guardó nada): se puede reintentar sin riesgo.
     err.retryable = res.status === 503;
     throw err;
   }
@@ -118,6 +123,10 @@ export interface Consultation {
   title: string;
   specialty: string;
   difficulty: Difficulty;
+  /** Área clínica puntual del caso (ej. "Colelitiasis / colecistitis aguda").
+   *  null mientras la consulta está IN_PROGRESS — no se revela el área
+   *  diagnóstica antes de que el estudiante cierre el caso. */
+  subtema: string | null;
   status: ConsultationStatus;
   started_at: string | null;
   finished_at: string | null;
@@ -128,33 +137,45 @@ export interface ChatMessage {
   sender: 'STUDENT' | 'PATIENT' | 'SYSTEM';
   content: string;
   timestamp: string | null;
+  /** true si este mensaje es la reacción del paciente a una maniobra de
+   *  examen físico (contenido "[Exploracion fisica: ...]") — no se debe
+   *  mostrar como pregunta normal del estudiante en el chat. */
+  es_exploracion?: boolean;
 }
 
-/** Caso clínico — versión pública (nunca trae ground_truth). */
-export interface PublicCase {
-  case_id: string;
-  title: string;
-  specialty: string;
-  difficulty: string;
-  demographics: { age: number; gender: 'M' | 'F'; occupation: string };
-  chief_complaint: string;
-  present_illness: string;
-  medical_history: Record<string, string>;
-  vital_signs: {
-    blood_pressure: string;
-    heart_rate: number;
-    respiratory_rate: number;
-    temperature: number;
-    oxygen_saturation: number;
-  };
-  physical_exam: Record<string, string>;
+/** Un ítem del catálogo cerrado de exploración clínica (13 maniobras de
+ *  examen físico + 16 paraclínicos) — ver docs/ARQUITECTURA.md del repo
+ *  jrojas710/proyectodegrado2. */
+export interface CatalogoItem {
+  clave: string;
+  etiqueta: string;
+  grupo: string;
+}
+
+export interface CatalogoExploracion {
+  examen_fisico: CatalogoItem[];
+  paraclinicos: CatalogoItem[];
+}
+
+/** Caso clínico — versión pública. Nunca incluye el diagnóstico real, la
+ *  rúbrica, los antecedentes ni los síntomas: eso se revela solo
+ *  conversando con el paciente virtual (o, el diagnóstico, al finalizar). */
+export interface CaseDetails {
+  id_caso: string;
+  dificultad: Difficulty;
+  paciente: { nombre: string };
+  estado_emocional_inicial: string;
+  presentacion_inicial: string;
+  catalogo_exploracion: CatalogoExploracion;
 }
 
 export interface ConsultationDetail extends Consultation {
-  /** true si el caso lo generó el mock (Gemini no respondió) en vez del agente real */
+  /** true si el caso/turno lo generó el modo demo (ningún proveedor de IA respondió) */
   is_mock?: boolean;
   chat_history: ChatMessage[];
-  case_details: PublicCase | Record<string, never>;
+  case_details: CaseDetails | Record<string, never>;
+  /** Presente solo cuando status === 'COMPLETED' (GET de una consulta ya cerrada). */
+  evaluation?: EvaluationResult;
 }
 
 export function listConsultations(params?: { status?: ConsultationStatus; course_id?: string }): Promise<Consultation[]> {
@@ -170,6 +191,9 @@ export function createConsultation(payload: {
   title?: string;
   specialty?: string;
   difficulty?: Difficulty;
+  /** Subtema forzado (ej. "Colelitiasis / colecistitis aguda"); si se omite,
+   *  el backend elige uno por selección adaptativa (rotación / refuerzo de
+   *  áreas débiles según el desempeño histórico del estudiante). */
   condition?: string;
 }): Promise<ConsultationDetail> {
   return apiFetch('/api/consultas', { method: 'POST', body: JSON.stringify(payload) });
@@ -179,45 +203,98 @@ export function getConsultation(id: string): Promise<ConsultationDetail> {
   return apiFetch(`/api/consultas/${id}`);
 }
 
-export function sendMessage(id: string, content: string): Promise<{
+export interface SendMessageResult {
   sent: ChatMessage;
   reply: ChatMessage;
+  estado_emocional: string | null;
+  consulta_terminada: boolean;
   guardrail_activado: boolean;
+  guardrails: string[];
   is_mock: boolean;
-}> {
+}
+
+export function sendMessage(id: string, content: string): Promise<SendMessageResult> {
   return apiFetch(`/api/consultas/${id}/mensajes`, { method: 'POST', body: JSON.stringify({ content }) });
 }
 
-export interface DomainScores {
-  anamnesis: number;
-  diagnostic_tests: number;
-  differential_hypotheses: number;
-  final_diagnosis: number;
+export type TipoExploracion = 'examen_fisico' | 'paraclinico';
+
+export interface ExplorarResult {
+  tipo: TipoExploracion;
+  clave: string;
+  etiqueta: string;
+  resultado: string;
+  /** Segundos "de laboratorio" sugeridos antes de mostrar el resultado (0 para examen físico). */
+  demora_segundos: number;
+  /** true en maniobras con contacto físico (palpación, Murphy, tacto rectal, etc.):
+   *  el cliente debe seguir con un POST a /mensajes usando `mensaje_para_paciente`
+   *  como contenido, SIN mostrarlo como burbuja normal del estudiante, para que
+   *  el paciente reaccione en personaje. */
+  requiere_reaccion_paciente: boolean;
+  mensaje_para_paciente: string | null;
 }
 
-export interface CognitiveBias {
-  bias_name: string;
-  detected: boolean;
-  explanation: string | null;
+/** Maniobra de examen físico o solicitud de paraclínico — determinista, no
+ *  llama a ningún modelo, responde en milisegundos. Clave/tipo inválido -> 400. */
+export function explorar(id: string, tipo: TipoExploracion, clave: string): Promise<ExplorarResult> {
+  return apiFetch(`/api/consultas/${id}/explorar`, { method: 'POST', body: JSON.stringify({ tipo, clave }) });
 }
 
+export interface EvaluationDimension {
+  dimension: 'anamnesis' | 'hallazgos' | 'exploracion' | 'razonamiento' | 'comunicacion';
+  etiqueta: string;
+  /** Peso de la dimensión en el puntaje global, en porcentaje (30/20/15/25/10). */
+  peso: number;
+  /** Puntaje de la dimensión, 0-100. */
+  puntaje: number;
+}
+
+/** Evaluación completa del Agente Evaluador — el LLM solo clasifica
+ *  (qué preguntas cubrió, concordancia del diagnóstico, etc.), el
+ *  `puntaje_global`/`desglose` los calcula siempre el backend con una
+ *  fórmula ponderada auditable (ver docs/ARQUITECTURA.md). */
 export interface EvaluationResult {
-  consultation_id: string | null;
-  final_score: number;
-  domain_scores: DomainScores;
-  detected_biases: CognitiveBias[];
-  feedback_summary: string;
-  strengths: string[];
-  areas_for_improvement: string[];
-  comparison_with_ground_truth: Record<string, unknown>;
-  is_mock: boolean;
+  puntaje_global: number;
+  desglose: EvaluationDimension[];
+  preguntas_clave_cubiertas: string[];
+  preguntas_clave_omitidas: string[];
+  hallazgos_indagados_correctamente: string[];
+  hallazgos_no_indagados: string[];
+  concordancia_hipotesis: 'alta' | 'media' | 'baja' | 'nula';
+  comentario_hipotesis: string;
+  diferenciales_pertinentes: string[];
+  diferenciales_faltantes: string[];
+  calidad_plan: 'adecuado' | 'parcial' | 'inadecuado' | 'ausente';
+  comentario_plan: string;
+  comunicacion: 'excelente' | 'adecuada' | 'mejorable' | 'deficiente';
+  comentario_comunicacion: string;
+  fortalezas: string[];
+  aspectos_a_mejorar: string[];
+  retroalimentacion_formativa: string;
+  exploracion: {
+    pertinentes_realizados: string[];
+    pertinentes_omitidos: string[];
+    paraclinicos_no_pertinentes: string[];
+  };
+  /** El único momento en que se revela el diagnóstico real y el subtema. */
+  revelacion: {
+    diagnostico_real: string;
+    subtema: string;
+    dificultad: string;
+    diferenciales_esperados: string[];
+  };
+  duracion_segundos: number | null;
 }
 
 export function finishConsultation(id: string, payload: {
   final_diagnosis: string;
   differential_diagnoses?: string[];
-  requested_tests?: string[];
-}): Promise<{ message: string; consultation: Consultation; evaluation: EvaluationResult }> {
+  treatment_plan?: string;
+  /** Notas libres tomadas durante la consulta (opcional, máx. 2000 caracteres). */
+  notes?: string;
+  /** Duración total de la consulta en segundos — se muestra en el informe final. */
+  duration_seconds?: number;
+}): Promise<{ message: string; consultation: Consultation; evaluation: EvaluationResult; is_mock: boolean }> {
   return apiFetch(`/api/consultas/${id}/finalizar`, { method: 'PATCH', body: JSON.stringify(payload) });
 }
 
@@ -228,10 +305,20 @@ export function listHistorial(params?: { course_id?: string }): Promise<Consulta
   return apiFetch(`/api/historial${qs}`);
 }
 
-export function getRetroalimentacion(consultationId: string): Promise<{
+export interface RetroalimentacionResponse {
   consultation: Consultation;
-  evaluation: EvaluationResult & { feedback_summary: string; created_at?: string | null };
-}> {
+  evaluation: {
+    final_score: number;
+    feedback_summary: string | null;
+    execution_time_seconds: number | null;
+    created_at?: string | null;
+    /** La evaluación completa (desglose, revelación, etc.) — ver EvaluationResult.
+     *  Puede faltar en consultas viejas evaluadas antes de esta integración. */
+    detailed_rubric?: EvaluationResult;
+  };
+}
+
+export function getRetroalimentacion(consultationId: string): Promise<RetroalimentacionResponse> {
   return apiFetch(`/api/historial/${consultationId}/retroalimentacion`);
 }
 
@@ -251,7 +338,9 @@ export function getEstadisticas(): Promise<Estadisticas> {
 
 /* ── Helpers de la simulación ───────────────────────────────────────── */
 
-/** Mismos 8 subtemas de gastroenterología que usa el Agente 1 en el backend. */
+/** Mismos 8 subtemas de gastroenterología que usa el Agente Generador en el
+ *  backend (app/services/simulador/catalogo.py) — la comparación ahí es sin
+ *  distinguir mayúsculas ni tildes, así que estos acentos son solo para la UI. */
 export const GASTRO_SUBTEMAS = [
   'Enfermedad por reflujo gastroesofágico (ERGE)',
   'Gastritis y enfermedad ulcerosa péptica',

@@ -13,6 +13,7 @@ class Consultation(db.Model):
     title = db.Column(db.String(255), nullable=False)
     specialty = db.Column(db.String(100), nullable=False)
     difficulty = db.Column(db.String(20), nullable=False)  # EASY, MEDIUM, HARD
+    subtema = db.Column(db.String(150), nullable=True)  # ej. "Colelitiasis / colecistitis aguda" — ver services/simulador/adaptativo.py
     status = db.Column(db.String(20), nullable=False, default="IN_PROGRESS")  # IN_PROGRESS, COMPLETED, ABANDONED
     started_at = db.Column(db.DateTime, server_default=func.now())
     finished_at = db.Column(db.DateTime, nullable=True)
@@ -30,6 +31,7 @@ class Consultation(db.Model):
             "title": self.title,
             "specialty": self.specialty,
             "difficulty": self.difficulty,
+            "subtema": self.subtema,
             "status": self.status,
             "started_at": self.started_at.isoformat() if self.started_at else None,
             "finished_at": self.finished_at.isoformat() if self.finished_at else None,

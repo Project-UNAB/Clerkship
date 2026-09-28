@@ -57,6 +57,25 @@ class SendMessageResponse(BaseSchema):
     reply: ChatMessage
 
 
+class ExplorarRequest(BaseSchema):
+    """Payload para realizar una maniobra de examen físico o pedir un paraclínico."""
+
+    tipo: Literal["examen_fisico", "paraclinico"]
+    clave: str = Field(..., description="Clave del catálogo cerrado (ver GET /api/consultas/catalogo)")
+
+
+class ExplorarResponse(BaseSchema):
+    """Resultado determinista de una exploración clínica (no llama al modelo)."""
+
+    tipo: str
+    clave: str
+    etiqueta: str
+    resultado: str
+    demora_segundos: int
+    requiere_reaccion_paciente: bool
+    mensaje_para_paciente: Optional[str] = None
+
+
 class ConsultationDetailResponse(ConsultationResponse):
     """Full consultation detail including chat transcript and clinical case metadata."""
 
@@ -70,7 +89,9 @@ class FinishConsultationRequest(BaseSchema):
     final_diagnosis: Optional[str] = None
     treatment_plan: Optional[str] = None
     differential_diagnoses: List[str] = Field(default_factory=list, description="Diagnósticos diferenciales planteados por el estudiante")
-    requested_tests: List[str] = Field(default_factory=list, description="Paraclínicos/exámenes solicitados durante la consulta")
+    requested_tests: List[str] = Field(default_factory=list, description="Paraclínicos/exámenes solicitados durante la consulta (legado, texto libre; la evaluación real usa las acciones registradas vía /explorar)")
+    notes: Optional[str] = Field(None, max_length=2000, description="Notas libres tomadas durante la consulta")
+    duration_seconds: Optional[float] = Field(None, description="Duración total de la consulta en segundos")
 
 
 class FinishConsultationResponse(BaseSchema):
