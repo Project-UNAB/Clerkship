@@ -12682,3 +12682,17 @@
 
 
 
+
+/* ── Ficha del paciente: subtítulo demográfico + Historial médico (se llena
+   solo con lo que el paciente fue diciendo en la charla, nada inventado aparte) ── */
+.sim-hc-sub { font-size: 0.72rem; color: var(--ink3); margin-top: 2px !important; }
+.sim-hc-hist-empty { font-style: italic; color: var(--ink3); }
+.sim-hc-hist-list { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
+.sim-hc-hist-item {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 10px; background: var(--surface2);
+  border-radius: 8px; border-left: 2px solid var(--p);
+}
+.sim-hc-hist-item::before { content: none; }
+.sim-hc-hist-time { font-size: 0.68rem; color: var(--ink3); font-weight: 600; }
+.sim-hc-hist-text { font-style: italic; color: var(--ink2); }

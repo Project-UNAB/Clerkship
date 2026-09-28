@@ -96,6 +96,14 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
     if se_asigno:
         avisos.append("Nombre del paciente asignado por el sistema")
 
+    peso = caso["datos_paciente"].get("peso_kg")
+    if not isinstance(peso, (int, float)) or isinstance(peso, bool) or not (2 <= peso <= 250):
+        edad_dp = caso["datos_paciente"].get("edad")
+        edad_dp = edad_dp if isinstance(edad_dp, (int, float)) else 40
+        peso = round((60 if sexo == "F" else 70) + max(0, min(edad_dp, 60) - 20) * 0.15, 1)
+        avisos.append("Peso del paciente asignado por el sistema (fuera de rango o ausente)")
+    caso["datos_paciente"]["peso_kg"] = peso
+
     if not isinstance(caso.get("id_caso"), str) or not caso["id_caso"]:
         caso["id_caso"] = "GI-" + uuid.uuid4().hex[:8].upper()
 

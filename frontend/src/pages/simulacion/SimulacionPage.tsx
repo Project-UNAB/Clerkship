@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   CheckCircle, Send, ChevronRight, Info, ArrowLeft, Stethoscope,
-  Loader2, AlertTriangle, TrendingUp, Award, User, Eye,
+  Loader2, AlertTriangle, TrendingUp, Award, User, Eye, ClipboardList,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import logoUrl from '../../assets/Logo Clerkship.svg';
@@ -54,13 +54,18 @@ function groupByGrupo(items: CatalogoItem[]): [string, CatalogoItem[]][] {
 
 /* ── Panel derecho: ficha del caso + catálogo de exploración clínica ── */
 function CaseSheet({
-  c, explored, onExplorar, disabled,
+  c, explored, onExplorar, disabled, messages,
 }: {
   c: CaseDetails;
   explored: Record<string, ExploredEntry>;
   onExplorar: (tipo: TipoExploracion, item: CatalogoItem) => void;
   disabled: boolean;
+  /** Lo que el paciente realmente fue diciendo en la charla — el "Historial
+   *  médico" no inventa nada aparte, es esto mismo presentado como notas
+   *  clínicas: se va llenando solo a medida que el estudiante pregunta. */
+  messages: ChatMsg[];
 }) {
+  const notasHistoria = messages.filter(m => m.role === 'patient');
   const [tab, setTab] = useState<TipoExploracion>('examen_fisico');
   const items = tab === 'examen_fisico' ? c.catalogo_exploracion.examen_fisico : c.catalogo_exploracion.paraclinicos;
   const groups = groupByGrupo(items);
@@ -78,6 +83,14 @@ function CaseSheet({
           </div>
           <div className="sim-hc-sec-body">
             <p>{c.paciente.nombre}</p>
+            <p className="sim-hc-sub">
+              {[
+                c.paciente.edad != null ? `${c.paciente.edad} años` : null,
+                c.paciente.sexo === 'F' ? 'Femenino' : c.paciente.sexo === 'M' ? 'Masculino' : null,
+                c.paciente.ocupacion,
+                c.paciente.peso_kg != null ? `${c.paciente.peso_kg} kg` : null,
+              ].filter(Boolean).join(' · ')}
+            </p>
           </div>
         </div>
 
@@ -96,6 +109,26 @@ function CaseSheet({
           </div>
           <div className="sim-hc-sec-body">
             <p>{c.presentacion_inicial}</p>
+          </div>
+        </div>
+
+        <div className="sim-hc-section">
+          <div className="sim-hc-sec-head">
+            <span className="sim-hc-sec-num-title"><ClipboardList size={13} /> Historial médico</span>
+          </div>
+          <div className="sim-hc-sec-body">
+            {notasHistoria.length === 0 ? (
+              <p className="sim-hc-hist-empty">Todavía no le preguntaste nada — esta sección se va llenando con lo que el paciente te va contando.</p>
+            ) : (
+              <ul className="sim-hc-hist-list">
+                {notasHistoria.map((m, i) => (
+                  <li key={i} className="sim-hc-hist-item">
+                    <span className="sim-hc-hist-time">{fmtTime(m.ts)}</span>
+                    <span className="sim-hc-hist-text">"{m.text}"</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
@@ -616,7 +649,7 @@ export default function SimulacionPage() {
             messages={messages} onSend={handleSend} onFinish={() => setPhase('diagnosis')} sending={sending}
             estadoEmocional={estadoEmocional} consultaTerminada={consultaTerminada}
           />
-          <CaseSheet c={caseDetails} explored={explored} onExplorar={handleExplorar} disabled={sending} />
+          <CaseSheet c={caseDetails} explored={explored} onExplorar={handleExplorar} disabled={sending} messages={messages} />
         </div>
       )}
 

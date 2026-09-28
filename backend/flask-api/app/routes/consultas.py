@@ -110,17 +110,27 @@ def _consultation_dict(consultation: Consultation) -> dict:
 
 
 def _public_case_view(caso: dict) -> dict:
-    """Lo unico que el cliente ve al abrir/consultar el caso: nombre del
-    paciente, saludo inicial, estado emocional y el menu de exploracion
-    (claves/etiquetas, sin resultados). NUNCA el diagnostico, la rubrica, los
-    antecedentes ni los sintomas — esos se revelan solo conversando con el
-    Agente 2, o (el diagnostico) al finalizar."""
+    """Lo unico que el cliente ve al abrir/consultar el caso: datos
+    administrativos del paciente (nombre, edad, sexo, ocupacion, peso — como
+    la cabecera de una historia clinica real, no son diagnosticos), saludo
+    inicial, estado emocional y el menu de exploracion (claves/etiquetas, sin
+    resultados). NUNCA el diagnostico, la rubrica, los antecedentes ni los
+    sintomas — esos se revelan solo conversando con el Agente 2 (por eso no
+    van aca: el "historial medico" que arma el frontend sale de la
+    conversacion real, no de este endpoint), o (el diagnostico) al finalizar."""
     if not caso:
         return {}
+    dp = caso.get("datos_paciente") or {}
     return {
         "id_caso": caso.get("id_caso"),
         "dificultad": _DIFICULTAD_CATALOGO_A_UI.get(caso.get("dificultad_asignada"), "MEDIUM"),
-        "paciente": {"nombre": (caso.get("datos_paciente") or {}).get("nombre")},
+        "paciente": {
+            "nombre": dp.get("nombre"),
+            "edad": dp.get("edad"),
+            "sexo": dp.get("sexo"),
+            "ocupacion": dp.get("ocupacion"),
+            "peso_kg": dp.get("peso_kg"),
+        },
         "estado_emocional_inicial": caso.get("estado_emocional_inicial"),
         "presentacion_inicial": caso.get("presentacion_inicial"),
         "catalogo_exploracion": agentes.catalogo_exploracion(),

@@ -41,7 +41,7 @@ PARAMETROS DEL CASO
 REGLAS
 - El caso pertenece exclusivamente a gastroenterologia y al subtema indicado.
 - Toda la informacion debe ser coherente con la literatura medica: sintomas, signos vitales, examen fisico y paraclinicos deben apuntar de forma consistente al diagnostico real (o enmascararlo de forma verosimil si la dificultad lo pide).
-- El paciente es una persona colombiana verosimil: nombre y apellido comunes, edad y ocupacion coherentes con la epidemiologia del cuadro.
+- El paciente es una persona colombiana verosimil: nombre y apellido comunes, edad, ocupacion y peso (peso_kg, fisiologicamente plausible para su edad y sexo) coherentes con la epidemiologia del cuadro.
 - "examen_fisico_alterado" contiene SOLO las maniobras con hallazgo anormal o relevante, redactadas como en una historia clinica. Claves permitidas: {claves_examen}.
 - "paraclinicos_alterados" contiene SOLO los examenes cuyo resultado este alterado o aporte al diagnostico, con valores numericos y unidades realistas. Claves permitidas: {claves_paraclinicos}. Todo lo que no incluyas se reportara como normal.
 - "examenes_pertinentes" lista entre 3 y 7 claves (de cualquiera de las dos listas, incluida signos_vitales) que un estudiante competente deberia realizar o solicitar en este caso.
@@ -52,7 +52,7 @@ REGLAS
 {{
   "id_caso": "string",
   "subtema": "string",
-  "datos_paciente": {{ "nombre": "string", "edad": 0, "sexo": "M o F", "ocupacion": "string" }},
+  "datos_paciente": {{ "nombre": "string", "edad": 0, "sexo": "M o F", "ocupacion": "string", "peso_kg": 0 }},
   "antecedentes": ["personales, farmacologicos, quirurgicos, toxicos y familiares relevantes"],
   "sintomas_principales": ["string"],
   "signos_vitales": {{ "TA": "string con mmHg", "FC": "string con lpm", "FR": "string con rpm", "temp": "string con grados C", "SatO2": "string con %" }},

@@ -13,7 +13,7 @@ from app.services.simulador.catalogo import CATALOGO_EXAMEN_FISICO, CATALOGO_PAR
 
 CASO_DEMO_BASE = {
     "id_caso": "GI-DEMO-001",
-    "datos_paciente": {"nombre": "Luz Marina Rueda", "edad": 46, "sexo": "F", "ocupacion": "Modista"},
+    "datos_paciente": {"nombre": "Luz Marina Rueda", "edad": 46, "sexo": "F", "ocupacion": "Modista", "peso_kg": 68},
     "antecedentes": ["Obesidad grado I", "G3P3", "Sin cirugias previas"],
     "sintomas_principales": ["dolor en hipocondrio derecho de 2 dias", "nauseas", "fiebre"],
     "signos_vitales": {"TA": "128/82 mmHg", "FC": "104 lpm", "FR": "20 rpm", "temp": "38.4 C", "SatO2": "96 %"},

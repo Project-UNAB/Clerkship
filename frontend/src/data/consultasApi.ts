@@ -163,7 +163,9 @@ export interface CatalogoExploracion {
 export interface CaseDetails {
   id_caso: string;
   dificultad: Difficulty;
-  paciente: { nombre: string };
+  /** Datos administrativos, como la cabecera de una historia clínica real
+   *  (no son diagnóstico, por eso se muestran de entrada). */
+  paciente: { nombre: string; edad: number | null; sexo: 'M' | 'F' | null; ocupacion: string | null; peso_kg: number | null };
   estado_emocional_inicial: string;
   presentacion_inicial: string;
   catalogo_exploracion: CatalogoExploracion;
