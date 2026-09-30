@@ -201,7 +201,12 @@ def crear_consulta(validated_body: CreateConsultationRequest):
         return _servicio_no_disponible("generar el caso", resultado.get("error_details"))
 
     caso = resultado["caso_completo_oculto"]
-    title = validated_body.title or f"Caso clínico — {PERFILES_DIFICULTAD[seleccion['dificultad']]['etiqueta']}"
+    # El nombre del paciente lo genera el mismo Agente Generador junto con el
+    # resto del caso (no es un dato aparte) y no es diagnostico, asi que se
+    # puede mostrar siempre -- a diferencia del subtema/enfermedad, que sigue
+    # oculto hasta completar el caso (ver _consultation_dict/_public_case_view).
+    nombre_paciente = (caso.get("datos_paciente") or {}).get("nombre")
+    title = validated_body.title or (f"Caso de {nombre_paciente}" if nombre_paciente else f"Caso clínico — {PERFILES_DIFICULTAD[seleccion['dificultad']]['etiqueta']}")
 
     consultation = Consultation(
         student_id=current_user.id,
