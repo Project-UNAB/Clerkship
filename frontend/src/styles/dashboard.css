@@ -6431,6 +6431,8 @@
   background: var(--surface2, #F8FAFC);
   border-color: var(--border2, #CBD5E1);
 }
+.hist-fb-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.hist-fb-btn:disabled:hover { background: var(--surface, #fff); border-color: var(--border, #E2E8F0); }
 
 .hist-empty-state {
   padding: 60px 20px;

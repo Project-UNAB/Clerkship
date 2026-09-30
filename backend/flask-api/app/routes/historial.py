@@ -6,6 +6,8 @@ from sqlalchemy import func
 
 from app import db, get_mongo_db
 from app.models import AiEvaluation, Consultation, Course
+from app.services.simulador.adaptativo import MIN_SESIONES_PARA_PROMEDIO, promedios_por_subtema
+from app.services.simulador.scoring import ETIQUETAS
 from app.utils import get_current_user, role_required
 
 historial_bp = Blueprint("historial", __name__)
@@ -133,5 +135,63 @@ def obtener_estadisticas():
         "puntaje_maximo": float(stats.maximo) if stats and stats.maximo else 0.0,
         "puntaje_minimo": float(stats.minimo) if stats and stats.minimo else 0.0,
         "por_especialidad": {esp: count for esp, count in especialidades}
+    }), 200
+
+
+@historial_bp.route("/recomendacion", methods=["GET"])
+@role_required("STUDENT")
+def obtener_recomendacion():
+    """Sugerencia de refuerzo para el banner de Historial: el subtema más
+    débil del estudiante (misma fuente de verdad que la selección adaptativa
+    de app/services/simulador/adaptativo.py, para que nunca se contradigan) y,
+    dentro de ese subtema, la dimensión de evaluación más floja en promedio."""
+    current_user = get_current_user()
+
+    promedios = promedios_por_subtema(current_user.id)
+    candidatos = [
+        (subtema, suma / n)
+        for subtema, (suma, n) in promedios.items()
+        if n >= MIN_SESIONES_PARA_PROMEDIO
+    ]
+    if not candidatos:
+        return jsonify({
+            "disponible": False,
+            "motivo": "Completá al menos 3 casos evaluados de un mismo subtema para desbloquear recomendaciones.",
+        }), 200
+
+    subtema_debil, promedio_subtema = min(candidatos, key=lambda t: t[1])
+
+    ids = [
+        str(cid) for (cid,) in Consultation.query
+        .filter_by(student_id=current_user.id, status="COMPLETED", subtema=subtema_debil)
+        .with_entities(Consultation.id).all()
+    ]
+
+    dimension_debil = None
+    try:
+        mongo_db = get_mongo_db()
+        sumas: dict = {}
+        for doc in mongo_db.consultations.find(
+            {"consultation_id": {"$in": ids}, "ai_evaluation.desglose": {"$exists": True}},
+            {"ai_evaluation.desglose": 1},
+        ):
+            for item in (doc.get("ai_evaluation") or {}).get("desglose") or []:
+                dim = item.get("dimension")
+                puntaje = item.get("puntaje")
+                if not dim or puntaje is None:
+                    continue
+                suma, n = sumas.get(dim, (0.0, 0))
+                sumas[dim] = (suma + float(puntaje), n + 1)
+        if sumas:
+            dim, (suma, n) = min(sumas.items(), key=lambda kv: kv[1][0] / kv[1][1])
+            dimension_debil = {"dimension": dim, "etiqueta": ETIQUETAS.get(dim, dim), "promedio": round(suma / n)}
+    except Exception:  # noqa: BLE001
+        dimension_debil = None
+
+    return jsonify({
+        "disponible": True,
+        "subtema": subtema_debil,
+        "promedio": round(promedio_subtema),
+        "dimension_debil": dimension_debil,
     }), 200
 

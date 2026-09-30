@@ -338,6 +338,22 @@ export function getEstadisticas(): Promise<Estadisticas> {
   return apiFetch('/api/historial/estadisticas');
 }
 
+/** Sugerencia de refuerzo (banner de Historial): el subtema más débil del
+ *  estudiante (misma fuente que la selección adaptativa, nunca se
+ *  contradicen) y su dimensión más floja. Exige 3+ casos evaluados en un
+ *  mismo subtema — si no hay suficiente historial, `disponible` es false. */
+export interface Recomendacion {
+  disponible: boolean;
+  motivo?: string;
+  subtema?: string;
+  promedio?: number;
+  dimension_debil?: { dimension: string; etiqueta: string; promedio: number } | null;
+}
+
+export function getRecomendacion(): Promise<Recomendacion> {
+  return apiFetch('/api/historial/recomendacion');
+}
+
 /* ── Helpers de la simulación ───────────────────────────────────────── */
 
 /** Mismos 8 subtemas de gastroenterología que usa el Agente Generador en el

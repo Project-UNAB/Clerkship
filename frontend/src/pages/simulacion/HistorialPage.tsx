@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Search, Clock, Info,
@@ -7,8 +8,8 @@ import {
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import {
-  listHistorial, getEstadisticas, getRetroalimentacion,
-  type Consultation, type Estadisticas, type EvaluationResult, type RetroalimentacionResponse,
+  listHistorial, getEstadisticas, getRetroalimentacion, getRecomendacion,
+  type Consultation, type Estadisticas, type EvaluationResult, type RetroalimentacionResponse, type Recomendacion,
 } from '../../data/consultasApi';
 import { mainAuthErrorMessage } from '../../data/mainAuth';
 
@@ -307,6 +308,7 @@ function RetroalimentacionModal({ consultationId, onClose }: { consultationId: s
 
 /* ── Page ───────────────────────────────────────────────── */
 export default function HistorialPage() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [specFilter, setSpecFilter] = useState('Todos');
@@ -318,6 +320,7 @@ export default function HistorialPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [detalleId, setDetalleId] = useState<string | null>(null);
+  const [recomendacion, setRecomendacion] = useState<Recomendacion | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -329,8 +332,16 @@ export default function HistorialPage() {
       })
       .catch(err => { if (!cancelled) setLoadError(mainAuthErrorMessage(err)); })
       .finally(() => { if (!cancelled) setLoading(false); });
+    // Recomendación aparte: si falla, el banner cae al mensaje genérico sin romper la página.
+    getRecomendacion().then(r => { if (!cancelled) setRecomendacion(r); }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
+
+  function irAReforzar() {
+    if (!recomendacion?.disponible || !recomendacion.subtema) return;
+    const qs = new URLSearchParams({ dificultad: 'EASY', subtema: recomendacion.subtema });
+    navigate(`/casos?${qs.toString()}`);
+  }
 
   const filtered = useMemo(() => sessions.filter(s => {
     const q = query.toLowerCase();
@@ -496,17 +507,32 @@ export default function HistorialPage() {
           </div>
         </div>
 
-        {/* ── Footer Banner ── */}
+        {/* ── Footer Banner: recomendación real, misma fuente que la selección adaptativa ── */}
         <div className="hist-footer-banner">
           <div className="hist-fb-left">
             <div className="hist-fb-icon"><Info size={20} /></div>
             <div className="hist-fb-text">
-              <h4>¿Quieres mejorar tu desempeño?</h4>
-              <p>Revisa los casos gastroenterológicos con resultado parcial para identificar oportunidades de mejora.</p>
+              {recomendacion?.disponible ? (
+                <>
+                  <h4>Tu área más floja: {recomendacion.subtema}</h4>
+                  <p>
+                    Promedio de {recomendacion.promedio}/100
+                    {recomendacion.dimension_debil && (
+                      <> — sobre todo en <strong>{recomendacion.dimension_debil.etiqueta}</strong> ({recomendacion.dimension_debil.promedio}/100)</>
+                    )}
+                    . Practicá un caso nuevo de ese subtema para reforzar.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h4>¿Quieres mejorar tu desempeño?</h4>
+                  <p>{recomendacion?.motivo || 'Completá más casos clínicos para que la recomendación se active.'}</p>
+                </>
+              )}
             </div>
           </div>
-          <button className="hist-fb-btn">
-            Ver recomendaciones <ChevronRight size={16} />
+          <button className="hist-fb-btn" onClick={irAReforzar} disabled={!recomendacion?.disponible}>
+            Reforzar este subtema <ChevronRight size={16} />
           </button>
         </div>
 

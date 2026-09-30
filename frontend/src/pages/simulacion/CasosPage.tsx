@@ -22,12 +22,28 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/** El backend compara subtemas sin distinguir tildes; el link "Reforzar" del
+ *  Historial manda el subtema tal como lo devuelve el backend (sin tildes),
+ *  así que hay que emparejarlo contra la lista acentuada de la UI. */
+function normalizarSinTildes(s: string) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+function matchSubtema(param: string | null): string {
+  if (!param) return '';
+  const norm = normalizarSinTildes(param);
+  return GASTRO_SUBTEMAS.find(s => normalizarSinTildes(s) === norm) || '';
+}
+
 /* Casos clínicos: todos los casos los genera en vivo el agente generador —
  * acá solo se elige (o no) subtema y dificultad, y se ven las consultas del usuario. */
 export default function CasosPage() {
   const navigate = useNavigate();
-  const [difficulty, setDifficulty] = useState<DifficultyChoice>('AUTO');
-  const [subtema, setSubtema] = useState('');
+  const initialParams = new URLSearchParams(window.location.search);
+  const [difficulty, setDifficulty] = useState<DifficultyChoice>(
+    (initialParams.get('dificultad') as Difficulty) || 'AUTO',
+  );
+  const [subtema, setSubtema] = useState(() => matchSubtema(initialParams.get('subtema')));
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

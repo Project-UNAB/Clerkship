@@ -20,14 +20,18 @@ from app.services.simulador.catalogo import SUBTEMAS, normalizar_dificultad, nor
 
 logger = logging.getLogger(__name__)
 
-_MIN_SESIONES_PARA_PROMEDIO = 3
+MIN_SESIONES_PARA_PROMEDIO = 3
+_MIN_SESIONES_PARA_PROMEDIO = MIN_SESIONES_PARA_PROMEDIO  # alias interno, no romper el nombre usado abajo
 _UMBRAL_AREA_DEBIL = 60
 _UMBRAL_DIFICULTAD_BAJA = 50
 _UMBRAL_DIFICULTAD_ALTA = 85
 
 
-def _promedios_por_subtema(student_id) -> dict:
-    """Ultimas 40 sesiones evaluadas del estudiante -> {subtema: (suma, n)}."""
+def promedios_por_subtema(student_id) -> dict:
+    """Ultimas 40 sesiones evaluadas del estudiante -> {subtema: (suma, n)}.
+    Publica (sin guion bajo) porque tambien la usa historial.py para armar la
+    recomendacion de refuerzo — misma fuente de verdad que la seleccion
+    adaptativa, para que nunca se contradigan entre si."""
     filas = (
         Consultation.query
         .join(AiEvaluation, AiEvaluation.consultation_id == Consultation.id)
@@ -66,7 +70,7 @@ def elegir_subtema_y_dificultad(student_id, subtema_pedido=None, dificultad_pedi
     dificultad_forzada = normalizar_dificultad(dificultad_pedida)
 
     try:
-        promedios = _promedios_por_subtema(student_id)
+        promedios = promedios_por_subtema(student_id)
         recientes = _recientes(student_id)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Seleccion adaptativa: no se pudo leer el historial (%s); se usa aleatorio.", exc)
