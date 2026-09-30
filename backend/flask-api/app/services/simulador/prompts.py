@@ -15,7 +15,7 @@ from app.services.simulador.catalogo import (
 )
 
 
-def construir_prompt_generador(subtema: str, dificultad: str, referencias: list) -> str:
+def construir_prompt_generador(subtema: str, dificultad: str, referencias: list, identidad_forzada: dict = None) -> str:
     perfil = PERFILES_DIFICULTAD.get(dificultad, PERFILES_DIFICULTAD["intermedio"])
     referencias = referencias or []
 
@@ -32,6 +32,22 @@ def construir_prompt_generador(subtema: str, dificultad: str, referencias: list)
     claves_paraclinicos = ", ".join(f"{clave} ({d['etiqueta']})" for clave, d in CATALOGO_PARACLINICOS.items())
     estados = ", ".join(ESTADOS_EMOCIONALES)
 
+    if identidad_forzada:
+        # El estudiante ya vio esta identidad en la pantalla de carga (ficha
+        # administrativa, instantanea, sin IA) -- el caso tiene que ser sobre
+        # esta misma persona, no sobre otra que el modelo invente aparte.
+        genero = "mujer" if identidad_forzada["sexo"] == "F" else "hombre"
+        regla_identidad = (
+            f"- El paciente YA TIENE nombre, edad y sexo asignados, usalos EXACTAMENTE asi (no inventes otros): "
+            f"{identidad_forzada['nombre']}, {genero}, {identidad_forzada['edad']} anos. "
+            f"Elegi una ocupacion coherente con esa edad y con la epidemiologia del cuadro."
+        )
+    else:
+        regla_identidad = (
+            "- El paciente es una persona colombiana verosimil: nombre y apellido comunes, edad, ocupacion y peso "
+            "(peso_kg, fisiologicamente plausible para su edad y sexo) coherentes con la epidemiologia del cuadro."
+        )
+
     return f"""Eres el generador de casos clinicos de un simulador academico de entrevista medica en GASTROENTEROLOGIA (prototipo TRL 5, sin fines diagnosticos reales). El contexto es una consulta en un hospital universitario de Colombia.
 
 PARAMETROS DEL CASO
@@ -41,7 +57,7 @@ PARAMETROS DEL CASO
 REGLAS
 - El caso pertenece exclusivamente a gastroenterologia y al subtema indicado.
 - Toda la informacion debe ser coherente con la literatura medica: sintomas, signos vitales, examen fisico y paraclinicos deben apuntar de forma consistente al diagnostico real (o enmascararlo de forma verosimil si la dificultad lo pide).
-- El paciente es una persona colombiana verosimil: nombre y apellido comunes, edad, ocupacion y peso (peso_kg, fisiologicamente plausible para su edad y sexo) coherentes con la epidemiologia del cuadro.
+{regla_identidad}
 - "examen_fisico_alterado" contiene SOLO las maniobras con hallazgo anormal o relevante, redactadas como en una historia clinica. Claves permitidas: {claves_examen}.
 - "paraclinicos_alterados" contiene SOLO los examenes cuyo resultado este alterado o aporte al diagnostico, con valores numericos y unidades realistas. Claves permitidas: {claves_paraclinicos}. Todo lo que no incluyas se reportara como normal.
 - "examenes_pertinentes" lista entre 3 y 7 claves (de cualquiera de las dos listas, incluida signos_vitales) que un estudiante competente deberia realizar o solicitar en este caso.

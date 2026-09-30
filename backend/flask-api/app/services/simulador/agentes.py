@@ -57,11 +57,17 @@ def catalogo_exploracion() -> dict:
 # Agente 1 — Generador de casos
 # ---------------------------------------------------------------------------
 
-def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = None) -> dict:
+def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = None, identidad_forzada: Optional[dict] = None) -> dict:
     """Genera y sanea un caso clinico completo. Devuelve un dict con
     `is_mock` (True si hay que reintentar/usar demo) y, si tuvo exito,
-    `caso_completo_oculto` + `system_prompt_paciente` listos para persistir."""
-    prompt = construir_prompt_generador(subtema, dificultad, referencias or [])
+    `caso_completo_oculto` + `system_prompt_paciente` listos para persistir.
+
+    `identidad_forzada` (de GET /api/consultas/ficha-previa) es la identidad
+    administrativa que el estudiante ya vio en la pantalla de carga -- se le
+    pide al modelo que la use (prompts.py) y, como red de seguridad, se
+    sobreescribe nombre/edad/sexo/peso al final por si el modelo la ignora.
+    """
+    prompt = construir_prompt_generador(subtema, dificultad, referencias or [], identidad_forzada)
     resp = llamar_modelo([prompt, "Genera un caso nuevo siguiendo las reglas. Responde solo con el JSON."], temperature=0.3)
 
     avisos = []
@@ -81,6 +87,14 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
 
     if caso is None:
         caso = mock.caso_demo(subtema, dificultad)
+        if identidad_forzada:
+            caso["datos_paciente"].update({
+                "nombre": identidad_forzada["nombre"], "edad": identidad_forzada["edad"],
+                "sexo": identidad_forzada["sexo"], "peso_kg": identidad_forzada.get("peso_kg") or caso["datos_paciente"]["peso_kg"],
+            })
+            for campo in ("documento", "telefono", "tipo_sangre"):
+                if identidad_forzada.get(campo):
+                    caso["datos_paciente"][campo] = identidad_forzada[campo]
         return _finalizar_caso(
             caso, subtema, dificultad, avisos,
             provider_used="Mock", model_used=None,
@@ -89,12 +103,20 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
 
     avisos.extend(validar_signos_vitales(caso.get("signos_vitales")))
 
-    sexo = "F" if normalizar((caso["datos_paciente"] or {}).get("sexo", "")).startswith("f") else "M"
-    caso["datos_paciente"]["sexo"] = sexo
-    nombre, se_asigno = asignar_nombre_si_falta(caso["datos_paciente"].get("nombre"), sexo)
-    caso["datos_paciente"]["nombre"] = nombre
-    if se_asigno:
-        avisos.append("Nombre del paciente asignado por el sistema")
+    if identidad_forzada:
+        sexo = identidad_forzada["sexo"]
+        caso["datos_paciente"]["nombre"] = identidad_forzada["nombre"]
+        caso["datos_paciente"]["edad"] = identidad_forzada["edad"]
+        caso["datos_paciente"]["sexo"] = sexo
+        if identidad_forzada.get("peso_kg"):
+            caso["datos_paciente"]["peso_kg"] = identidad_forzada["peso_kg"]
+    else:
+        sexo = "F" if normalizar((caso["datos_paciente"] or {}).get("sexo", "")).startswith("f") else "M"
+        caso["datos_paciente"]["sexo"] = sexo
+        nombre, se_asigno = asignar_nombre_si_falta(caso["datos_paciente"].get("nombre"), sexo)
+        caso["datos_paciente"]["nombre"] = nombre
+        if se_asigno:
+            avisos.append("Nombre del paciente asignado por el sistema")
 
     peso = caso["datos_paciente"].get("peso_kg")
     if not isinstance(peso, (int, float)) or isinstance(peso, bool) or not (2 <= peso <= 250):
@@ -103,6 +125,13 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
         peso = round((60 if sexo == "F" else 70) + max(0, min(edad_dp, 60) - 20) * 0.15, 1)
         avisos.append("Peso del paciente asignado por el sistema (fuera de rango o ausente)")
     caso["datos_paciente"]["peso_kg"] = peso
+
+    # Documento/telefono/tipo de sangre no los escribe el modelo (no afectan
+    # la narrativa clinica) -- se pegan tal cual de la identidad pre-generada.
+    if identidad_forzada:
+        for campo in ("documento", "telefono", "tipo_sangre"):
+            if identidad_forzada.get(campo):
+                caso["datos_paciente"][campo] = identidad_forzada[campo]
 
     if not isinstance(caso.get("id_caso"), str) or not caso["id_caso"]:
         caso["id_caso"] = "GI-" + uuid.uuid4().hex[:8].upper()

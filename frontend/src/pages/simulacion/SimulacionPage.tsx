@@ -7,10 +7,10 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import logoUrl from '../../assets/Logo Clerkship.svg';
 import {
-  ensureCourseId, createConsultation, retryUntilGemini, getConsultation,
+  ensureCourseId, createConsultation, retryUntilGemini, getConsultation, getFichaPrevia,
   sendMessage as sendPatientMessage, finishConsultation, explorar,
   type CaseDetails, type CatalogoItem, type TipoExploracion,
-  type EvaluationResult, type Difficulty,
+  type EvaluationResult, type Difficulty, type IdentidadPaciente,
 } from '../../data/consultasApi';
 
 /* ═══════════════════════════════════════════════════════════
@@ -91,6 +91,15 @@ function CaseSheet({
                 c.paciente.peso_kg != null ? `${c.paciente.peso_kg} kg` : null,
               ].filter(Boolean).join(' · ')}
             </p>
+            {(c.paciente.documento || c.paciente.telefono || c.paciente.tipo_sangre) && (
+              <p className="sim-hc-sub">
+                {[
+                  c.paciente.documento,
+                  c.paciente.telefono,
+                  c.paciente.tipo_sangre ? `Tipo ${c.paciente.tipo_sangre}` : null,
+                ].filter(Boolean).join(' · ')}
+              </p>
+            )}
           </div>
         </div>
 
@@ -438,6 +447,11 @@ export default function SimulacionPage() {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isMock, setIsMock] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0); // >0 = esperando a que Gemini responda
+  // Identidad administrativa (nombre/edad/documento/telefono/tipo de sangre/peso)
+  // generada al instante, sin IA — se muestra mientras el Agente Generador
+  // arma el resto del caso real (eso sí tarda, llama a Gemini), y viaja como
+  // restricción en createConsultation para que sea la misma persona.
+  const [fichaPrevia, setFichaPrevia] = useState<IdentidadPaciente | null>(null);
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
@@ -454,9 +468,11 @@ export default function SimulacionPage() {
           // según el desempeño histórico del estudiante en el subtema.
           const difficulty = (params.get('dificultad') as Difficulty) || undefined;
           const subtema = params.get('subtema') || undefined;
-          const courseId = await ensureCourseId();
+          const [courseId, identidad] = await Promise.all([ensureCourseId(), getFichaPrevia()]);
+          if (cancelled) return;
+          setFichaPrevia(identidad);
           detail = await retryUntilGemini(
-            () => createConsultation({ course_id: courseId, difficulty, condition: subtema }),
+            () => createConsultation({ course_id: courseId, difficulty, condition: subtema, identidad_paciente: identidad }),
             setRetryAttempt, () => cancelled,
           );
         }
@@ -593,8 +609,24 @@ export default function SimulacionPage() {
     return (
       <div className="sim-root sim-loading-root">
         <div className="sim-loading-box">
-          <Loader2 size={28} className="sim-spin" />
-          <p>El agente generador está preparando tu caso clínico...</p>
+          {fichaPrevia ? (
+            <>
+              <p className="sim-ficha-previa-title">Armando la ficha de {fichaPrevia.nombre}...</p>
+              <ul className="sim-ficha-previa-list">
+                <li><CheckCircle size={13} /> Edad: {fichaPrevia.edad} años</li>
+                <li><CheckCircle size={13} /> Documento: {fichaPrevia.documento}</li>
+                <li><CheckCircle size={13} /> Teléfono: {fichaPrevia.telefono}</li>
+                <li><CheckCircle size={13} /> Tipo de sangre: {fichaPrevia.tipo_sangre}</li>
+                <li><CheckCircle size={13} /> Peso: {fichaPrevia.peso_kg} kg</li>
+              </ul>
+              <p className="sim-ficha-previa-footer"><Loader2 size={14} className="sim-spin" /> Preparando la consulta clínica...</p>
+            </>
+          ) : (
+            <>
+              <Loader2 size={28} className="sim-spin" />
+              <p>El agente generador está preparando tu caso clínico...</p>
+            </>
+          )}
         </div>
         {retryAttempt > 0 && (
           <div className="sim-toast" role="status">

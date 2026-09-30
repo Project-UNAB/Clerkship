@@ -38,6 +38,7 @@ from app.schemas import (
 from app.services.simulador import agentes
 from app.services.simulador.adaptativo import elegir_subtema_y_dificultad
 from app.services.simulador.catalogo import PERFILES_DIFICULTAD
+from app.services.simulador.identidad import generar_identidad
 from app.services.simulador.rag import obtener_referencias
 from app.services.simulador import supabase_externo
 from app.utils import get_current_user, role_required
@@ -131,6 +132,9 @@ def _public_case_view(caso: dict) -> dict:
             "sexo": dp.get("sexo"),
             "ocupacion": dp.get("ocupacion"),
             "peso_kg": dp.get("peso_kg"),
+            "documento": dp.get("documento"),
+            "telefono": dp.get("telefono"),
+            "tipo_sangre": dp.get("tipo_sangre"),
         },
         "estado_emocional_inicial": caso.get("estado_emocional_inicial"),
         "presentacion_inicial": caso.get("presentacion_inicial"),
@@ -170,6 +174,19 @@ def listar_consultas():
     return jsonify([_consultation_dict(c) for c in consultations]), 200
 
 
+@consultas_bp.route("/ficha-previa", methods=["GET"])
+@role_required("STUDENT")
+def obtener_ficha_previa():
+    """Identidad administrativa del paciente (nombre, edad, sexo, documento,
+    teléfono, tipo de sangre, peso) — determinista, sin IA, instantánea.
+    Pensada para mostrarse en la pantalla de carga mientras el Agente
+    Generador arma el resto del caso (eso sí tarda, llama a Gemini): el
+    cliente debe reenviar esta misma identidad como `identidad_paciente` al
+    crear la consulta (POST /api/consultas), para que el caso completo sea
+    sobre esta persona exacta y no sobre otra inventada aparte."""
+    return jsonify(generar_identidad()), 200
+
+
 @consultas_bp.route("", methods=["POST"])
 @role_required("STUDENT")
 @validate_body(CreateConsultationRequest)
@@ -195,7 +212,8 @@ def crear_consulta(validated_body: CreateConsultationRequest):
         dificultad_pedida=dificultad_pedida,
     )
     referencias = obtener_referencias(seleccion["subtema"])
-    resultado = agentes.generar_caso(seleccion["subtema"], seleccion["dificultad"], referencias)
+    identidad_forzada = validated_body.identidad_paciente.model_dump() if validated_body.identidad_paciente else None
+    resultado = agentes.generar_caso(seleccion["subtema"], seleccion["dificultad"], referencias, identidad_forzada=identidad_forzada)
 
     if resultado["is_mock"] and _real_ai_expected():
         return _servicio_no_disponible("generar el caso", resultado.get("error_details"))

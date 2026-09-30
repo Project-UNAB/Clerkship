@@ -7,6 +7,21 @@ from pydantic import Field
 from app.schemas.base import BaseSchema
 
 
+class IdentidadPacienteInput(BaseSchema):
+    """Identidad administrativa pre-generada (GET /api/consultas/ficha-previa)
+    que se le pasa al Agente Generador como restricción, para que el caso
+    completo sea sobre esta persona exacta — la misma que ya vio el
+    estudiante en la pantalla de carga, no una inventada aparte."""
+
+    nombre: str
+    edad: int
+    sexo: Literal["M", "F"]
+    peso_kg: Optional[float] = None
+    documento: Optional[str] = None
+    telefono: Optional[str] = None
+    tipo_sangre: Optional[str] = None
+
+
 class CreateConsultationRequest(BaseSchema):
     """Payload to start a simulated clinical consultation."""
 
@@ -21,6 +36,10 @@ class CreateConsultationRequest(BaseSchema):
         None,
         max_length=150,
         description="Subtema clínico especifico a forzar (ej. 'Pancreatitis Aguda'). Si se omite, el Agente 1 elige uno al azar entre los subtemas de gastroenterología soportados.",
+    )
+    identidad_paciente: Optional[IdentidadPacienteInput] = Field(
+        None,
+        description="Identidad pre-generada por GET /api/consultas/ficha-previa, para que el caso se arme sobre esta misma persona.",
     )
 
 

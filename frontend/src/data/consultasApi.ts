@@ -157,15 +157,46 @@ export interface CatalogoExploracion {
   paraclinicos: CatalogoItem[];
 }
 
+/** Datos administrativos del paciente — como la cabecera de una historia
+ *  clínica real (no son diagnóstico, por eso se muestran de entrada). */
+export interface DatosPaciente {
+  nombre: string;
+  edad: number | null;
+  sexo: 'M' | 'F' | null;
+  ocupacion: string | null;
+  peso_kg: number | null;
+  documento?: string | null;
+  telefono?: string | null;
+  tipo_sangre?: string | null;
+}
+
+/** Identidad pre-generada (GET /api/consultas/ficha-previa), determinista y
+ *  sin IA — se muestra de inmediato mientras el Agente Generador arma el
+ *  resto del caso (eso sí tarda, llama a Gemini), y se reenvía en
+ *  `createConsultation` para que el caso completo sea sobre esta misma
+ *  persona, no sobre otra inventada aparte. `ocupacion` no viene: esa la
+ *  elige el generador para que sea coherente con la enfermedad del caso. */
+export interface IdentidadPaciente {
+  nombre: string;
+  edad: number;
+  sexo: 'M' | 'F';
+  documento: string;
+  telefono: string;
+  tipo_sangre: string;
+  peso_kg: number;
+}
+
+export function getFichaPrevia(): Promise<IdentidadPaciente> {
+  return apiFetch('/api/consultas/ficha-previa');
+}
+
 /** Caso clínico — versión pública. Nunca incluye el diagnóstico real, la
  *  rúbrica, los antecedentes ni los síntomas: eso se revela solo
  *  conversando con el paciente virtual (o, el diagnóstico, al finalizar). */
 export interface CaseDetails {
   id_caso: string;
   dificultad: Difficulty;
-  /** Datos administrativos, como la cabecera de una historia clínica real
-   *  (no son diagnóstico, por eso se muestran de entrada). */
-  paciente: { nombre: string; edad: number | null; sexo: 'M' | 'F' | null; ocupacion: string | null; peso_kg: number | null };
+  paciente: DatosPaciente;
   estado_emocional_inicial: string;
   presentacion_inicial: string;
   catalogo_exploracion: CatalogoExploracion;
@@ -197,6 +228,9 @@ export function createConsultation(payload: {
    *  el backend elige uno por selección adaptativa (rotación / refuerzo de
    *  áreas débiles según el desempeño histórico del estudiante). */
   condition?: string;
+  /** La identidad que ya trajo getFichaPrevia() — para que el caso se arme
+   *  sobre esta misma persona en vez de que el generador invente otra. */
+  identidad_paciente?: IdentidadPaciente;
 }): Promise<ConsultationDetail> {
   return apiFetch('/api/consultas', { method: 'POST', body: JSON.stringify(payload) });
 }
