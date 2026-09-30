@@ -318,6 +318,10 @@ export interface RetroalimentacionResponse {
      *  Puede faltar en consultas viejas evaluadas antes de esta integración. */
     detailed_rubric?: EvaluationResult;
   };
+  /** La conversación completa con el paciente — la consulta ya está
+   *  completada acá, así que mostrarla entera no revela nada que el
+   *  estudiante no supiera ya. */
+  chat_history: ChatMessage[];
 }
 
 export function getRetroalimentacion(consultationId: string): Promise<RetroalimentacionResponse> {

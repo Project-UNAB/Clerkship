@@ -305,11 +305,42 @@ function EvaluationBreakdown({ ev }: { ev: EvaluationResult }) {
   );
 }
 
+function fmtHora(iso: string | null) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+}
+
+/* ── Transcripción completa de la charla con el paciente — la consulta ya
+   está completada acá, así que no hay nada que se esté "adelantando". ── */
+function ConversationView({ chat }: { chat: RetroalimentacionResponse['chat_history'] }) {
+  if (chat.length === 0) {
+    return <p className="sim-hc-hist-empty">No quedó ninguna conversación registrada para esta consulta.</p>;
+  }
+  return (
+    <div className="hist-chat-transcript">
+      {chat.map((m, i) => (
+        m.es_exploracion ? (
+          <div key={i} className="sim-explora-nota">{m.content}</div>
+        ) : (
+          <div key={i} className={`sim-bubble-wrap${m.sender === 'STUDENT' ? ' sim-bubble-wrap-student' : ''}`}>
+            <div>
+              <div className={`sim-bubble sim-bubble-${m.sender === 'STUDENT' ? 'student' : 'patient'}`}>{m.content}</div>
+              <div className="sim-bubble-meta">{fmtHora(m.timestamp)}</div>
+            </div>
+          </div>
+        )
+      ))}
+    </div>
+  );
+}
+
 /* ── Modal de retroalimentación real (Agente 3) ────────────── */
 function RetroalimentacionModal({ consultationId, onClose }: { consultationId: string; onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<RetroalimentacionResponse | null>(null);
+  const [tab, setTab] = useState<'evaluacion' | 'conversacion'>('evaluacion');
 
   useEffect(() => {
     let cancelled = false;
@@ -338,7 +369,27 @@ function RetroalimentacionModal({ consultationId, onClose }: { consultationId: s
         {data && (
           <>
             <p className="sim-eval-mock-badge">{data.consultation.title}</p>
-            {rubric ? (
+
+            <div className="sim-explora-tabs" style={{ marginBottom: 16 }}>
+              <button
+                type="button"
+                className={`sim-explora-tab${tab === 'evaluacion' ? ' active' : ''}`}
+                onClick={() => setTab('evaluacion')}
+              >
+                Evaluación
+              </button>
+              <button
+                type="button"
+                className={`sim-explora-tab${tab === 'conversacion' ? ' active' : ''}`}
+                onClick={() => setTab('conversacion')}
+              >
+                Conversación ({data.chat_history.filter(m => !m.es_exploracion).length})
+              </button>
+            </div>
+
+            {tab === 'conversacion' ? (
+              <ConversationView chat={data.chat_history} />
+            ) : rubric ? (
               <EvaluationBreakdown ev={rubric} />
             ) : (
               <>

@@ -84,18 +84,25 @@ def obtener_retroalimentacion(consultation_id):
         "created_at": consultation.finished_at.replace(tzinfo=timezone.utc).isoformat() if consultation.finished_at else None,
     }
 
-    # Intentar enriquecer con rúbrica detallada almacenada en MongoDB
+    # Intentar enriquecer con rúbrica detallada y la conversación completa,
+    # guardadas en MongoDB. La consulta ya está COMPLETED en esta ruta (es la
+    # única forma de llegar acá), así que el diagnóstico ya se reveló y no
+    # hay problema en mostrar la charla entera.
+    chat_history = []
     try:
         mongo_db = get_mongo_db()
         doc = mongo_db.consultations.find_one({"consultation_id": str(consultation.id)})
-        if doc and "ai_evaluation" in doc:
-            eval_data["detailed_rubric"] = doc["ai_evaluation"]
+        if doc:
+            if "ai_evaluation" in doc:
+                eval_data["detailed_rubric"] = doc["ai_evaluation"]
+            chat_history = doc.get("chat_history") or []
     except Exception:
         pass
 
     return jsonify({
         "consultation": consultation.to_dict(),
-        "evaluation": eval_data
+        "evaluation": eval_data,
+        "chat_history": chat_history,
     }), 200
 
 
