@@ -148,6 +148,9 @@ export default function CasosPage() {
                     {c.score !== null && <div className="casos-mod-card-score">{Math.round(c.score)} pts</div>}
                   </div>
                   <h3 className="casos-mod-card-title">{c.title}</h3>
+                  {/* Subtema visible solo aca (ya completado) — mientras esta
+                      en curso arruinaria el ejercicio de anamnesis. */}
+                  {c.subtema && <p className="casos-mod-card-subtema">{c.subtema}</p>}
                   <p className="casos-mod-card-scenario"><Stethoscope size={12} /> {fmtDate(c.finished_at)}</p>
                   <button className="casos-mod-start-btn done" onClick={() => navigate('/historial')}>
                     <CheckCircle size={14} /> Ver en historial

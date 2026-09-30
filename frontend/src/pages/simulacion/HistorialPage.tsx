@@ -172,7 +172,15 @@ function SessionRow({ s, delay, onVerDetalle }: { s: Consultation; delay: number
         <div className="hist-td-icon" style={{ background: spC.bg, color: spC.color }}>
           <StomachIcon />
         </div>
-        <span className="hist-td-title">{s.title}</span>
+        <div>
+          <span className="hist-td-title">{s.title}</span>
+          {/* El subtema solo se revela en casos ya completados — mientras está
+              en curso arruinaría el ejercicio de anamnesis (el estudiante
+              tiene que descubrirlo preguntando, no leerlo en la lista). */}
+          {s.status === 'COMPLETED' && s.subtema && (
+            <span className="hist-td-subtema">{s.subtema}</span>
+          )}
+        </div>
       </div>
 
       <div className="hist-td hist-td-mod">

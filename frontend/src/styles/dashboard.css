@@ -5692,6 +5692,13 @@
   line-height: 1.3;
 }
 
+.casos-mod-card-subtema {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--p, #0369A1);
+  margin: 2px 0 0;
+}
+
 .casos-mod-card-scenario {
   font-size: 0.78rem;
   color: var(--ink3);
@@ -6192,6 +6199,13 @@
   font-weight: 700;
   color: var(--ink, #0F172A);
   line-height: 1.4;
+}
+.hist-td-subtema {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--ink3, #64748B);
+  margin-top: 2px;
 }
 
 /* Tag cells */
