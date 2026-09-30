@@ -470,7 +470,14 @@ function CaseGenerationLoader({
   }, [loadingStep]);
 
   return (
-    <div className="sim-root sim-loading-root">
+    <motion.div
+      key="loader"
+      className="sim-root sim-loading-root"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+    >
       <div className="sim-loader-wrap">
         <div className="sim-loader-header">
           <h2 className="sim-loader-title">Preparando caso clínico</h2>
@@ -557,15 +564,24 @@ function CaseGenerationLoader({
         </AnimatePresence>
 
         {/* Lista animada de pasos progresivos con iconos reales de lucide-react */}
+        {/* Lista animada de pasos progresivos con aparición escalonada */}
         <div className="sim-loader-steps">
-          {GENERATION_STEPS.map((step, idx) => {
+          {GENERATION_STEPS.slice(0, Math.min(loadingStep + 2, GENERATION_STEPS.length)).map((step, idx) => {
             const isDone = loadingStep > idx;
             const isActive = loadingStep === idx;
             const isPending = loadingStep < idx;
 
             return (
-              <div
+              <motion.div
                 key={step.id}
+                layout
+                initial={{ opacity: 0, y: 14 }}
+                animate={{
+                  opacity: isActive ? 1 : isDone ? 0.95 : 0.28,
+                  y: 0,
+                  scale: isActive ? 1.01 : 1,
+                }}
+                transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
                 className={`sim-loader-step${isActive ? ' sim-loader-step-active' : ''}${isDone ? ' sim-loader-step-done' : ''}${isPending ? ' sim-loader-step-pending' : ''}`}
               >
                 <div className={`sim-loader-step-icon${isDone ? ' sim-loader-step-icon-done' : ''}${isActive ? ' sim-loader-step-icon-active' : ''}${isPending ? ' sim-loader-step-icon-pending' : ''}`}>
@@ -576,10 +592,10 @@ function CaseGenerationLoader({
                       transition={{ duration: 0.35, ease: 'easeOut' }}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
-                      <Check size={12} strokeWidth={3} />
+                      <Check size={11} strokeWidth={2.8} />
                     </motion.div>
                   ) : isActive ? (
-                    <Loader2 size={13} strokeWidth={2.5} className="sim-spin" />
+                    <Loader2 size={11.5} strokeWidth={2.4} className="sim-spin" />
                   ) : (
                     <span className="sim-step-dot" />
                   )}
@@ -588,7 +604,7 @@ function CaseGenerationLoader({
                 <div className="sim-loader-step-text">
                   <span className="sim-loader-step-label">{step.label}</span>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -605,7 +621,7 @@ function CaseGenerationLoader({
           <span>Servicio ocupado, reintentando… ({retryAttempt})</span>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -669,28 +685,28 @@ export default function SimulacionPage() {
           const coursePromise = ensureCourseId();
           const fichaPromise = getFichaPrevia();
 
-          // A los 700ms pasamos a registrar ficha de admisión
+          // A los 1200ms pasamos a registrar ficha de admisión del paciente
           timer0 = setTimeout(() => {
             if (!cancelled) setLoadingStep(prev => Math.max(prev, 1));
-          }, 700);
+          }, 1200);
 
           const [courseId, identidad] = await Promise.all([coursePromise, fichaPromise]);
           if (cancelled) return;
           setFichaPrevia(identidad);
 
-          // A los 1.6s activamos paso 2 (Generando cuadro clínico y antecedentes)
+          // A los 3400ms activamos paso 2 (Generando cuadro clínico y antecedentes)
           timer1 = setTimeout(() => {
             if (!cancelled) setLoadingStep(prev => Math.max(prev, 2));
-          }, 1600);
+          }, 3400);
 
           // Tiempos más lentos, pausados y relajados mientras Gemini genera el caso
           timer2 = setTimeout(() => {
             if (!cancelled) setLoadingStep(prev => Math.max(prev, 3));
-          }, 5000);
+          }, 7400);
 
           timer3 = setTimeout(() => {
             if (!cancelled) setLoadingStep(prev => Math.max(prev, 4));
-          }, 9500);
+          }, 12000);
 
           detail = await retryUntilGemini(
             () => createConsultation({ course_id: courseId, difficulty, condition: subtema, identidad_paciente: identidad }),
@@ -715,8 +731,8 @@ export default function SimulacionPage() {
         })));
         if (!routeId) navigate(`/simulacion/${detail.id}`, { replace: true });
 
-        // Pausa suave de 600ms para apreciar que llegó al 100%
-        await new Promise(r => setTimeout(r, 600));
+        // Pausa suave de 800ms para apreciar que llegó al 100% y se completaron los pasos
+        await new Promise(r => setTimeout(r, 800));
       } catch (err) {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : 'No se pudo iniciar la consulta.');
       } finally {
@@ -846,76 +862,87 @@ export default function SimulacionPage() {
     }
   }, [consultationId]);
 
-  if (loading) {
-    return (
-      <CaseGenerationLoader
-        fichaPrevia={fichaPrevia}
-        loadingStep={loadingStep}
-        retryAttempt={retryAttempt}
-      />
-    );
-  }
-
-  if (loadError || !consultationId || !caseDetails) {
-    return (
-      <div className="sim-root sim-loading-root">
-        <div className="sim-loading-box sim-error-box">
-          <AlertTriangle size={28} />
-          <p>{loadError || 'No se pudo iniciar la consulta.'}</p>
-          <button className="sim-btn-next sim-btn-next-sm" onClick={() => navigate('/casos')}>
-            Volver a Casos clínicos
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="sim-root">
-      <header className="sim-topbar">
-        <div className="sim-tb-left">
-          <img src={logoUrl} alt="Clerkship" className="sim-tb-logo" />
-          <button className="sim-tb-back" onClick={() => navigate('/casos')}>
-            <ArrowLeft size={14} /> Casos clínicos
-          </button>
-        </div>
-        <div className="sim-tb-center">
-          <span className="sim-tb-case-ico"><Stethoscope size={16} /></span>
-          <span className="sim-tb-case-title">{consultationTitle}</span>
-        </div>
-        <div className="sim-tb-right" />
-      </header>
+    <AnimatePresence mode="wait">
+      {loading ? (
+        <CaseGenerationLoader
+          key="loader"
+          fichaPrevia={fichaPrevia}
+          loadingStep={loadingStep}
+          retryAttempt={retryAttempt}
+        />
+      ) : loadError || !consultationId || !caseDetails ? (
+        <motion.div
+          key="error"
+          className="sim-root sim-loading-root"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="sim-loading-box sim-error-box">
+            <AlertTriangle size={28} />
+            <p>{loadError || 'No se pudo iniciar la consulta.'}</p>
+            <button className="sim-btn-next sim-btn-next-sm" onClick={() => navigate('/casos')}>
+              Volver a Casos clínicos
+            </button>
+          </div>
+        </motion.div>
+      ) : (
+        <motion.div
+          key="simulation"
+          className="sim-root"
+          initial={{ opacity: 0, y: 14, filter: 'blur(4px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <header className="sim-topbar">
+            <div className="sim-tb-left">
+              <img src={logoUrl} alt="Clerkship" className="sim-tb-logo" />
+              <button className="sim-tb-back" onClick={() => navigate('/casos')}>
+                <ArrowLeft size={14} /> Casos clínicos
+              </button>
+            </div>
+            <div className="sim-tb-center">
+              <span className="sim-tb-case-ico"><Stethoscope size={16} /></span>
+              <span className="sim-tb-case-title">{consultationTitle}</span>
+            </div>
+            <div className="sim-tb-right" />
+          </header>
 
-      {retryAttempt > 0 && (
-        <div className="sim-toast" role="status">
-          <Loader2 size={14} className="sim-spin" />
-          <span>Gemini está ocupado, reintentando… ({retryAttempt})</span>
-        </div>
-      )}
+          {retryAttempt > 0 && (
+            <div className="sim-toast" role="status">
+              <Loader2 size={14} className="sim-spin" />
+              <span>Gemini está ocupado, reintentando… ({retryAttempt})</span>
+            </div>
+          )}
 
-      {phase === 'interview' && (
-        <div className="sim-2col">
-          <Interview
-            messages={messages} onSend={handleSend} onFinish={() => setPhase('diagnosis')} sending={sending}
-            estadoEmocional={estadoEmocional} consultaTerminada={consultaTerminada}
-          />
-          <CaseSheet c={caseDetails} explored={explored} onExplorar={handleExplorar} disabled={sending} messages={messages} />
-        </div>
-      )}
+          {phase === 'interview' && (
+            <div className="sim-2col">
+              <Interview
+                messages={messages} onSend={handleSend} onFinish={() => setPhase('diagnosis')} sending={sending}
+                estadoEmocional={estadoEmocional} consultaTerminada={consultaTerminada}
+              />
+              <CaseSheet c={caseDetails} explored={explored} onExplorar={handleExplorar} disabled={sending} messages={messages} />
+            </div>
+          )}
 
-      {phase === 'diagnosis' && (
-        <div className="sim-body-full">
-          <DiagnosisForm onSubmit={handleSubmit} onBack={() => setPhase('interview')}
-            submitting={submitting} error={submitError} />
-        </div>
-      )}
+          {phase === 'diagnosis' && (
+            <div className="sim-body-full">
+              <DiagnosisForm onSubmit={handleSubmit} onBack={() => setPhase('interview')}
+                submitting={submitting} error={submitError} />
+            </div>
+          )}
 
-      {phase === 'result' && evaluation && (
-        <div className="sim-body-full">
-          <ResultView evaluation={evaluation} isMock={isMock}
-            onHistory={() => navigate('/historial')} onNew={() => navigate('/casos')} />
-        </div>
+          {phase === 'result' && evaluation && (
+            <div className="sim-body-full">
+              <ResultView evaluation={evaluation} isMock={isMock}
+                onHistory={() => navigate('/historial')} onNew={() => navigate('/casos')} />
+            </div>
+          )}
+        </motion.div>
       )}
-    </div>
+    </AnimatePresence>
   );
 }

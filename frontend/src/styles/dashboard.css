@@ -2688,25 +2688,61 @@
 .sim-loader-steps {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
+  position: relative;
 }
 
 .sim-loader-step {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  transition: opacity 0.4s ease, background 0.4s ease;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.4s ease,
+              border-color 0.4s ease,
+              transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sim-loader-step-label {
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.sim-loader-step-pending {
+  opacity: 0.28;
+  border-color: transparent;
+}
+
+.sim-loader-step-pending .sim-loader-step-label {
+  color: var(--ink3);
 }
 
 .sim-loader-step-active {
   background: rgba(0, 179, 248, 0.06);
+  border-color: rgba(0, 179, 248, 0.16);
+  opacity: 1;
+}
+
+.sim-loader-step-active .sim-loader-step-label {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.sim-loader-step-done {
+  opacity: 0.95;
+  background: transparent;
+  border-color: transparent;
+}
+
+.sim-loader-step-done .sim-loader-step-label {
+  color: var(--ink2);
 }
 
 .sim-loader-step-icon {
-  width: 22px;
-  height: 22px;
+  width: 19px;
+  height: 19px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2719,7 +2755,7 @@
   background: #10B981;
   color: #FFFFFF;
   border: none;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.32);
 }
 
 .sim-loader-step-icon-active {
@@ -2732,44 +2768,15 @@
   background: transparent;
   color: var(--ink3);
   border: 1.5px solid var(--border2);
-  opacity: 0.45;
+  opacity: 0.55;
 }
 
 .sim-step-dot {
-  width: 4px;
-  height: 4px;
+  width: 3.5px;
+  height: 3.5px;
   border-radius: 50%;
   background: currentColor;
-  opacity: 0.6;
-}
-
-.sim-loader-step-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.sim-loader-step-label {
-  font-size: 0.88rem;
-  font-weight: 500;
-  color: var(--ink2);
-  line-height: 1.35;
-  transition: color 0.3s ease;
-}
-
-.sim-loader-step-active .sim-loader-step-label {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.sim-loader-step-done .sim-loader-step-label {
-  color: var(--ink2);
-}
-
-.sim-loader-step-pending .sim-loader-step-label {
-  color: var(--ink3);
-  opacity: 0.65;
+  opacity: 0.7;
 }
 
 /* ── Barra de progreso sutil de un solo color con avance continuo ── */
@@ -5983,6 +5990,45 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* ── Seleccion multiple de casos en progreso (para borrado en conjunto) ── */
+.casos-pg-section-headrow {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+}
+.casos-select-all-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none; cursor: pointer;
+  font-size: 0.78rem; font-weight: 600; color: var(--ink3, #64748B);
+}
+.casos-select-all-btn:hover { color: var(--p, #0369A1); }
+.casos-bulk-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2, #F0F9FF); border: 1.5px solid var(--p, #0369A1);
+  border-radius: 12px; padding: 10px 16px; margin-bottom: 14px;
+  font-size: 0.82rem; font-weight: 700; color: var(--ink, #0F172A);
+}
+.casos-bulk-bar-actions { display: flex; align-items: center; gap: 10px; }
+.casos-bulk-cancel-btn, .casos-bulk-delete-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: none; border-radius: 8px; padding: 7px 14px;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+}
+.casos-bulk-cancel-btn { background: transparent; color: var(--ink3, #64748B); }
+.casos-bulk-cancel-btn:hover { color: var(--ink, #0F172A); }
+.casos-bulk-delete-btn { background: #EF4444; color: #fff; }
+.casos-bulk-delete-btn:hover { background: #DC2626; }
+.casos-bulk-delete-btn:disabled, .casos-bulk-cancel-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.casos-mod-card-top-left { display: flex; align-items: center; gap: 10px; }
+.casos-card-select-btn {
+  border: none; background: none; color: var(--ink3, #64748B);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+}
+.casos-card-select-btn:hover { color: var(--p, #0369A1); }
+.casos-mod-card-selected {
+  border-color: var(--p, #0369A1) !important;
+  box-shadow: 0 0 0 2px rgba(3, 105, 161, 0.15);
 }
 
 .casos-mod-card-diff {

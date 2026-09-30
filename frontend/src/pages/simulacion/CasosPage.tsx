@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, CheckCircle, Loader2, Stethoscope, Clock, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Play, CheckCircle, Loader2, Stethoscope, Clock, MoreVertical, Pencil, Trash2, Square, CheckSquare, X } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import {
   listConsultations, renameConsultation, deleteConsultation, GASTRO_SUBTEMAS,
@@ -72,6 +72,8 @@ export default function CasosPage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -121,10 +123,42 @@ export default function CasosPage() {
     try {
       await deleteConsultation(c.id);
       setConsultations(prev => prev.filter(x => x.id !== c.id));
+      setSelected(prev => { const next = new Set(prev); next.delete(c.id); return next; });
     } catch (err) {
       setError(mainAuthErrorMessage(err));
     } finally {
       setBusyId(null);
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllInProgress() {
+    setSelected(prev => (prev.size === inProgress.length ? new Set() : new Set(inProgress.map(c => c.id))));
+  }
+
+  async function handleBulkDelete() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    setBulkDeleting(true);
+    setError(null);
+    try {
+      const resultados = await Promise.allSettled(ids.map(id => deleteConsultation(id)));
+      const eliminados = new Set(ids.filter((_, i) => resultados[i].status === 'fulfilled'));
+      const fallidos = resultados.filter(r => r.status === 'rejected').length;
+      setConsultations(prev => prev.filter(x => !eliminados.has(x.id)));
+      setSelected(new Set());
+      if (fallidos > 0) {
+        setError(`No se pudieron eliminar ${fallidos} de ${ids.length} casos seleccionados. Probá de nuevo.`);
+      }
+    } finally {
+      setBulkDeleting(false);
     }
   }
 
@@ -183,13 +217,45 @@ export default function CasosPage() {
 
         {!loading && inProgress.length > 0 && (
           <div className="casos-pg-section">
-            <h2 className="casos-pg-section-title">En progreso</h2>
+            <div className="casos-pg-section-headrow">
+              <h2 className="casos-pg-section-title">En progreso</h2>
+              <button type="button" className="casos-select-all-btn" onClick={toggleSelectAllInProgress}>
+                {selected.size === inProgress.length ? <CheckSquare size={14} /> : <Square size={14} />}
+                {selected.size === inProgress.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+              </button>
+            </div>
+
+            {selected.size > 0 && (
+              <div className="casos-bulk-bar">
+                <span>{selected.size} seleccionado{selected.size > 1 ? 's' : ''}</span>
+                <div className="casos-bulk-bar-actions">
+                  <button type="button" className="casos-bulk-cancel-btn" onClick={() => setSelected(new Set())} disabled={bulkDeleting}>
+                    <X size={13} /> Cancelar
+                  </button>
+                  <button type="button" className="casos-bulk-delete-btn" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                    {bulkDeleting ? <Loader2 size={13} className="dfm-spin" /> : <Trash2 size={13} />}
+                    Eliminar {selected.size > 1 ? 'seleccionados' : 'seleccionado'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="casos-mod-grid">
               {inProgress.map(c => (
-                <div key={c.id} className="casos-mod-card">
+                <div key={c.id} className={`casos-mod-card${selected.has(c.id) ? ' casos-mod-card-selected' : ''}`}>
                   <div className="casos-mod-card-top">
-                    <div className="casos-mod-card-status" data-status="en_progreso" style={{ background: '#FFF7E6', color: '#F59E0B' }}>
-                      <Play size={12} /> En progreso
+                    <div className="casos-mod-card-top-left">
+                      <button
+                        type="button"
+                        className="casos-card-select-btn"
+                        onClick={() => toggleSelect(c.id)}
+                        aria-label={selected.has(c.id) ? 'Deseleccionar' : 'Seleccionar'}
+                      >
+                        {selected.has(c.id) ? <CheckSquare size={17} /> : <Square size={17} />}
+                      </button>
+                      <div className="casos-mod-card-status" data-status="en_progreso" style={{ background: '#FFF7E6', color: '#F59E0B' }}>
+                        <Play size={12} /> En progreso
+                      </div>
                     </div>
                     <div className="casos-card-menu-wrap" ref={menuFor === c.id ? menuRef : undefined}>
                       <button
