@@ -78,7 +78,8 @@ function difficultyToNum(d: string): 1 | 2 | 3 {
 const SPECIALTIES = ['Todos', 'Gastroenterología'];
 const STATUS_OPTIONS = ['Todos', 'Completados', 'En progreso'];
 const DIFF_OPTIONS = ['Todos', 'Básico', 'Intermedio', 'Avanzado'];
-const DATE_OPTIONS = ['Últimos 3 meses', 'Último mes', 'Este año'];
+const DATE_OPTIONS = ['Todo el tiempo', 'Últimos 3 meses', 'Último mes', 'Este año'];
+const PAGE_SIZE = 6;
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -86,6 +87,49 @@ function fmtDate(iso: string) {
   const month = d.toLocaleDateString('es-CO', { month: 'short' });
   const year = d.getFullYear();
   return `${day} ${month} ${year}`;
+}
+
+/** true si `iso` cae dentro del filtro de fecha elegido. */
+function dentroDelFiltroFecha(iso: string | null, filtro: string): boolean {
+  if (filtro === 'Todo el tiempo' || !iso) return true;
+  const fecha = new Date(iso).getTime();
+  const ahora = Date.now();
+  if (filtro === 'Último mes') return ahora - fecha <= 30 * 24 * 60 * 60 * 1000;
+  if (filtro === 'Últimos 3 meses') return ahora - fecha <= 90 * 24 * 60 * 60 * 1000;
+  if (filtro === 'Este año') return new Date(iso).getFullYear() === new Date().getFullYear();
+  return true;
+}
+
+/** Tiempo real que duró la consulta (finished_at - started_at), o null si falta algún dato. */
+function fmtDuracion(startIso: string | null, endIso: string | null): string | null {
+  if (!startIso || !endIso) return null;
+  const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const minutos = Math.round(ms / 60000);
+  if (minutos < 1) return '<1 min';
+  if (minutos < 60) return `${minutos} min`;
+  return `${Math.floor(minutos / 60)}h ${minutos % 60}m`;
+}
+
+/** Exporta las filas visibles (ya filtradas) a un CSV descargable — todo client-side. */
+function exportarCsv(filas: Consultation[]) {
+  const headers = ['Titulo', 'Subtema', 'Especialidad', 'Dificultad', 'Estado', 'Iniciado', 'Finalizado', 'Puntaje'];
+  const escapar = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const lineas = filas.map(s => [
+    s.title, s.subtema || '', s.specialty, DIFFICULTY_LABEL[difficultyToNum(s.difficulty)],
+    s.status === 'COMPLETED' ? 'Completado' : 'En progreso',
+    s.started_at || '', s.finished_at || '', s.score != null ? String(s.score) : '',
+  ].map(escapar).join(','));
+  const csv = [headers.map(escapar).join(','), ...lineas].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `historial-clerkship-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 const DIFFICULTY_LABEL: Record<number, string> = { 1: 'Básico', 2: 'Intermedio', 3: 'Avanzado' };
@@ -149,7 +193,7 @@ function SessionRow({ s, delay, onVerDetalle }: { s: Consultation; delay: number
       </div>
 
       <div className="hist-td hist-td-time">
-        {s.status === 'IN_PROGRESS' ? 'En curso' : '—'}
+        {s.status === 'IN_PROGRESS' ? 'En curso' : (fmtDuracion(s.started_at, s.finished_at) || '—')}
       </div>
 
       <div className="hist-td hist-td-acc">
@@ -313,7 +357,8 @@ export default function HistorialPage() {
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [specFilter, setSpecFilter] = useState('Todos');
   const [diffFilter, setDiffFilter] = useState('Todos');
-  const [dateFilter, setDateFilter] = useState('Últimos 3 meses');
+  const [dateFilter, setDateFilter] = useState('Todo el tiempo');
+  const [page, setPage] = useState(1);
 
   const [sessions, setSessions] = useState<Consultation[]>([]);
   const [stats, setStats] = useState<Estadisticas | null>(null);
@@ -345,15 +390,23 @@ export default function HistorialPage() {
 
   const filtered = useMemo(() => sessions.filter(s => {
     const q = query.toLowerCase();
-    const matchQ    = !q || s.title.toLowerCase().includes(q) || s.specialty.toLowerCase().includes(q);
+    const matchQ    = !q || s.title.toLowerCase().includes(q) || s.specialty.toLowerCase().includes(q)
+      || (s.subtema || '').toLowerCase().includes(q);
     const matchSpec = specFilter === 'Todos' || s.specialty === specFilter;
     const matchStatus = statusFilter === 'Todos'
       || (statusFilter === 'Completados' ? s.status === 'COMPLETED' : s.status === 'IN_PROGRESS');
     const matchDiff = diffFilter === 'Todos' || DIFFICULTY_LABEL[difficultyToNum(s.difficulty)] === diffFilter;
-    return matchQ && matchSpec && matchStatus && matchDiff;
-  }), [sessions, query, specFilter, statusFilter, diffFilter]);
+    const matchFecha = dentroDelFiltroFecha(s.finished_at || s.started_at, dateFilter);
+    return matchQ && matchSpec && matchStatus && matchDiff && matchFecha;
+  }), [sessions, query, specFilter, statusFilter, diffFilter, dateFilter]);
 
-  const displayed = filtered.slice(0, 6);
+  // Cada vez que cambia un filtro (o la búsqueda) volvemos a la página 1 —
+  // si no, se puede quedar viendo una página vacía tras filtrar.
+  useEffect(() => { setPage(1); }, [query, specFilter, statusFilter, diffFilter, dateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageClamped = Math.min(page, totalPages);
+  const displayed = filtered.slice((pageClamped - 1) * PAGE_SIZE, pageClamped * PAGE_SIZE);
 
   return (
     <div className="dash-root">
@@ -460,7 +513,7 @@ export default function HistorialPage() {
                 onChange={e => setQuery(e.target.value)}
               />
             </div>
-            <button className="hist-export-btn">
+            <button className="hist-export-btn" onClick={() => exportarCsv(filtered)} disabled={filtered.length === 0}>
               <Download size={16} /> Exportar
             </button>
           </div>
@@ -500,10 +553,29 @@ export default function HistorialPage() {
         <div className="hist-pagination-bar">
           <span className="hist-page-info">Mostrando {displayed.length} de {filtered.length} casos</span>
           <div className="hist-page-controls">
-            <button className="hist-page-btn hist-page-btn-icon"><ChevronRight size={16} style={{transform: 'rotate(180deg)'}} /></button>
-            <button className="hist-page-btn hist-page-btn-active">1</button>
-            <button className="hist-page-btn">2</button>
-            <button className="hist-page-btn hist-page-btn-icon"><ChevronRight size={16} /></button>
+            <button
+              className="hist-page-btn hist-page-btn-icon"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={pageClamped <= 1}
+            >
+              <ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+              <button
+                key={n}
+                className={`hist-page-btn${n === pageClamped ? ' hist-page-btn-active' : ''}`}
+                onClick={() => setPage(n)}
+              >
+                {n}
+              </button>
+            ))}
+            <button
+              className="hist-page-btn hist-page-btn-icon"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={pageClamped >= totalPages}
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
         </div>
 

@@ -6119,6 +6119,8 @@
   background: var(--surface2, #F8FAFC);
   color: var(--ink, #0F172A);
 }
+.hist-export-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.hist-export-btn:disabled:hover { background: var(--surface, #fff); color: var(--ink2, #334155); }
 
 /* ── Table ── */
 .hist-table-container {
@@ -6345,6 +6347,8 @@
 .hist-page-btn-active:hover {
   background: var(--p, #0F172A);
 }
+.hist-page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.hist-page-btn:disabled:hover { background: var(--surface, #fff); }
 
 /* ── Footer Banner ── */
 .hist-footer-banner {
