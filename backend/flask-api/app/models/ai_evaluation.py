@@ -1,3 +1,5 @@
+from datetime import timezone
+
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
@@ -24,6 +26,7 @@ class AiEvaluation(db.Model):
             "final_score": float(self.final_score) if self.final_score is not None else None,
             "feedback_summary": self.feedback_summary,
             "execution_time_seconds": float(self.execution_time_seconds) if self.execution_time_seconds is not None else None,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            # Naive pero en UTC — marcarla explicita para que el navegador la convierta bien.
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
         }
 

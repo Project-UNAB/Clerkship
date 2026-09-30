@@ -1,4 +1,5 @@
 import uuid
+from datetime import timezone
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
@@ -80,7 +81,7 @@ def obtener_retroalimentacion(consultation_id):
             "Se recomienda profundizar en los diagnósticos diferenciales antes de solicitar paraclínicos."
         ),
         "execution_time_seconds": 12.5,
-        "created_at": consultation.finished_at.isoformat() if consultation.finished_at else None,
+        "created_at": consultation.finished_at.replace(tzinfo=timezone.utc).isoformat() if consultation.finished_at else None,
     }
 
     # Intentar enriquecer con rúbrica detallada almacenada en MongoDB

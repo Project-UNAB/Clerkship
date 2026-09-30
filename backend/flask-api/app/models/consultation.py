@@ -1,3 +1,5 @@
+from datetime import timezone
+
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
@@ -24,6 +26,12 @@ class Consultation(db.Model):
     course = db.relationship("Course", backref=db.backref("consultations", lazy=True))
 
     def to_dict(self):
+        # Columnas naive pero siempre en UTC (server_default=func.now()) —
+        # sin marcar tzinfo, isoformat() no lleva "+00:00" y el navegador
+        # interpreta la hora como si ya fuera local (bug: una consulta hecha
+        # a las 9pm en Colombia aparecía como "2:00 a.m." — 5 horas de más).
+        started = self.started_at.replace(tzinfo=timezone.utc).isoformat() if self.started_at else None
+        finished = self.finished_at.replace(tzinfo=timezone.utc).isoformat() if self.finished_at else None
         return {
             "id": str(self.id),
             "student_id": str(self.student_id),
@@ -33,8 +41,8 @@ class Consultation(db.Model):
             "difficulty": self.difficulty,
             "subtema": self.subtema,
             "status": self.status,
-            "started_at": self.started_at.isoformat() if self.started_at else None,
-            "finished_at": self.finished_at.isoformat() if self.finished_at else None,
+            "started_at": started,
+            "finished_at": finished,
             "score": float(self.score) if self.score is not None else None,
         }
 

@@ -1,3 +1,5 @@
+from datetime import timezone
+
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
@@ -19,5 +21,6 @@ class CommunityComment(db.Model):
             "post_id": str(self.post_id),
             "author_id": str(self.author_id),
             "content": self.content,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            # Naive pero en UTC — marcarla explicita para que el navegador la convierta bien.
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
         }
