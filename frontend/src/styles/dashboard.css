@@ -2553,28 +2553,242 @@
 .sim-btn-submit:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
 .sim-btn-submit:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
 
-/* ── Carga inicial / error al crear la consulta (Agente 1) ── */
-.sim-loading-root { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); }
-.sim-loading-box {
-  display: flex; flex-direction: column; align-items: center; gap: 14px;
-  text-align: center; max-width: 380px; color: var(--ink2); font-size: 0.92rem;
+/* ── Carga inicial animada de la consulta médica (Layout abierto y fluido) ── */
+.sim-loading-root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 40px 24px;
 }
-/* ── Ficha previa (identidad instantanea, sin IA) durante la carga ── */
-.sim-ficha-previa-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0 0 4px; }
-.sim-ficha-previa-list {
-  list-style: none; margin: 0; padding: 0;
-  display: flex; flex-direction: column; gap: 6px;
-  text-align: left; width: 100%;
+
+.sim-loader-wrap {
+  width: 100%;
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
-.sim-ficha-previa-list li {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 0.85rem; color: var(--ink2);
+
+.sim-loader-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
 }
-.sim-ficha-previa-list li svg { color: #10B981; flex-shrink: 0; }
-.sim-ficha-previa-footer {
-  display: flex; align-items: center; gap: 8px;
-  margin-top: 10px; font-size: 0.8rem; color: var(--ink3);
+
+.sim-loader-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.015em;
 }
+
+.sim-loader-subtitle {
+  font-size: 0.9rem;
+  color: var(--ink3);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Tarjeta elegante de admisión clínica ("Historia Clínica") ── */
+.sim-patient-admission-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(12px);
+}
+
+.sim-pac-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.sim-pac-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--p);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sim-pac-name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sim-pac-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sim-pac-name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.sim-pac-demographics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--ink2);
+  line-height: 1.45;
+}
+
+.sim-pac-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink3);
+}
+
+.sim-pac-sep {
+  color: var(--border2);
+  font-weight: 400;
+}
+
+.sim-pac-blood-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+/* ── Lista de pasos de progreso ── */
+.sim-loader-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-loader-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  transition: opacity 0.4s ease, background 0.4s ease;
+}
+
+.sim-loader-step-active {
+  background: rgba(0, 179, 248, 0.06);
+}
+
+.sim-loader-step-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sim-loader-step-icon-done {
+  background: #10B981;
+  color: #FFFFFF;
+  border: none;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+}
+
+.sim-loader-step-icon-active {
+  background: rgba(0, 179, 248, 0.08);
+  color: var(--p);
+  border: 1.5px solid var(--p);
+}
+
+.sim-loader-step-icon-pending {
+  background: transparent;
+  color: var(--ink3);
+  border: 1.5px solid var(--border2);
+  opacity: 0.45;
+}
+
+.sim-step-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.sim-loader-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.sim-loader-step-label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink2);
+  line-height: 1.35;
+  transition: color 0.3s ease;
+}
+
+.sim-loader-step-active .sim-loader-step-label {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.sim-loader-step-done .sim-loader-step-label {
+  color: var(--ink2);
+}
+
+.sim-loader-step-pending .sim-loader-step-label {
+  color: var(--ink3);
+  opacity: 0.65;
+}
+
+/* ── Barra de progreso sutil de un solo color con avance continuo ── */
+.sim-loader-progress-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border2);
+  overflow: hidden;
+  margin-top: 4px;
+  width: 100%;
+}
+
+.sim-loader-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--p); /* Un solo color sólido y suave */
+  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 .sim-error-box { color: #EF4444; }
 .sim-error-text { color: #EF4444; }
 .sim-spin { animation: sim-spin-rotate 0.9s linear infinite; color: var(--p); }
@@ -5706,6 +5920,22 @@
   font-weight: 800;
   color: var(--ink);
   line-height: 1.3;
+}
+
+/* ── Menú de opciones (renombrar/eliminar) en las tarjetas de Casos en progreso ── */
+.casos-card-menu-wrap { position: relative; }
+.casos-card-menu-btn {
+  border: none; background: var(--surface2, #F1F5F9); color: var(--ink3);
+  width: 26px; height: 26px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.casos-card-menu-btn:hover { background: var(--border, #E2E8F0); color: var(--ink); }
+.casos-card-menu-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.casos-card-rename-input {
+  font-size: 0.95rem; font-weight: 800; color: var(--ink);
+  font-family: var(--font); border: 1.5px solid var(--p, #0369A1);
+  border-radius: 8px; padding: 4px 8px; width: 100%;
 }
 
 .casos-mod-card-subtema {

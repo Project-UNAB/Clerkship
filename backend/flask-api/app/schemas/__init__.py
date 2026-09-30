@@ -62,6 +62,7 @@ from app.schemas.consultas import (
     FinishConsultationResponse,
     SendMessageRequest,
     SendMessageResponse,
+    UpdateConsultationRequest,
 )
 from app.schemas.historial import (
     AiEvaluationSummary,
@@ -132,6 +133,7 @@ __all__ = [
     "LikeResponse",
     # Consultas
     "CreateConsultationRequest",
+    "UpdateConsultationRequest",
     "ConsultationResponse",
     "ChatMessage",
     "SendMessageRequest",

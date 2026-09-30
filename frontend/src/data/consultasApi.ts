@@ -184,6 +184,7 @@ export interface IdentidadPaciente {
   telefono: string;
   tipo_sangre: string;
   peso_kg: number;
+  ocupacion?: string;
 }
 
 export function getFichaPrevia(): Promise<IdentidadPaciente> {
@@ -237,6 +238,17 @@ export function createConsultation(payload: {
 
 export function getConsultation(id: string): Promise<ConsultationDetail> {
   return apiFetch(`/api/consultas/${id}`);
+}
+
+/** Renombra una consulta propia (cualquier estado). */
+export function renameConsultation(id: string, title: string): Promise<Consultation> {
+  return apiFetch(`/api/consultas/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) });
+}
+
+/** Solo se puede eliminar una consulta IN_PROGRESS — una vez completada
+ *  queda en el historial académico y el backend rechaza el borrado. */
+export function deleteConsultation(id: string): Promise<{ message: string }> {
+  return apiFetch(`/api/consultas/${id}`, { method: 'DELETE' });
 }
 
 export interface SendMessageResult {

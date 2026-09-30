@@ -31,6 +31,17 @@ NOMBRES_M = [
 TIPOS_SANGRE = ["O+", "A+", "B+", "O-", "AB+", "A-", "B-", "AB-"]
 _PESOS_TIPO_SANGRE = [38, 34, 9, 7, 3, 6, 2, 1]  # distribucion real aproximada, no uniforme
 
+OCUPACIONES_F = [
+    "Docente universitaria", "Ingeniera de sistemas", "Contadora pública", "Comerciante independiente",
+    "Abogada", "Enfermera", "Administradora de empresas", "Diseñadora gráfica",
+    "Arquitecta", "Secretaria ejecutiva", "Auxiliar contable", "Bióloga",
+]
+OCUPACIONES_M = [
+    "Docente universitario", "Ingeniero civil", "Contador público", "Comerciante independiente",
+    "Abogado", "Enfermero", "Administrador de empresas", "Diseñador gráfico",
+    "Arquitecto", "Conductor", "Auxiliar logístico", "Electricista",
+]
+
 
 def peso_por_defecto(edad: int, sexo: str) -> float:
     """Formula compartida para un peso corporal plausible cuando falta o es
@@ -46,10 +57,12 @@ def generar_identidad() -> dict:
     documento = f"CC {random.randint(10_000_000, 1_199_999_999)}"
     telefono = f"3{random.randint(0, 2)}{random.randint(0, 9)} {random.randint(100, 999)} {random.randint(1000, 9999)}"
     tipo_sangre = random.choices(TIPOS_SANGRE, weights=_PESOS_TIPO_SANGRE, k=1)[0]
+    ocupacion = random.choice(OCUPACIONES_F if sexo == "F" else OCUPACIONES_M)
     return {
         "nombre": nombre,
         "edad": edad,
         "sexo": sexo,
+        "ocupacion": ocupacion,
         "documento": documento,
         "telefono": telefono,
         "tipo_sangre": tipo_sangre,

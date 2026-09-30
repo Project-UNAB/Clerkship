@@ -92,7 +92,7 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
                 "nombre": identidad_forzada["nombre"], "edad": identidad_forzada["edad"],
                 "sexo": identidad_forzada["sexo"], "peso_kg": identidad_forzada.get("peso_kg") or caso["datos_paciente"]["peso_kg"],
             })
-            for campo in ("documento", "telefono", "tipo_sangre"):
+            for campo in ("documento", "telefono", "tipo_sangre", "ocupacion"):
                 if identidad_forzada.get(campo):
                     caso["datos_paciente"][campo] = identidad_forzada[campo]
         return _finalizar_caso(
@@ -129,7 +129,7 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
     # Documento/telefono/tipo de sangre no los escribe el modelo (no afectan
     # la narrativa clinica) -- se pegan tal cual de la identidad pre-generada.
     if identidad_forzada:
-        for campo in ("documento", "telefono", "tipo_sangre"):
+        for campo in ("documento", "telefono", "tipo_sangre", "ocupacion"):
             if identidad_forzada.get(campo):
                 caso["datos_paciente"][campo] = identidad_forzada[campo]
 

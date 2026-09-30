@@ -33,6 +33,7 @@ from app.schemas import (
     FinishConsultationResponse,
     SendMessageRequest,
     SendMessageResponse,
+    UpdateConsultationRequest,
     validate_body,
 )
 from app.services.simulador import agentes
@@ -289,6 +290,55 @@ def obtener_consulta(consultation_id):
         res_data["evaluation"] = doc.get("ai_evaluation")
 
     return jsonify(res_data), 200
+
+
+@consultas_bp.route("/<string:consultation_id>", methods=["PATCH"])
+@role_required("STUDENT")
+@validate_body(UpdateConsultationRequest)
+def renombrar_consulta(consultation_id, validated_body: UpdateConsultationRequest):
+    """Renombrar una consulta propia (cualquier estado)."""
+    current_user = get_current_user()
+    consultation, error = _consulta_o_404(consultation_id)
+    if error:
+        return error
+    if consultation.student_id != current_user.id:
+        return jsonify({"error": "Forbidden", "message": "No tienes acceso a esta consulta", "status_code": 403}), 403
+
+    nuevo_titulo = validated_body.title.strip()
+    if not nuevo_titulo:
+        return jsonify({"error": "Bad Request", "message": "El título no puede quedar vacío", "status_code": 400}), 400
+
+    consultation.title = nuevo_titulo
+    db.session.commit()
+    return jsonify(_consultation_dict(consultation)), 200
+
+
+@consultas_bp.route("/<string:consultation_id>", methods=["DELETE"])
+@role_required("STUDENT")
+def eliminar_consulta(consultation_id):
+    """Eliminar una consulta propia — solo si está IN_PROGRESS: una vez
+    completada es una nota real del historial académico, no se borra."""
+    current_user = get_current_user()
+    consultation, error = _consulta_o_404(consultation_id)
+    if error:
+        return error
+    if consultation.student_id != current_user.id:
+        return jsonify({"error": "Forbidden", "message": "No tienes acceso a esta consulta", "status_code": 403}), 403
+    if consultation.status != "IN_PROGRESS":
+        return jsonify({
+            "error": "Bad Request",
+            "message": "Solo se pueden eliminar consultas en progreso — una vez completada queda en tu historial académico.",
+            "status_code": 400,
+        }), 400
+
+    try:
+        get_mongo_db().consultations.delete_one({"consultation_id": str(consultation.id)})
+    except Exception:  # noqa: BLE001
+        pass
+    # AiEvaluation (si la hubiera) cae en cascada por FK ON DELETE CASCADE.
+    db.session.delete(consultation)
+    db.session.commit()
+    return jsonify({"message": "Consulta eliminada"}), 200
 
 
 @consultas_bp.route("/<string:consultation_id>/mensajes", methods=["POST"])

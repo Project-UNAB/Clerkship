@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import {
   Plus, ArrowUpDown, FileText, FileSpreadsheet,
   Presentation, Image as ImageIcon, FileCode, File,
   MoreVertical, Pencil, Trash2, ArrowLeft, FolderPlus, UploadCloud, Loader2, Download, Eye,
   LayoutGrid, List, Search, X, Folder, HardDrive, Check,
-  ChevronRight
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import WelcomeOverlay from '../../components/shared/WelcomeOverlay';
@@ -212,7 +210,6 @@ function getPeekDocsForFolder(docsInFolder: DocumentSummary[], fileCount: number
    Página Dashboard (Estilo Google Drive / Cloud 100% Responsivo)
    ════════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
-  const navigate = useNavigate();
   const [showWelcome, setShowWelcome] = useState(() => {
     return sessionStorage.getItem('clerkship_show_welcome') === 'true';
   });
@@ -294,9 +291,6 @@ export default function DashboardPage() {
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuFor(null);
-      if (widgetPopoverRef.current && !widgetPopoverRef.current.contains(e.target as Node)) {
-        setActiveWidgetPopover(null);
-      }
     }
     if (menuFor) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);

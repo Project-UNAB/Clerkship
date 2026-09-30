@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, CheckCircle, Loader2, Stethoscope, Clock } from 'lucide-react';
+import { Play, CheckCircle, Loader2, Stethoscope, Clock, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import {
-  listConsultations, GASTRO_SUBTEMAS,
+  listConsultations, renameConsultation, deleteConsultation, GASTRO_SUBTEMAS,
   type Consultation, type Difficulty,
 } from '../../data/consultasApi';
 import { mainAuthErrorMessage } from '../../data/mainAuth';
@@ -17,9 +17,29 @@ const DIFFICULTIES: { id: DifficultyChoice; label: string }[] = [
   { id: 'HARD', label: 'Avanzado' },
 ];
 
+/** Solo para mostrar (distinto del selector de arriba, que incluye "Automática"). */
+const DIFFICULTY_LABEL: Record<Difficulty, string> = { EASY: 'Básico', MEDIUM: 'Intermedio', HARD: 'Avanzado' };
+
 function fmtDate(iso: string | null) {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function fmtHora(iso: string | null) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+}
+
+/** "hace 5 min" / "hace 2 h" — para que se sienta el tiempo transcurrido sin tener que hacer la cuenta. */
+function fmtHaceTiempo(iso: string | null): string {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return 'recién';
+  if (min < 60) return `hace ${min} min`;
+  const horas = Math.floor(min / 60);
+  if (horas < 24) return `hace ${horas} h`;
+  return `hace ${Math.floor(horas / 24)} d`;
 }
 
 /** El backend compara subtemas sin distinguir tildes; el link "Reforzar" del
@@ -48,6 +68,12 @@ export default function CasosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     let cancelled = false;
     listConsultations()
@@ -57,8 +83,50 @@ export default function CasosPage() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuFor(null);
+    }
+    if (menuFor) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuFor]);
+
   const inProgress = consultations.filter(c => c.status === 'IN_PROGRESS');
   const completed = consultations.filter(c => c.status === 'COMPLETED');
+
+  function startRename(c: Consultation) {
+    setRenamingId(c.id);
+    setRenameValue(c.title);
+    setMenuFor(null);
+  }
+
+  async function confirmRename(c: Consultation) {
+    const nuevo = renameValue.trim();
+    setRenamingId(null);
+    if (!nuevo || nuevo === c.title) return;
+    setBusyId(c.id);
+    try {
+      const updated = await renameConsultation(c.id, nuevo);
+      setConsultations(prev => prev.map(x => (x.id === c.id ? { ...x, title: updated.title } : x)));
+    } catch (err) {
+      setError(mainAuthErrorMessage(err));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDelete(c: Consultation) {
+    setMenuFor(null);
+    setBusyId(c.id);
+    try {
+      await deleteConsultation(c.id);
+      setConsultations(prev => prev.filter(x => x.id !== c.id));
+    } catch (err) {
+      setError(mainAuthErrorMessage(err));
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   function startNew() {
     const qs = new URLSearchParams();
@@ -123,9 +191,44 @@ export default function CasosPage() {
                     <div className="casos-mod-card-status" data-status="en_progreso" style={{ background: '#FFF7E6', color: '#F59E0B' }}>
                       <Play size={12} /> En progreso
                     </div>
+                    <div className="casos-card-menu-wrap" ref={menuFor === c.id ? menuRef : undefined}>
+                      <button
+                        type="button"
+                        className="casos-card-menu-btn"
+                        onClick={() => setMenuFor(menuFor === c.id ? null : c.id)}
+                        aria-label="Opciones del caso"
+                        disabled={busyId === c.id}
+                      >
+                        {busyId === c.id ? <Loader2 size={15} className="dfm-spin" /> : <MoreVertical size={15} />}
+                      </button>
+                      {menuFor === c.id && (
+                        <div className="bib2-file-menu">
+                          <button type="button" onClick={() => startRename(c)}><Pencil size={13} /> Renombrar</button>
+                          <button type="button" className="danger" onClick={() => handleDelete(c)}><Trash2 size={13} /> Eliminar</button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <h3 className="casos-mod-card-title">{c.title}</h3>
-                  <p className="casos-mod-card-scenario"><Clock size={12} /> Iniciado {fmtDate(c.started_at)}</p>
+
+                  {renamingId === c.id ? (
+                    <input
+                      className="casos-card-rename-input"
+                      autoFocus
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      onBlur={() => confirmRename(c)}
+                      onKeyDown={e => { if (e.key === 'Enter') confirmRename(c); if (e.key === 'Escape') setRenamingId(null); }}
+                    />
+                  ) : (
+                    <h3 className="casos-mod-card-title">{c.title}</h3>
+                  )}
+
+                  <div className="casos-mod-card-tags">
+                    <span className="casos-mod-card-tag">{DIFFICULTY_LABEL[c.difficulty]}</span>
+                  </div>
+                  <p className="casos-mod-card-scenario">
+                    <Clock size={12} /> Iniciado {fmtDate(c.started_at)} · {fmtHora(c.started_at)} ({fmtHaceTiempo(c.started_at)})
+                  </p>
                   <button className="casos-mod-start-btn" onClick={() => navigate(`/simulacion/${c.id}`)}>
                     <Play size={14} /> Continuar
                   </button>

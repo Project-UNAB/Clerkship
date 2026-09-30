@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CheckCircle, Send, ChevronRight, Info, ArrowLeft, Stethoscope,
-  Loader2, AlertTriangle, TrendingUp, Award, User, Eye, ClipboardList,
+  Check, CheckCircle, Send, ChevronRight, Info, ArrowLeft, Stethoscope,
+  Loader2, AlertTriangle, TrendingUp, Award, User, Eye, ClipboardList, FileText,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import logoUrl from '../../assets/Logo Clerkship.svg';
@@ -422,6 +422,193 @@ function ResultView({ evaluation, isMock, onHistory, onNew }: {
   );
 }
 
+
+/* ── Pasos progresivos de la simulación clínica ── */
+interface GenerationStep {
+  id: string;
+  label: string;
+}
+
+const GENERATION_STEPS: GenerationStep[] = [
+  { id: 'connect', label: 'Iniciando conexión con el sistema médico...' },
+  { id: 'patient', label: 'Registrando ficha de admisión del paciente...' },
+  { id: 'clinical', label: 'Generando cuadro clínico y antecedentes médicos...' },
+  { id: 'exploration', label: 'Configurando examen físico y catálogo de paraclínicos...' },
+  { id: 'ready', label: 'Apertura de la sala de consulta médica...' },
+];
+
+/* ── Pantalla animada de carga con progreso continuo y ficha previa ── */
+function CaseGenerationLoader({
+  fichaPrevia,
+  loadingStep,
+  retryAttempt,
+}: {
+  fichaPrevia: IdentidadPaciente | null;
+  loadingStep: number;
+  retryAttempt: number;
+}) {
+  // Barra de progreso continua de un solo color que se mueve lento y nunca se clava
+  const [progress, setProgress] = useState(12);
+
+  useEffect(() => {
+    if (loadingStep >= GENERATION_STEPS.length) {
+      setProgress(100);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev < 32) return prev + 0.8;
+        if (prev < 62) return prev + 0.5;
+        if (prev < 84) return prev + 0.3;
+        if (prev < 94) return prev + 0.1;
+        return prev;
+      });
+    }, 180);
+
+    return () => clearInterval(interval);
+  }, [loadingStep]);
+
+  return (
+    <div className="sim-root sim-loading-root">
+      <div className="sim-loader-wrap">
+        <div className="sim-loader-header">
+          <h2 className="sim-loader-title">Preparando caso clínico</h2>
+          <p className="sim-loader-subtitle">
+            Estructurando el paciente virtual y el entorno de consulta médica.
+          </p>
+        </div>
+
+        {/* Tarjeta dinámica de admisión clínica ("Historia Clínica") */}
+        <AnimatePresence mode="wait">
+          {fichaPrevia ? (
+            <motion.div
+              key="patient-card"
+              className="sim-patient-admission-card"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <motion.div
+                className="sim-pac-top"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.15 }}
+              >
+                <span className="sim-pac-badge">
+                  <FileText size={14} /> Historia Clínica · Admisión
+                </span>
+              </motion.div>
+
+              <motion.div
+                className="sim-pac-name-block"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.85, delay: 0.3 }}
+              >
+                <span className="sim-pac-label">Paciente</span>
+                <h3 className="sim-pac-name">{fichaPrevia.nombre}</h3>
+              </motion.div>
+
+              <motion.div
+                className="sim-pac-demographics"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.85, delay: 0.5 }}
+              >
+                <span>{fichaPrevia.edad} años</span>
+                <span className="sim-pac-sep">·</span>
+                <span>{fichaPrevia.sexo === 'F' ? 'Femenino' : 'Masculino'}</span>
+                <span className="sim-pac-sep">·</span>
+                <span style={{ fontWeight: 600 }}>{fichaPrevia.ocupacion || (fichaPrevia.sexo === 'F' ? 'Docente universitaria' : 'Docente universitario')}</span>
+                <span className="sim-pac-sep">·</span>
+                <span>{fichaPrevia.peso_kg} kg</span>
+              </motion.div>
+
+              <motion.div
+                className="sim-pac-meta"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.85, delay: 0.7 }}
+              >
+                <span>{fichaPrevia.documento}</span>
+                <span className="sim-pac-sep">·</span>
+                <span>{fichaPrevia.telefono}</span>
+                <span className="sim-pac-sep">·</span>
+                <span className="sim-pac-blood-tag">Tipo {fichaPrevia.tipo_sangre}</span>
+              </motion.div>
+            </motion.div>
+          ) : (
+            <div
+              className="sim-patient-admission-card"
+              style={{ opacity: 0.6, borderStyle: 'dashed' }}
+            >
+              <div className="sim-pac-top">
+                <span className="sim-pac-badge">
+                  <Loader2 size={13} className="sim-spin" /> Registrando paciente...
+                </span>
+              </div>
+              <div className="sim-pac-name-block">
+                <span className="sim-pac-label">Paciente</span>
+                <h3 className="sim-pac-name" style={{ color: 'var(--ink3)' }}>Generando perfil demográfico...</h3>
+              </div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Lista animada de pasos progresivos con iconos reales de lucide-react */}
+        <div className="sim-loader-steps">
+          {GENERATION_STEPS.map((step, idx) => {
+            const isDone = loadingStep > idx;
+            const isActive = loadingStep === idx;
+            const isPending = loadingStep < idx;
+
+            return (
+              <div
+                key={step.id}
+                className={`sim-loader-step${isActive ? ' sim-loader-step-active' : ''}${isDone ? ' sim-loader-step-done' : ''}${isPending ? ' sim-loader-step-pending' : ''}`}
+              >
+                <div className={`sim-loader-step-icon${isDone ? ' sim-loader-step-icon-done' : ''}${isActive ? ' sim-loader-step-icon-active' : ''}${isPending ? ' sim-loader-step-icon-pending' : ''}`}>
+                  {isDone ? (
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.35, ease: 'easeOut' }}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Check size={12} strokeWidth={3} />
+                    </motion.div>
+                  ) : isActive ? (
+                    <Loader2 size={13} strokeWidth={2.5} className="sim-spin" />
+                  ) : (
+                    <span className="sim-step-dot" />
+                  )}
+                </div>
+
+                <div className="sim-loader-step-text">
+                  <span className="sim-loader-step-label">{step.label}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Barra de progreso sutil de un solo color con avance continuo */}
+        <div className="sim-loader-progress-track">
+          <div className="sim-loader-progress-fill" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+
+      {retryAttempt > 0 && (
+        <div className="sim-toast" role="status">
+          <Loader2 size={14} className="sim-spin" />
+          <span>Servicio ocupado, reintentando… ({retryAttempt})</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════
    Página
    /simulacion            → crea un caso nuevo (query ?dificultad=&subtema=)
@@ -440,6 +627,7 @@ export default function SimulacionPage() {
   const [estadoEmocional, setEstadoEmocional] = useState<string | null>(null);
   const [consultaTerminada, setConsultaTerminada] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingStep, setLoadingStep] = useState<number>(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -447,7 +635,7 @@ export default function SimulacionPage() {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isMock, setIsMock] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0); // >0 = esperando a que Gemini responda
-  // Identidad administrativa (nombre/edad/documento/telefono/tipo de sangre/peso)
+  // Identidad administrativa (nombre/edad/documento/telefono/tipo de sangre/peso/ocupacion)
   // generada al instante, sin IA — se muestra mientras el Agente Generador
   // arma el resto del caso real (eso sí tarda, llama a Gemini), y viaja como
   // restricción en createConsultation para que sea la misma persona.
@@ -456,10 +644,16 @@ export default function SimulacionPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let timer0: ReturnType<typeof setTimeout> | undefined;
+    let timer1: ReturnType<typeof setTimeout> | undefined;
+    let timer2: ReturnType<typeof setTimeout> | undefined;
+    let timer3: ReturnType<typeof setTimeout> | undefined;
+
     (async () => {
       try {
         let detail;
         if (routeId) {
+          setLoadingStep(3);
           detail = await getConsultation(routeId);
           if (detail.status === 'COMPLETED') { navigate('/historial', { replace: true }); return; }
         } else {
@@ -468,15 +662,46 @@ export default function SimulacionPage() {
           // según el desempeño histórico del estudiante en el subtema.
           const difficulty = (params.get('dificultad') as Difficulty) || undefined;
           const subtema = params.get('subtema') || undefined;
-          const [courseId, identidad] = await Promise.all([ensureCourseId(), getFichaPrevia()]);
+
+          // Paso 0: Iniciando conexión...
+          setLoadingStep(0);
+
+          const coursePromise = ensureCourseId();
+          const fichaPromise = getFichaPrevia();
+
+          // A los 700ms pasamos a registrar ficha de admisión
+          timer0 = setTimeout(() => {
+            if (!cancelled) setLoadingStep(prev => Math.max(prev, 1));
+          }, 700);
+
+          const [courseId, identidad] = await Promise.all([coursePromise, fichaPromise]);
           if (cancelled) return;
           setFichaPrevia(identidad);
+
+          // A los 1.6s activamos paso 2 (Generando cuadro clínico y antecedentes)
+          timer1 = setTimeout(() => {
+            if (!cancelled) setLoadingStep(prev => Math.max(prev, 2));
+          }, 1600);
+
+          // Tiempos más lentos, pausados y relajados mientras Gemini genera el caso
+          timer2 = setTimeout(() => {
+            if (!cancelled) setLoadingStep(prev => Math.max(prev, 3));
+          }, 5000);
+
+          timer3 = setTimeout(() => {
+            if (!cancelled) setLoadingStep(prev => Math.max(prev, 4));
+          }, 9500);
+
           detail = await retryUntilGemini(
             () => createConsultation({ course_id: courseId, difficulty, condition: subtema, identidad_paciente: identidad }),
             setRetryAttempt, () => cancelled,
           );
         }
         if (cancelled) return;
+
+        // Marcamos todos los pasos como completados
+        setLoadingStep(GENERATION_STEPS.length);
+
         setConsultationId(detail.id);
         setConsultationTitle(detail.title);
         const cd = detail.case_details as CaseDetails;
@@ -489,13 +714,29 @@ export default function SimulacionPage() {
           ts: m.timestamp ? new Date(m.timestamp).getTime() : Date.now(),
         })));
         if (!routeId) navigate(`/simulacion/${detail.id}`, { replace: true });
+
+        // Pausa suave de 600ms para apreciar que llegó al 100%
+        await new Promise(r => setTimeout(r, 600));
       } catch (err) {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : 'No se pudo iniciar la consulta.');
       } finally {
-        if (!cancelled) { setLoading(false); setRetryAttempt(0); }
+        if (!cancelled) {
+          clearTimeout(timer0);
+          clearTimeout(timer1);
+          clearTimeout(timer2);
+          clearTimeout(timer3);
+          setLoading(false);
+          setRetryAttempt(0);
+        }
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      clearTimeout(timer0);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeId]);
 
@@ -607,34 +848,11 @@ export default function SimulacionPage() {
 
   if (loading) {
     return (
-      <div className="sim-root sim-loading-root">
-        <div className="sim-loading-box">
-          {fichaPrevia ? (
-            <>
-              <p className="sim-ficha-previa-title">Armando la ficha de {fichaPrevia.nombre}...</p>
-              <ul className="sim-ficha-previa-list">
-                <li><CheckCircle size={13} /> Edad: {fichaPrevia.edad} años</li>
-                <li><CheckCircle size={13} /> Documento: {fichaPrevia.documento}</li>
-                <li><CheckCircle size={13} /> Teléfono: {fichaPrevia.telefono}</li>
-                <li><CheckCircle size={13} /> Tipo de sangre: {fichaPrevia.tipo_sangre}</li>
-                <li><CheckCircle size={13} /> Peso: {fichaPrevia.peso_kg} kg</li>
-              </ul>
-              <p className="sim-ficha-previa-footer"><Loader2 size={14} className="sim-spin" /> Preparando la consulta clínica...</p>
-            </>
-          ) : (
-            <>
-              <Loader2 size={28} className="sim-spin" />
-              <p>El agente generador está preparando tu caso clínico...</p>
-            </>
-          )}
-        </div>
-        {retryAttempt > 0 && (
-          <div className="sim-toast" role="status">
-            <Loader2 size={14} className="sim-spin" />
-            <span>Gemini está ocupado, reintentando… ({retryAttempt})</span>
-          </div>
-        )}
-      </div>
+      <CaseGenerationLoader
+        fichaPrevia={fichaPrevia}
+        loadingStep={loadingStep}
+        retryAttempt={retryAttempt}
+      />
     );
   }
 

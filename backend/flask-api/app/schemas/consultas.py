@@ -20,6 +20,7 @@ class IdentidadPacienteInput(BaseSchema):
     documento: Optional[str] = None
     telefono: Optional[str] = None
     tipo_sangre: Optional[str] = None
+    ocupacion: Optional[str] = None
 
 
 class CreateConsultationRequest(BaseSchema):
@@ -41,6 +42,12 @@ class CreateConsultationRequest(BaseSchema):
         None,
         description="Identidad pre-generada por GET /api/consultas/ficha-previa, para que el caso se arme sobre esta misma persona.",
     )
+
+
+class UpdateConsultationRequest(BaseSchema):
+    """Payload para renombrar una consulta propia."""
+
+    title: str = Field(..., min_length=1, max_length=150)
 
 
 class ConsultationResponse(BaseSchema):
