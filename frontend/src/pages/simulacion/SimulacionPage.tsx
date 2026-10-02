@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, CheckCircle, Send, ChevronRight, Info, ArrowLeft, Stethoscope,
   Loader2, AlertTriangle, TrendingUp, Award, User, Eye, ClipboardList, FileText,
-  X, FlaskConical,
+  X, FlaskConical, Sparkles, Shuffle, CornerDownLeft,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import logoUrl from '../../assets/Logo Clerkship.svg';
@@ -44,6 +44,34 @@ function fmtTime(ts: number) {
 
 function splitLines(text: string): string[] {
   return text.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+}
+
+/* ── Banco de preguntas de anamnesis sugeridas (semiología general, no
+   atadas a ningún caso ni diagnóstico — no filtran nada del caso oculto) ── */
+const BANCO_PREGUNTAS_SUGERIDAS = [
+  '¿Desde cuándo tiene las molestias?',
+  '¿Cómo describiría el dolor (punzante, cólico, ardor, pesadez)?',
+  '¿El dolor se irradia hacia algún lado?',
+  '¿Qué lo alivia o qué lo empeora?',
+  '¿Ha tenido fiebre?',
+  '¿Ha tenido náuseas o vómito?',
+  '¿Cómo han sido sus deposiciones últimamente?',
+  '¿Toma algún medicamento actualmente?',
+  '¿Tiene alguna enfermedad o cirugía previa?',
+  '¿Ha perdido peso sin proponérselo?',
+  '¿Fuma o consume alcohol?',
+  '¿Alguien en su familia ha tenido algo parecido?',
+  '¿La molestia tiene relación con las comidas?',
+  '¿En qué parte del abdomen le duele exactamente?',
+];
+
+function elegirSugerencias(n: number): string[] {
+  const copia = [...BANCO_PREGUNTAS_SUGERIDAS];
+  for (let i = copia.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copia[i], copia[j]] = [copia[j], copia[i]];
+  }
+  return copia.slice(0, n);
 }
 
 function groupByGrupo(items: CatalogoItem[]): [string, CatalogoItem[]][] {
@@ -525,30 +553,81 @@ function HistoriaClinicaEHR({
 /* ── Entrevista (chat con el Agente 2, centrado en pantalla) ── */
 function Interview({
   messages, onSend, onFinish, sending, estadoEmocional, consultaTerminada, paciente,
-  onOpenModule, doneExamenCount = 0, doneParaclinicosCount = 0,
+  onOpenModule, doneExamenCount = 0, doneParaclinicosCount = 0, onBack,
 }: {
   messages: ChatMsg[]; onSend: (t: string) => void; onFinish: () => void; sending: boolean;
   estadoEmocional: string | null; consultaTerminada: boolean; paciente: DatosPaciente | null;
   onOpenModule?: (module: ClinicalModule) => void;
   doneExamenCount?: number;
   doneParaclinicosCount?: number;
+  onBack?: () => void;
 }) {
   const [input, setInput] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>(() => elegirSugerencias(4));
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const historyRef = useRef<string[]>([]);
+  const historyIdxRef = useRef(-1);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, sending]);
+
+  // Textarea que crece con el contenido (hasta un máximo), en vez de un input de una sola línea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [input]);
 
   const send = () => {
     const text = input.trim();
     if (!text || sending || consultaTerminada) return;
+    historyRef.current.unshift(text);
+    historyIdxRef.current = -1;
     setInput('');
     onSend(text);
+  };
+
+  const insertarSugerencia = (texto: string) => {
+    setInput(texto);
+    textareaRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+      return;
+    }
+    const caretAlInicio = textareaRef.current?.selectionStart === 0 && textareaRef.current?.selectionEnd === 0;
+    if (e.key === 'ArrowUp' && caretAlInicio && historyRef.current.length > 0) {
+      e.preventDefault();
+      const next = Math.min(historyIdxRef.current + 1, historyRef.current.length - 1);
+      historyIdxRef.current = next;
+      setInput(historyRef.current[next]);
+    } else if (e.key === 'ArrowDown' && historyIdxRef.current >= 0) {
+      e.preventDefault();
+      const next = historyIdxRef.current - 1;
+      historyIdxRef.current = next;
+      setInput(next >= 0 ? historyRef.current[next] : '');
+    }
   };
 
   return (
     <div className="sim-chat-col sim-chat-col-centered">
       <div className="sim-agent-header">
         <div className="sim-agent-info-group">
+          {onBack && (
+            <button
+              type="button"
+              className="sim-agent-back-btn"
+              onClick={onBack}
+              title="Volver a Casos clínicos"
+            >
+              <ArrowLeft size={14} />
+              <span>Casos</span>
+            </button>
+          )}
           <div className="sim-agent-logo-wrap">
             <img src={paciente?.avatar_url || logoUrl} alt="Paciente" />
           </div>
@@ -621,19 +700,58 @@ function Interview({
         </div>
       ) : (
         <div className="sim-input-area">
-          <div className="sim-input-row">
-            <input
-              className="sim-input-field"
-              placeholder="Hacé una pregunta al paciente..."
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && send()}
+          <div className="sim-suggestions-row">
+            <span className="sim-suggestions-label"><Sparkles size={12} /> Sugerencias</span>
+            {suggestions.map((s, i) => (
+              <button
+                key={i}
+                type="button"
+                className="sim-suggestion-chip"
+                onClick={() => insertarSugerencia(s)}
+                disabled={sending}
+              >
+                {s}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="sim-suggestions-refresh"
+              onClick={() => setSuggestions(elegirSugerencias(4))}
+              title="Ver otras sugerencias"
               disabled={sending}
-            />
-            <button className="sim-input-send" onClick={send} disabled={!input.trim() || sending}>
-              <Send size={15} />
+            >
+              <Shuffle size={13} />
             </button>
           </div>
+
+          <div className="sim-input-row">
+            <textarea
+              ref={textareaRef}
+              className="sim-input-field"
+              placeholder="Hacé una pregunta al paciente... (Enter para enviar, Shift+Enter para salto de línea)"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={sending}
+              rows={1}
+            />
+            {input && (
+              <button
+                type="button"
+                className="sim-input-clear"
+                onClick={() => { setInput(''); textareaRef.current?.focus(); }}
+                title="Borrar texto"
+              >
+                <X size={14} />
+              </button>
+            )}
+            <button className="sim-input-send" onClick={send} disabled={!input.trim() || sending}>
+              {sending ? <Loader2 size={15} className="sim-spin" /> : <Send size={15} />}
+            </button>
+          </div>
+          <p className="sim-input-tip">
+            <CornerDownLeft size={11} /> Enter envía · Shift+Enter salto de línea · ↑ repite tu última pregunta
+          </p>
         </div>
       )}
 
@@ -1020,7 +1138,6 @@ export default function SimulacionPage() {
 
   const [phase, setPhase] = useState<Phase>('interview');
   const [consultationId, setConsultationId] = useState<string | null>(null);
-  const [consultationTitle, setConsultationTitle] = useState<string>('');
   const [caseDetails, setCaseDetails] = useState<CaseDetails | null>(null);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [explored, setExplored] = useState<Record<string, ExploredEntry>>({});
@@ -1104,7 +1221,6 @@ export default function SimulacionPage() {
         setLoadingStep(GENERATION_STEPS.length);
 
         setConsultationId(detail.id);
-        setConsultationTitle(detail.title);
         const cd = detail.case_details as CaseDetails;
         const validCase = cd && typeof cd === 'object' && 'id_caso' in cd ? cd : null;
         setCaseDetails(validCase);
@@ -1285,20 +1401,6 @@ export default function SimulacionPage() {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
         >
-          <header className="sim-topbar">
-            <div className="sim-tb-left">
-              <img src={logoUrl} alt="Clerkship" className="sim-tb-logo" />
-              <button className="sim-tb-back" onClick={() => navigate('/casos')}>
-                <ArrowLeft size={14} /> Casos clínicos
-              </button>
-            </div>
-            <div className="sim-tb-center">
-              <span className="sim-tb-case-ico"><Stethoscope size={16} /></span>
-              <span className="sim-tb-case-title">{consultationTitle}</span>
-            </div>
-            <div className="sim-tb-right" />
-          </header>
-
           {retryAttempt > 0 && (
             <div className="sim-toast" role="status">
               <Loader2 size={14} className="sim-spin" />
@@ -1314,6 +1416,7 @@ export default function SimulacionPage() {
                 onOpenModule={setActiveClinicalModule}
                 doneExamenCount={Object.values(explored).filter(e => e.tipo === 'examen_fisico').length}
                 doneParaclinicosCount={Object.values(explored).filter(e => e.tipo === 'paraclinico').length}
+                onBack={() => navigate('/casos')}
               />
               {caseDetails && (
                 <HistoriaClinicaEHR
