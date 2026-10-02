@@ -2915,11 +2915,26 @@
 
 .ehr-patient-form-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
   border: none;
   margin: 0;
   width: 100%;
+}
+
+.ehr-cell-nombres { grid-column: span 4; }
+.ehr-cell-edad { grid-column: span 2; }
+.ehr-cell-doc { grid-column: span 3; }
+.ehr-cell-tel { grid-column: span 3; }
+.ehr-cell-sexo { grid-column: span 3; }
+.ehr-cell-sangre { grid-column: span 3; }
+.ehr-cell-ocupacion { grid-column: span 4; }
+.ehr-cell-peso { grid-column: span 2; }
+.ehr-cell-modalidad { grid-column: span 3; }
+.ehr-cell-fecha { grid-column: span 3; }
+
+.ehr-form-cell-wide {
+  grid-column: span 3;
 }
 
 .ehr-form-cell {
@@ -2929,7 +2944,8 @@
   padding: 8px 12px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  justify-content: center;
+  gap: 3px;
   min-width: 0;
   transition: all 0.18s ease;
 }
@@ -2940,63 +2956,63 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
-.ehr-form-cell-wide {
-  grid-column: span 2;
-}
-
 .ehr-cell-lbl {
   font-size: 0.62rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--ink3);
+  line-height: 1.2;
 }
 
 .ehr-cell-val {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.35;
 }
 
 .ehr-checkbox-row {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  gap: 10px;
   margin-top: 2px;
+  flex-wrap: wrap;
 }
 
 .ehr-checkbox-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 0.76rem;
   font-weight: 600;
-  color: var(--ink3);
+  color: var(--ink2);
+}
+
+.ehr-checkbox-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border2, #94A3B8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
 }
 
 .ehr-checkbox-item.checked {
   color: var(--ink);
-  font-weight: 800;
-}
-
-.ehr-checkbox-box {
-  width: 13px;
-  height: 13px;
-  border: 1.4px solid var(--ink);
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: var(--ink);
-  background: var(--surface);
+  font-weight: 700;
 }
 
 .ehr-checkbox-item.checked .ehr-checkbox-box {
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--p, #0284C7);
+  border-color: var(--p, #0284C7);
+  color: #FFFFFF;
 }
 
 /* ── Barra de Navegación del Formulario Clínico ── */
@@ -3512,6 +3528,9 @@
   padding: 12px 16px;
   box-shadow: none;
   transition: all 0.18s ease;
+  overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .sim-sheet-result-card:hover {
@@ -3522,10 +3541,11 @@
 
 .sim-src-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .sim-src-name {
@@ -3534,6 +3554,8 @@
   text-transform: none;
   letter-spacing: -0.01em;
   color: var(--ink);
+  min-width: 0;
+  word-break: break-word;
 }
 
 .sim-src-tecnica {
@@ -3541,9 +3563,15 @@
   font-weight: 600;
   color: var(--p, #0284C7);
   background: rgba(0, 179, 248, 0.08);
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+  display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .sim-src-meta {
@@ -3693,13 +3721,11 @@
 .sim-docs-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 14, 22, 0.78);
-  /* blur mas bajo: el costo de backdrop-filter crece fuerte con el radio;
-     4px ya se ve difuminado y es bastante mas barato de pintar que 7px
-     en una capa a pantalla completa que ademas queda detras de la
-     animacion de pasar hoja. */
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  /* Sin backdrop-filter: el blur a pantalla completa, detras de la
+     animacion de pasar hoja, era el principal responsable del lag — se
+     reemplaza por un overlay solido un poco mas oscuro para mantener el
+     contraste sin pedirle ese trabajo al navegador en cada frame. */
+  background: rgba(8, 11, 18, 0.88);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -3844,46 +3870,210 @@
   padding: 0;
   overflow: hidden;
 }
-.sim-doc-page-lab .sim-lab-sheet {
-  border: none;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.sim-doc-page-lab .sim-lab-sheet-body {
-  flex: 1;
-  overflow-y: auto;
-}
 
 .sim-doc-page-title {
   font-size: 0.82rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #111;
+  color: var(--ink);
   margin: 0 0 14px;
   padding-bottom: 8px;
-  border-bottom: 2px solid #1A1A1A;
+  border-bottom: 2px solid var(--ink);
 }
 
 .sim-doc-sub-title {
   font-size: 0.74rem;
   font-weight: 700;
-  color: #111;
+  color: var(--ink);
   margin: 16px 0 8px;
 }
 
+.sim-doc-text {
+  font-size: 0.81rem;
+  color: var(--ink2);
+  line-height: 1.6;
+  margin: 0 0 6px;
+}
+.sim-doc-text strong { color: var(--ink); }
+
+.sim-doc-notes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sim-doc-note-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.sim-doc-note-time {
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  padding: 1px 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.sim-doc-note-text {
+  font-size: 0.78rem;
+  color: var(--ink2);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* ── Grilla de identificación del paciente (Sección A), independiente de
+   la del panel en vivo — mismo "look" de formulario impreso con bordes
+   negros reales, sin importar como se vea el panel clínico en pantalla. ── */
 .sim-doc-id-grid {
-  border-left-color: #1A1A1A;
-  border-top-color: #1A1A1A;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-left: 1px solid var(--ink);
+  border-top: 1px solid var(--ink);
 }
-.sim-doc-id-grid .ehr-form-cell {
-  background: #FFFFFF;
-  border-right-color: #1A1A1A;
-  border-bottom-color: #1A1A1A;
+.sim-doc-id-cell {
+  background: var(--surface);
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
-.sim-doc-id-grid .ehr-cell-lbl { color: #5B6572; }
-.sim-doc-id-grid .ehr-cell-val { color: #111; }
+.sim-doc-id-cell-wide { grid-column: span 2; }
+.sim-doc-id-lbl {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+}
+.sim-doc-id-val {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Resultado de examen físico / paraclínico dentro del documento —
+   independiente de .sim-sheet-result-card (panel en vivo). ── */
+.sim-doc-result {
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  border-top: none;
+  padding: 10px 14px;
+}
+.sim-doc-page > .sim-doc-result:first-of-type { border-top: 1px solid var(--ink); }
+.sim-doc-result-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.sim-doc-result-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+.sim-doc-result-tecnica {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.sim-doc-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border);
+  font-size: 0.66rem;
+  color: var(--ink3);
+}
+.sim-doc-result-val {
+  font-size: 0.79rem;
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+
+/* ── Hoja de laboratorio por departamento dentro del documento —
+   independiente de .sim-lab-sheet (panel en vivo). ── */
+.sim-doc-labsheet {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.sim-doc-labsheet-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ink);
+  flex-shrink: 0;
+}
+.sim-doc-labsheet-logo { height: 30px; width: auto; flex-shrink: 0; }
+.sim-doc-labsheet-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sim-doc-labsheet-orden {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--ink);
+}
+.sim-doc-labsheet-orden-lbl {
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+}
+.sim-doc-labsheet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 2px 14px;
+}
+.sim-doc-labsheet-grid span { font-size: 0.68rem; color: var(--ink2); }
+.sim-doc-labsheet-grid strong { color: var(--ink); font-weight: 700; }
+.sim-doc-labsheet-title {
+  padding: 8px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--ink);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.sim-doc-labsheet-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
 
 /* Portada */
 .sim-doc-cover {

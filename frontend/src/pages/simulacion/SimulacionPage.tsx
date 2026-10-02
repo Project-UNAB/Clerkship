@@ -186,6 +186,64 @@ function LabDepartmentSheet({ grupo, items, paciente, folio }: {
   );
 }
 
+/* ── Versiones EXCLUSIVAS de la Carpeta de Documentos (flipbook), con sus
+   propias clases "sim-doc-*" — a propósito NO reutilizan sim-sheet-result-card
+   / sim-lab-sheet* (esas son del panel clínico en vivo y tienen su propio
+   diseño, que cambia aparte). Así ningún rediseño del panel vuelve a
+   chocar con el look de "documento impreso" de estas páginas, y viceversa. */
+function DocResultRow({ e, procesandoLabel }: { e: ExploredEntry; procesandoLabel: string }) {
+  return (
+    <div className="sim-doc-result">
+      <div className="sim-doc-result-head">
+        <span className="sim-doc-result-name">{e.etiqueta}</span>
+        {e.tecnica && <span className="sim-doc-result-tecnica">Técnica: {e.tecnica}</span>}
+      </div>
+      {!e.procesando && (e.fecha_hora_resultado || (e.muestra && e.muestra !== 'N/A')) && (
+        <div className="sim-doc-result-meta">
+          {e.muestra && e.muestra !== 'N/A' && <span>Muestra: {e.muestra}</span>}
+          {e.fecha_hora_resultado && <span>Fecha y hora de resultado: {e.fecha_hora_resultado}</span>}
+        </div>
+      )}
+      <p className="sim-doc-result-val">{e.procesando ? procesandoLabel : e.resultado}</p>
+    </div>
+  );
+}
+
+function DocLabSheet({ grupo, items, paciente, folio }: {
+  grupo: string;
+  items: ExploredEntry[];
+  paciente: DatosPaciente;
+  folio: string;
+}) {
+  return (
+    <div className="sim-doc-labsheet">
+      <div className="sim-doc-labsheet-header">
+        <img src={logoUrl} alt="Clerkship" className="sim-doc-labsheet-logo" />
+        <div className="sim-doc-labsheet-info">
+          <div className="sim-doc-labsheet-orden">
+            <span className="sim-doc-labsheet-orden-lbl">Orden de Servicio</span>
+            <strong>{folio}</strong>
+          </div>
+          <div className="sim-doc-labsheet-grid">
+            <span><strong>Paciente:</strong> {paciente.nombre}</span>
+            <span><strong>Sexo:</strong> {paciente.sexo === 'F' ? 'Femenino' : 'Masculino'}</span>
+            <span><strong>Edad:</strong> {paciente.edad} años</span>
+            <span><strong>Identificación:</strong> {paciente.documento || 'N/A'}</span>
+            <span><strong>Teléfono:</strong> {paciente.telefono || 'N/A'}</span>
+            <span><strong>Cliente:</strong> Clerkship · Simulación Clínica</span>
+          </div>
+        </div>
+      </div>
+      <div className="sim-doc-labsheet-title">{grupo}</div>
+      <div className="sim-doc-labsheet-body">
+        {items.map(e => (
+          <DocResultRow key={`${grupo}-${e.clave}`} e={e} procesandoLabel="Procesando en laboratorio..." />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Carpeta de Documentos: historia clínica completa en formato "revista",
    con animación real de pasar hoja (react-pageflip), tamaño carta y la
    misma estructura del reporte de laboratorio real (logo Clerkship, orden
@@ -237,54 +295,54 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
 
       <div className="sim-doc-page" key="identificacion">
         <h3 className="sim-doc-page-title">A. Identificación y Filiación del Paciente</h3>
-        <div className="ehr-patient-form-grid sim-doc-id-grid">
-          <div className="ehr-form-cell ehr-form-cell-wide">
-            <span className="ehr-cell-lbl">Apellidos y Nombres</span>
-            <strong className="ehr-cell-val">{c.paciente.nombre}</strong>
+        <div className="sim-doc-id-grid">
+          <div className="sim-doc-id-cell sim-doc-id-cell-wide">
+            <span className="sim-doc-id-lbl">Apellidos y Nombres</span>
+            <strong className="sim-doc-id-val">{c.paciente.nombre}</strong>
           </div>
-          <div className="ehr-form-cell">
-            <span className="ehr-cell-lbl">Documento de Identidad</span>
-            <span className="ehr-cell-val">{c.paciente.documento || 'N/A'}</span>
+          <div className="sim-doc-id-cell">
+            <span className="sim-doc-id-lbl">Documento de Identidad</span>
+            <span className="sim-doc-id-val">{c.paciente.documento || 'N/A'}</span>
           </div>
-          <div className="ehr-form-cell">
-            <span className="ehr-cell-lbl">Edad</span>
-            <span className="ehr-cell-val">{c.paciente.edad} años</span>
+          <div className="sim-doc-id-cell">
+            <span className="sim-doc-id-lbl">Edad</span>
+            <span className="sim-doc-id-val">{c.paciente.edad} años</span>
           </div>
-          <div className="ehr-form-cell">
-            <span className="ehr-cell-lbl">Sexo</span>
-            <span className="ehr-cell-val">{c.paciente.sexo === 'F' ? 'Femenino' : 'Masculino'}</span>
+          <div className="sim-doc-id-cell">
+            <span className="sim-doc-id-lbl">Sexo</span>
+            <span className="sim-doc-id-val">{c.paciente.sexo === 'F' ? 'Femenino' : 'Masculino'}</span>
           </div>
-          <div className="ehr-form-cell">
-            <span className="ehr-cell-lbl">Ocupación</span>
-            <span className="ehr-cell-val">{c.paciente.ocupacion || 'N/A'}</span>
+          <div className="sim-doc-id-cell">
+            <span className="sim-doc-id-lbl">Ocupación</span>
+            <span className="sim-doc-id-val">{c.paciente.ocupacion || 'N/A'}</span>
           </div>
-          <div className="ehr-form-cell">
-            <span className="ehr-cell-lbl">Grupo Sanguíneo y Rh</span>
-            <span className="ehr-cell-val">Tipo {c.paciente.tipo_sangre || 'N/A'}</span>
+          <div className="sim-doc-id-cell">
+            <span className="sim-doc-id-lbl">Grupo Sanguíneo y Rh</span>
+            <span className="sim-doc-id-val">Tipo {c.paciente.tipo_sangre || 'N/A'}</span>
           </div>
-          <div className="ehr-form-cell">
-            <span className="ehr-cell-lbl">Biometría / Peso</span>
-            <span className="ehr-cell-val">{c.paciente.peso_kg || 'N/A'} kg</span>
+          <div className="sim-doc-id-cell">
+            <span className="sim-doc-id-lbl">Biometría / Peso</span>
+            <span className="sim-doc-id-val">{c.paciente.peso_kg || 'N/A'} kg</span>
           </div>
-          <div className="ehr-form-cell">
-            <span className="ehr-cell-lbl">Teléfono</span>
-            <span className="ehr-cell-val">{c.paciente.telefono || 'N/A'}</span>
+          <div className="sim-doc-id-cell">
+            <span className="sim-doc-id-lbl">Teléfono</span>
+            <span className="sim-doc-id-val">{c.paciente.telefono || 'N/A'}</span>
           </div>
         </div>
       </div>,
 
       <div className="sim-doc-page" key="anamnesis">
         <h3 className="sim-doc-page-title">B. Anamnesis y Motivo de Consulta</h3>
-        <p className="sim-sheet-card-text"><strong>Motivo:</strong> {c.presentacion_inicial}</p>
-        <p className="sim-sheet-card-text"><strong>Estado emocional:</strong> {c.estado_emocional_inicial || 'Normal'}</p>
+        <p className="sim-doc-text"><strong>Motivo:</strong> {c.presentacion_inicial}</p>
+        <p className="sim-doc-text"><strong>Estado emocional:</strong> {c.estado_emocional_inicial || 'Normal'}</p>
         {notasHistoria.length > 0 && (
           <>
             <h4 className="sim-doc-sub-title">Declaraciones del Paciente</h4>
-            <ul className="sim-sheet-notes-list">
+            <ul className="sim-doc-notes-list">
               {notasHistoria.map((m, idx) => (
-                <li key={idx} className="sim-sheet-note-item">
-                  <span className="sim-sheet-note-time">{fmtTime(m.ts)}</span>
-                  <span className="sim-sheet-note-text">"{m.text}"</span>
+                <li key={idx} className="sim-doc-note-item">
+                  <span className="sim-doc-note-time">{fmtTime(m.ts)}</span>
+                  <span className="sim-doc-note-text">"{m.text}"</span>
                 </li>
               ))}
             </ul>
@@ -298,7 +356,7 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
         <div className="sim-doc-page" key="examen-fisico">
           <h3 className="sim-doc-page-title">C. Examen Físico Dirigido</h3>
           {doneExamen.map(e => (
-            <LabResultCard key={e.clave} e={e} procesandoLabel="Explorando..." />
+            <DocResultRow key={e.clave} e={e} procesandoLabel="Explorando..." />
           ))}
         </div>,
       );
@@ -307,7 +365,7 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
     for (const [grupo, items] of departamentos) {
       paginas.push(
         <div className="sim-doc-page sim-doc-page-lab" key={grupo}>
-          <LabDepartmentSheet grupo={grupo} items={items} paciente={c.paciente} folio={folio} />
+          <DocLabSheet grupo={grupo} items={items} paciente={c.paciente} folio={folio} />
         </div>,
       );
     }
@@ -597,20 +655,28 @@ function HistoriaClinicaEHRPanel({
                 <div className="ehr-patient-section">
                   <div className="ehr-section-kicker">A. IDENTIFICACIÓN Y FILIACIÓN DEL PACIENTE</div>
                   <div className="ehr-patient-form-grid">
-                    <div className="ehr-form-cell ehr-form-cell-wide">
+                    {/* Fila 1: Nombres (4) + Edad (2) */}
+                    <div className="ehr-form-cell ehr-cell-nombres">
                       <span className="ehr-cell-lbl">Apellidos y Nombres</span>
                       <strong className="ehr-cell-val">{c.paciente.nombre}</strong>
                     </div>
-                    <div className="ehr-form-cell">
-                      <span className="ehr-cell-lbl">Documento de Identidad</span>
-                      <span className="ehr-cell-val">{c.paciente.documento || 'CC 105661040'}</span>
-                    </div>
-                    <div className="ehr-form-cell">
+                    <div className="ehr-form-cell ehr-cell-edad">
                       <span className="ehr-cell-lbl">Edad</span>
                       <span className="ehr-cell-val">{c.paciente.edad} años</span>
                     </div>
 
-                    <div className="ehr-form-cell ehr-form-cell-wide">
+                    {/* Fila 2: Documento (3) + Teléfono (3) */}
+                    <div className="ehr-form-cell ehr-cell-doc">
+                      <span className="ehr-cell-lbl">Documento de Identidad</span>
+                      <span className="ehr-cell-val">{c.paciente.documento || 'CC 105661040'}</span>
+                    </div>
+                    <div className="ehr-form-cell ehr-cell-tel">
+                      <span className="ehr-cell-lbl">Teléfono de Contacto</span>
+                      <span className="ehr-cell-val">{c.paciente.telefono || '311 777 3967'}</span>
+                    </div>
+
+                    {/* Fila 3: Sexo (3) + Grupo Sanguíneo (3) */}
+                    <div className="ehr-form-cell ehr-cell-sexo">
                       <span className="ehr-cell-lbl">Sexo</span>
                       <div className="ehr-checkbox-row">
                         <span className={`ehr-checkbox-item${c.paciente.sexo === 'M' ? ' checked' : ''}`}>
@@ -623,28 +689,27 @@ function HistoriaClinicaEHRPanel({
                         </span>
                       </div>
                     </div>
-                    <div className="ehr-form-cell">
-                      <span className="ehr-cell-lbl">Ocupación Habitual</span>
-                      <span className="ehr-cell-val">{c.paciente.ocupacion || 'Docente universitaria'}</span>
-                    </div>
-                    <div className="ehr-form-cell">
+                    <div className="ehr-form-cell ehr-cell-sangre">
                       <span className="ehr-cell-lbl">Grupo Sanguíneo y Rh</span>
                       <span className="ehr-cell-val">Tipo {c.paciente.tipo_sangre || 'B+'}</span>
                     </div>
 
-                    <div className="ehr-form-cell">
+                    {/* Fila 4: Ocupación (4) + Biometría/Peso (2) */}
+                    <div className="ehr-form-cell ehr-cell-ocupacion">
+                      <span className="ehr-cell-lbl">Ocupación Habitual</span>
+                      <span className="ehr-cell-val">{c.paciente.ocupacion || 'Docente universitaria'}</span>
+                    </div>
+                    <div className="ehr-form-cell ehr-cell-peso">
                       <span className="ehr-cell-lbl">Biometría / Peso</span>
                       <span className="ehr-cell-val">{c.paciente.peso_kg || 62.1} kg</span>
                     </div>
-                    <div className="ehr-form-cell">
-                      <span className="ehr-cell-lbl">Teléfono de Contacto</span>
-                      <span className="ehr-cell-val">{c.paciente.telefono || '311 777 3967'}</span>
-                    </div>
-                    <div className="ehr-form-cell">
+
+                    {/* Fila 5: Modalidad (3) + Fecha (3) */}
+                    <div className="ehr-form-cell ehr-cell-modalidad">
                       <span className="ehr-cell-lbl">Modalidad de Atención</span>
                       <span className="ehr-cell-val">Consulta Externa</span>
                     </div>
-                    <div className="ehr-form-cell">
+                    <div className="ehr-form-cell ehr-cell-fecha">
                       <span className="ehr-cell-lbl">Fecha de Consulta</span>
                       <span className="ehr-cell-val">{fechaHoy}</span>
                     </div>
