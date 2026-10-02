@@ -564,12 +564,29 @@ function Interview({
 }) {
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>(() => elegirSugerencias(4));
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const historyRef = useRef<string[]>([]);
   const historyIdxRef = useRef(-1);
+  const dockRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, sending]);
+
+  // Cierra el popover de sugerencias al hacer clic afuera o con Escape
+  useEffect(() => {
+    if (!suggestionsOpen) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (dockRef.current && !dockRef.current.contains(e.target as Node)) setSuggestionsOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setSuggestionsOpen(false); };
+    document.addEventListener('mousedown', onClickOutside);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [suggestionsOpen]);
 
   // Textarea que crece con el contenido (hasta un máximo), en vez de un input de una sola línea
   useEffect(() => {
@@ -590,6 +607,7 @@ function Interview({
 
   const insertarSugerencia = (texto: string) => {
     setInput(texto);
+    setSuggestionsOpen(false);
     textareaRef.current?.focus();
   };
 
@@ -700,105 +718,100 @@ function Interview({
         </div>
       ) : (
         <div className="sim-input-area">
-          {/* Contenedor general: las herramientas y sugerencias quedan AFUERA
-              del recuadro de texto, no metidas adentro — el recuadro solo
-              sirve para escribir, minimalista y suave. */}
-          <div className="sim-input-container">
-            <div className="sim-input-side sim-input-side-left">
-              {onOpenModule && (
-                <>
+          {/* Un único contenedor (dock), organizado en 3 zonas: herramientas
+              clínicas a la izquierda, campo de texto al centro, acciones de
+              envío a la derecha — todo dentro del mismo recuadro. */}
+          <div className="sim-input-dock" ref={dockRef}>
+            {suggestionsOpen && (
+              <div className="sim-suggestions-pop">
+                <div className="sim-suggestions-pop-head">
+                  <span><Sparkles size={12} /> Preguntas sugeridas</span>
                   <button
                     type="button"
-                    className="sim-input-tool-btn sim-input-tool-exam"
-                    onClick={() => onOpenModule('examen_fisico')}
-                    title="Abrir Examen Físico Dirigido"
+                    className="sim-suggestions-refresh"
+                    onClick={() => setSuggestions(elegirSugerencias(4))}
+                    title="Ver otras sugerencias"
                   >
-                    <Stethoscope size={15} />
-                    {doneExamenCount > 0 && <span className="sim-input-tool-badge">{doneExamenCount}</span>}
+                    <Shuffle size={12} />
                   </button>
-                  <button
-                    type="button"
-                    className="sim-input-tool-btn sim-input-tool-lab"
-                    onClick={() => onOpenModule('paraclinicos')}
-                    title="Abrir Laboratorios y Estudios Paraclínicos"
-                  >
-                    <FlaskConical size={15} />
-                    {doneParaclinicosCount > 0 && <span className="sim-input-tool-badge">{doneParaclinicosCount}</span>}
-                  </button>
-                </>
-              )}
-              <div className="sim-input-chip-stack">
-                {suggestions.slice(0, 2).map((s, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className="sim-suggestion-chip"
-                    title={s}
-                    onClick={() => insertarSugerencia(s)}
-                    disabled={sending}
-                  >
-                    {s}
-                  </button>
-                ))}
+                </div>
+                <div className="sim-suggestions-pop-list">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="sim-suggestion-row"
+                      onClick={() => insertarSugerencia(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="sim-input-pill">
-              <textarea
-                ref={textareaRef}
-                className="sim-input-field"
-                placeholder="Hacé una pregunta al paciente..."
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={sending}
-                rows={1}
-              />
+            {onOpenModule && (
+              <div className="sim-input-dock-zone sim-input-dock-left">
+                <button
+                  type="button"
+                  className="sim-input-tool-btn sim-input-tool-exam"
+                  onClick={() => onOpenModule('examen_fisico')}
+                  title="Abrir Examen Físico Dirigido"
+                >
+                  <Stethoscope size={16} />
+                  {doneExamenCount > 0 && <span className="sim-input-tool-badge">{doneExamenCount}</span>}
+                </button>
+                <button
+                  type="button"
+                  className="sim-input-tool-btn sim-input-tool-lab"
+                  onClick={() => onOpenModule('paraclinicos')}
+                  title="Abrir Laboratorios y Estudios Paraclínicos"
+                >
+                  <FlaskConical size={16} />
+                  {doneParaclinicosCount > 0 && <span className="sim-input-tool-badge">{doneParaclinicosCount}</span>}
+                </button>
+                <span className="sim-input-dock-divider" />
+              </div>
+            )}
+
+            <textarea
+              ref={textareaRef}
+              className="sim-input-field"
+              placeholder="Hacé una pregunta al paciente..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={sending}
+              rows={1}
+            />
+
+            <div className="sim-input-dock-zone sim-input-dock-right">
               {input && (
                 <button
                   type="button"
-                  className="sim-input-clear"
+                  className="sim-input-tool-btn"
                   onClick={() => { setInput(''); textareaRef.current?.focus(); }}
                   title="Borrar texto"
                 >
-                  <X size={13} />
+                  <X size={15} />
                 </button>
               )}
-              <button className="sim-input-send" onClick={send} disabled={!input.trim() || sending}>
-                {sending ? <Loader2 size={15} className="sim-spin" /> : <Send size={15} />}
-              </button>
-            </div>
-
-            <div className="sim-input-side sim-input-side-right">
-              <div className="sim-input-chip-stack">
-                {suggestions.slice(2, 4).map((s, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className="sim-suggestion-chip"
-                    title={s}
-                    onClick={() => insertarSugerencia(s)}
-                    disabled={sending}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
               <button
                 type="button"
-                className="sim-suggestions-refresh"
-                onClick={() => setSuggestions(elegirSugerencias(4))}
-                title="Ver otras sugerencias"
+                className={`sim-input-tool-btn${suggestionsOpen ? ' is-active' : ''}`}
+                onClick={() => setSuggestionsOpen(v => !v)}
+                title="Preguntas sugeridas"
                 disabled={sending}
               >
-                <Shuffle size={13} />
+                <Sparkles size={16} />
+              </button>
+              <button className="sim-input-send" onClick={send} disabled={!input.trim() || sending}>
+                {sending ? <Loader2 size={15} className="sim-spin" /> : <Send size={15} />}
               </button>
             </div>
           </div>
           <p className="sim-input-tip">
             <CornerDownLeft size={11} /> Enter envía · Shift+Enter salto de línea · ↑ repite tu última pregunta
-            <span className="sim-input-tip-sep">·</span>
-            <Sparkles size={11} /> Clic en una sugerencia para insertarla
           </p>
         </div>
       )}

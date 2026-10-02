@@ -2048,30 +2048,51 @@
 .sim-input-area {
   background: var(--surface);
   border-top: 1px solid var(--border);
-  padding: 10px 14px 10px;
+  padding: 10px clamp(16px, 3vw, 40px) 10px;
   flex-shrink: 0;
 }
 
-/* ── Contenedor general del área de escritura: las herramientas y
-   sugerencias viven AFUERA del recuadro de texto, empujadas a los
-   bordes laterales del contenedor (no apretadas junto al recuadro). ── */
-.sim-input-container {
+/* ── Un único "dock": todo (herramientas clínicas, campo de texto y
+   envío) vive dentro del mismo recuadro, organizado en 3 zonas con un
+   separador sutil entre las herramientas y el campo de escritura. ── */
+.sim-input-dock {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  gap: 4px;
+  background: #F4F6FA;
+  border: 1px solid transparent;
+  border-radius: 26px;
+  padding: 6px 8px;
   width: 100%;
+  max-width: 920px;
   margin: 0 auto;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.sim-input-dock:focus-within {
+  background: #FFFFFF;
+  border-color: rgba(0, 179, 248, 0.35);
+  box-shadow: 0 0 0 4px rgba(0, 179, 248, 0.08), 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
-.sim-input-side {
+.sim-input-dock-zone {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
-/* Botones ghost, muy suaves, de acceso a Examen Físico / Laboratorios */
+.sim-input-dock-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border2);
+  margin: 0 4px 0 2px;
+  flex-shrink: 0;
+}
+
+/* Iconos de herramientas (Examen Físico, Laboratorios, borrar, sugerencias) —
+   todos del mismo tamaño y estilo "ghost" minimalista dentro del dock */
 .sim-input-tool-btn {
   position: relative;
   width: 32px; height: 32px;
@@ -2081,15 +2102,17 @@
   color: var(--ink3);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
 }
-.sim-input-tool-btn:hover { background: var(--surface2); transform: translate3d(0, -1px, 0); }
-.sim-input-tool-exam:hover { color: #059669; background: rgba(16, 185, 129, 0.08); }
-.sim-input-tool-lab:hover { color: #D97706; background: rgba(245, 158, 11, 0.08); }
+.sim-input-tool-btn:hover:not(:disabled) { background: rgba(15, 23, 42, 0.06); color: var(--ink2); }
+.sim-input-tool-btn:disabled { opacity: 0.45; cursor: default; }
+.sim-input-tool-btn.is-active { background: rgba(0, 179, 248, 0.14); color: var(--p-dk); }
+.sim-input-tool-exam:hover:not(:disabled) { color: #059669; background: rgba(16, 185, 129, 0.1); }
+.sim-input-tool-lab:hover:not(:disabled) { color: #D97706; background: rgba(245, 158, 11, 0.1); }
 .sim-input-tool-badge {
   position: absolute;
-  top: -3px; right: -3px;
+  top: -2px; right: -2px;
   min-width: 15px; height: 15px;
   padding: 0 3px;
   border-radius: 999px;
@@ -2102,70 +2125,6 @@
 }
 .sim-input-tool-lab .sim-input-tool-badge { background: #F59E0B; }
 
-/* Chips de sugerencias apiladas, muy suaves (sin borde azul fuerte) */
-.sim-input-chip-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.sim-suggestion-chip {
-  background: var(--surface2);
-  border: 1px solid transparent;
-  color: var(--ink3);
-  font-family: var(--font);
-  font-size: 0.67rem;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: var(--r-ful);
-  cursor: pointer;
-  transition: all 0.16s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 140px;
-  text-align: left;
-}
-.sim-suggestion-chip:hover:not(:disabled) {
-  background: rgba(0, 179, 248, 0.09);
-  color: var(--p-dk);
-}
-.sim-suggestion-chip:disabled { opacity: 0.5; cursor: default; }
-.sim-suggestions-refresh {
-  background: none;
-  border: none;
-  color: var(--ink3);
-  width: 24px; height: 24px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  flex-shrink: 0;
-}
-.sim-suggestions-refresh:hover:not(:disabled) { color: var(--p); background: var(--surface2); transform: rotate(140deg); }
-.sim-suggestions-refresh:disabled { opacity: 0.5; cursor: default; }
-
-/* El recuadro de texto en sí: minimalista, suave, sin nada más adentro
-   que el campo, el botón de borrar y el de enviar. */
-.sim-input-pill {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  background: #F6F7FA;
-  border-radius: 24px;
-  padding: 6px 6px 6px 18px;
-  border: 1px solid transparent;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  flex: 1;
-  min-width: 0;
-  max-width: 640px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-.sim-input-pill:focus-within {
-  background: #FFFFFF;
-  border-color: rgba(0, 179, 248, 0.35);
-  box-shadow: 0 0 0 4px rgba(0, 179, 248, 0.08), 0 2px 8px rgba(15, 23, 42, 0.06);
-}
-
 .sim-input-field {
   flex: 1;
   width: 100%;
@@ -2176,22 +2135,10 @@
   resize: none;
   line-height: 1.45;
   max-height: 120px;
-  padding: 7px 0;
+  padding: 8px 6px;
   caret-color: var(--p);
 }
 .sim-input-field::placeholder { color: var(--ink3); }
-.sim-input-clear {
-  background: var(--border);
-  border: none; cursor: pointer;
-  color: var(--ink2);
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  margin-bottom: 7px;
-  transition: background 0.14s ease;
-}
-.sim-input-clear:hover { background: var(--border2); color: var(--ink); }
 
 .sim-input-send {
   width: 34px; height: 34px; border-radius: 50%;
@@ -2199,6 +2146,7 @@
   display: flex; align-items: center; justify-content: center;
   color: #fff; transition: background 0.14s;
   flex-shrink: 0;
+  margin-left: 2px;
 }
 .sim-input-send:hover:not(:disabled) { background: #0d2a4a; }
 .sim-input-send:disabled { background: var(--border2); color: var(--ink3); cursor: default; }
@@ -2212,10 +2160,81 @@
   font-size: 0.66rem; color: var(--ink3);
   margin: 8px auto 0;
   width: 100%;
-  max-width: 1040px;
+  max-width: 920px;
   padding: 0 14px;
 }
-.sim-input-tip-sep { opacity: 0.6; margin: 0 2px; }
+
+/* ── Popover de preguntas sugeridas: se abre flotando arriba del dock,
+   no estorba el recuadro de escritura mientras está cerrado ── */
+.sim-suggestions-pop {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  max-width: 420px;
+  margin: 0 auto;
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  padding: 10px;
+  z-index: 20;
+  animation: simSuggestPopIn 0.16s ease-out;
+}
+@keyframes simSuggestPopIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sim-suggestions-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.sim-suggestions-pop-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--p-dk);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.sim-suggestions-pop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sim-suggestion-row {
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-family: var(--font);
+  font-size: 0.78rem;
+  color: var(--ink2);
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.sim-suggestion-row:hover { background: var(--surface2); color: var(--ink); }
+
+.sim-suggestions-refresh {
+  background: none;
+  border: none;
+  color: var(--ink3);
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+.sim-suggestions-refresh:hover:not(:disabled) { color: var(--p); background: var(--surface2); transform: rotate(140deg); }
+.sim-suggestions-refresh:disabled { opacity: 0.5; cursor: default; }
 
 /* ── Footer: solo el botón de Terminar entrevista ── */
 .sim-chat-footer {
