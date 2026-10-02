@@ -2662,7 +2662,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px 20px 24px;
-  background: var(--surface);
+  background: var(--bg);
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--border2) transparent;
@@ -2878,24 +2878,35 @@
   color: var(--ink3);
 }
 
-/* ── Ficha de Filiación e Identificación (formato de formulario clínico impreso, tipo tabla) ── */
+/* ── Ficha de Filiación e Identificación (Diseño Moderno Plataforma Clerkship) ── */
 .ehr-patient-section {
-  padding: 0;
+  padding: 14px 20px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 .ehr-section-kicker {
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--ink);
-  text-transform: uppercase;
-  padding: 6px 24px;
-  background: var(--surface2);
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
+  text-transform: none;
+  padding: 0 0 10px 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ehr-section-kicker::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--p, #0284C7);
 }
 
 .ehr-section-kicker-module {
@@ -2905,22 +2916,28 @@
 .ehr-patient-form-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border-left: 1px solid var(--ink);
-  border-top: 1px solid var(--ink);
-  margin: 0 24px;
-  width: calc(100% - 48px);
+  gap: 8px;
+  border: none;
+  margin: 0;
+  width: 100%;
 }
 
 .ehr-form-cell {
-  background: var(--surface);
-  border-right: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
-  border-radius: 0;
-  padding: 6px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  transition: all 0.18s ease;
+}
+
+.ehr-form-cell:hover {
+  background: var(--surface);
+  border-color: rgba(0, 179, 248, 0.35);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
 .ehr-form-cell-wide {
@@ -2928,7 +2945,7 @@
 }
 
 .ehr-cell-lbl {
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -2936,7 +2953,7 @@
 }
 
 .ehr-cell-val {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--ink);
   white-space: nowrap;
@@ -3168,12 +3185,12 @@
   border-radius: 999px;
 }
 
-/* Contenido scrollable de las hojas del legajador */
+/* Contenido scrollable de las hojas del legajador / panel clínico */
 .sim-sheet-body {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px;
-  background: #FFFFFF;
+  padding: 18px 20px 24px;
+  background: var(--bg);
   scrollbar-width: thin;
   scrollbar-color: var(--border2) transparent;
 }
@@ -3181,70 +3198,109 @@
 .sim-sheet-page-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
-/* ── Cuerpo del formulario: cajas de seccion con barra de etiqueta negra,
-   mismo lenguaje visual que el formato clinico impreso (seccion A) ── */
+/* ── Tarjetas Clínicas de Información (Diseño Auténtico Plataforma Clerkship) ── */
 .sim-sheet-card {
   background: var(--surface);
-  border: 1px solid var(--ink);
-  border-radius: 0;
-  padding: 0 16px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sim-sheet-card:hover {
+  border-color: rgba(0, 179, 248, 0.3);
+  box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.06);
 }
 
 .sim-sheet-card-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: var(--ink);
-  margin: 0 -16px 10px;
-  padding: 7px 16px;
-  background: var(--surface2);
-  border-bottom: 1px solid var(--ink);
+  margin: 0 0 12px 0;
+  padding: 0 0 10px 0;
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+}
+
+.sim-sheet-card-head svg {
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  border-radius: 8px;
+  background: rgba(0, 179, 248, 0.08);
+  color: var(--p, #0284C7);
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .sim-sheet-card-head h4 {
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.01em;
   margin: 0;
   color: var(--ink);
+  line-height: 1.35;
 }
 
 .sim-sheet-card-text {
-  font-size: 0.81rem;
+  font-size: 0.85rem;
   color: var(--ink2);
   line-height: 1.6;
   margin: 0;
 }
 
+.sim-sheet-card-text + .sim-sheet-card-text {
+  margin-top: 8px;
+}
+
+.sim-sheet-card-text strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .sim-sheet-empty-box {
   background: var(--surface2);
-  border: 1.5px dashed var(--ink);
-  border-radius: 0;
-  padding: 16px;
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  padding: 24px 20px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .sim-sheet-empty-box p {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--ink2);
-  margin: 0 0 4px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
 }
 
 .sim-sheet-empty-box span {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: var(--ink3);
+  line-height: 1.5;
+  max-width: 420px;
 }
 
 .sim-sheet-empty-sub {
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   color: var(--ink3);
   font-style: italic;
-  margin: 4px 0 0;
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  text-align: center;
 }
 
 .sim-sheet-notes-list {
@@ -3253,124 +3309,158 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .sim-sheet-note-item {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 8px 12px;
-  background: var(--surface);
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface2);
   border: 1px solid var(--border);
-  border-radius: 0;
+  border-radius: 10px;
+  transition: all 0.18s ease;
+}
+
+.sim-sheet-note-item:hover {
+  background: var(--surface);
+  border-color: rgba(0, 179, 248, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .sim-sheet-note-time {
-  font-size: 0.66rem;
-  font-weight: 800;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--ink);
-  padding: 1px 6px;
-  border-radius: 2px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--p, #0284C7);
+  background: rgba(0, 179, 248, 0.08);
+  border: 1px solid rgba(0, 179, 248, 0.2);
+  padding: 3px 8px;
+  border-radius: 6px;
   flex-shrink: 0;
+  letter-spacing: 0.02em;
 }
 
 .sim-sheet-note-text {
-  font-size: 0.78rem;
-  color: var(--ink2);
-  line-height: 1.5;
-  font-style: italic;
+  font-size: 0.84rem;
+  color: var(--ink);
+  line-height: 1.55;
+  font-style: normal;
+  flex: 1;
 }
 
+/* ── Banner de Cabecera de Módulo (Examen Físico / Paraclínicos) ── */
 .sim-sheet-section-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px 16px;
-  background: var(--surface2);
-  border: 1px solid var(--ink);
-  border-radius: 0;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 .sim-sheet-section-banner h4 {
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.01em;
   color: var(--ink);
-  margin: 0 0 2px;
+  margin: 0 0 3px;
 }
 
 .sim-sheet-section-banner p {
-  font-size: 0.73rem;
+  font-size: 0.78rem;
   color: var(--ink3);
   margin: 0;
+  line-height: 1.45;
 }
 
 .sim-sheet-progress-pill {
-  background: var(--ink);
-  color: var(--bg);
-  font-size: 0.66rem;
+  background: linear-gradient(135deg, #0284C7, #00B3F8);
+  color: #FFFFFF;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 2px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
+/* ── Categorías y Botones de Exploración / Laboratorios ── */
 .sim-exam-categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 0;
-  border: 1px solid var(--ink);
-  border-bottom: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: none;
 }
 
 .sim-sheet-cat-box {
   background: var(--surface);
-  border: none;
-  border-right: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
-  border-radius: 0;
-  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sim-sheet-cat-box:hover {
+  border-color: rgba(0, 179, 248, 0.28);
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
 }
 
 .sim-sheet-cat-title {
-  font-size: 0.66rem;
-  font-weight: 800;
-  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--ink2);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 6px;
+  padding-bottom: 8px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .sim-sheet-btn-wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .sim-sheet-exam-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 11px;
-  border-radius: 3px;
-  font-size: 0.74rem;
+  padding: 7px 13px;
+  border-radius: 8px;
+  font-size: 0.78rem;
   font-weight: 600;
-  background: var(--surface);
+  background: var(--surface2);
   color: var(--ink2);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .sim-sheet-exam-btn:hover:not(:disabled) {
-  background: var(--surface2);
+  background: var(--surface);
+  border-color: var(--p, #0284C7);
+  color: var(--p, #0284C7);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(2, 132, 199, 0.12);
+}
+
+.sim-sheet-exam-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .sim-sheet-exam-btn:disabled {
@@ -3379,121 +3469,137 @@
 }
 
 .sim-sheet-exam-btn-done {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--bg);
+  background: rgba(16, 185, 129, 0.08) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #059669 !important;
+  font-weight: 700;
 }
 
+.sim-sheet-exam-btn-done:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.14) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #047857 !important;
+  transform: translateY(-1px);
+}
+
+/* ── Panel y Tarjetas de Resultados Clínicos ── */
 .sim-sheet-results-panel {
   background: var(--surface);
-  border: 1px solid var(--ink);
-  border-radius: 0;
-  padding: 0 16px 14px;
-  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-top: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 .sim-sheet-results-panel .sim-sheet-card-head {
-  margin: 0 -16px 10px;
+  margin: 0 0 14px 0;
+  padding: 0 0 12px 0;
 }
 
-/* Lista de resultados en formato de informe de laboratorio: una fila por
-   prueba, con nombre + tecnica en el encabezado y fecha/muestra como
-   metadatos, igual a un reporte clinico real (no una grilla de tarjetas). */
 .sim-sheet-results-grid {
   display: flex;
   flex-direction: column;
+  gap: 10px;
   margin-top: 0;
-  border-top: 1px solid var(--ink);
+  border: none;
 }
 
 .sim-sheet-result-card {
-  background: var(--surface);
-  border-left: 1px solid var(--ink);
-  border-right: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
-  border-radius: 0;
-  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
   box-shadow: none;
+  transition: all 0.18s ease;
+}
+
+.sim-sheet-result-card:hover {
+  background: var(--surface);
+  border-color: rgba(0, 179, 248, 0.35);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
 }
 
 .sim-src-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
 }
 
 .sim-src-name {
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.01em;
   color: var(--ink);
 }
 
 .sim-src-tecnica {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  color: var(--ink3);
+  color: var(--p, #0284C7);
+  background: rgba(0, 179, 248, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
   white-space: nowrap;
 }
 
 .sim-src-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 14px;
-  margin-top: 2px;
-  padding-bottom: 6px;
+  gap: 6px 16px;
+  margin-top: 6px;
+  padding-bottom: 8px;
   border-bottom: 1px dashed var(--border);
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   color: var(--ink3);
 }
 
 .sim-src-val {
-  font-size: 0.79rem;
+  font-size: 0.84rem;
   color: var(--ink);
-  font-weight: 600;
-  line-height: 1.5;
+  font-weight: 500;
+  line-height: 1.55;
   margin: 8px 0 0;
 }
 
 .sim-sheet-grid-2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0;
+  gap: 8px;
   margin-top: 0;
-  border-top: 1px solid var(--ink);
-  border-left: 1px solid var(--ink);
+  border: none;
 }
 
 .sim-sheet-grid-2 p {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--ink2);
   margin: 0;
   padding: 8px 12px;
-  border-right: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .sim-sheet-grid-2 strong {
   color: var(--ink);
 }
 
-/* ── Hoja de resultados por departamento de laboratorio (Química,
-   Hematología, etc.), una por grupo, igual a un reporte real: logo +
-   orden de servicio + identificación del paciente arriba, titulo del
-   departamento en mayuscula, y debajo cada resultado de ese grupo. ── */
+/* ── Hoja de resultados por departamento de laboratorio (Química, Hematología, etc.) ── */
 .sim-lab-sheets-stack {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .sim-lab-sheet {
   background: var(--surface);
-  border: 1px solid var(--ink);
-  border-radius: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 
 .sim-lab-sheet-header {
@@ -3501,11 +3607,12 @@
   align-items: center;
   gap: 14px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--ink);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
 }
 
 .sim-lab-sheet-logo {
-  height: 30px;
+  height: 28px;
   width: auto;
   flex-shrink: 0;
 }
@@ -3552,26 +3659,26 @@
 
 .sim-lab-sheet-title {
   padding: 8px 16px;
-  background: var(--surface2);
-  border-bottom: 1px solid var(--ink);
-  font-size: 0.86rem;
-  font-weight: 800;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--ink);
+  color: var(--p, #0284C7);
 }
 
 .sim-lab-sheet-body {
   display: flex;
   flex-direction: column;
+  padding: 10px 14px;
+  gap: 8px;
 }
+
 .sim-lab-sheet-body .sim-sheet-result-card {
-  border-left: none;
-  border-right: none;
-  border-top: none;
-}
-.sim-lab-sheet-body .sim-sheet-result-card:last-child {
-  border-bottom: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -3586,9 +3693,13 @@
 .sim-docs-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 14, 22, 0.72);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
+  background: rgba(10, 14, 22, 0.78);
+  /* blur mas bajo: el costo de backdrop-filter crece fuerte con el radio;
+     4px ya se ve difuminado y es bastante mas barato de pintar que 7px
+     en una capa a pantalla completa que ademas queda detras de la
+     animacion de pasar hoja. */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -3690,10 +3801,19 @@
   justify-content: center;
   transform-origin: center center;
   transition: transform 0.18s ease;
+  /* promueve este contenedor a su propia capa de composicion ANTES de que
+     el usuario toque el zoom, para que escalarlo sea un trabajo de GPU
+     (compositor) y no fuerce recalcular layout/pintura de todo el libro
+     en cada click. */
+  will-change: transform;
 }
 
 .sim-docs-flipbook {
-  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5);
+  /* sombra mas liviana (menos radio de desenfoque) que la version anterior
+     -- el flipbook ya redibuja su propia sombra de pagina en cada frame
+     de la animacion, asi que una box-shadow CSS pesada encima solo suma
+     costo sin aportar mucho a la sensacion de profundidad. */
+  box-shadow: 0 18px 34px -14px rgba(0, 0, 0, 0.45);
 }
 
 /* Cada hoja del libro: proporción tamaño carta (8.5 x 11), fondo real de
