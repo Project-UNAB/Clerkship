@@ -2346,23 +2346,28 @@
 .sim-ehr-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.55);
+  background: rgba(30, 33, 38, 0.6);
   z-index: 999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px 16px;
+  padding: 32px 16px;
   contain: strict;
 }
 
+/* Hoja de papel real: esquinas cuadradas, blanco puro, sombra plana de hoja
+   levantada del escritorio (no un modal de app con esquinas redondeadas) */
 .sim-ehr-modal {
   width: 740px;
   max-width: 95vw;
   max-height: 85vh;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+  background: #FFFFFF;
+  border: 1px solid #D8DBDF;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 #FFFFFF inset,
+    0 18px 40px -12px rgba(15, 23, 42, 0.38),
+    0 3px 10px rgba(15, 23, 42, 0.14);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2676,8 +2681,8 @@
 .ehr-form-body {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 22px;
-  background: var(--surface);
+  padding: 20px 24px 24px;
+  background: #FFFFFF;
   overscroll-behavior: contain;
 }
 
