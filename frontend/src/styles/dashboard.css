@@ -2052,42 +2052,86 @@
   flex-shrink: 0;
 }
 
-/* ── Chips de preguntas sugeridas ── */
-.sim-suggestions-row {
+/* ── Barra única tipo chat de IA: herramientas clínicas + sugerencias a los
+   lados, campo de texto en el centro, envío a la derecha ── */
+.sim-input-bar {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  width: min(calc(100% - 160px), 880px);
-  margin: 0 auto 8px;
+  gap: 10px;
+  background: #F4F6FA;
+  border-radius: 26px;
+  padding: 7px 10px;
+  border: 1px solid var(--border2);
+  width: min(calc(100% - 80px), 980px);
+  margin: 0 auto;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
-.sim-suggestions-label {
-  display: inline-flex;
+.sim-input-bar:focus-within {
+  border-color: var(--p);
+  box-shadow: 0 0 0 3px rgba(0, 179, 248, 0.12);
+  background: #FFFFFF;
+}
+
+.sim-input-side {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--p-dk);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  gap: 6px;
   flex-shrink: 0;
-  margin-right: 2px;
+}
+
+/* Botones redondos de acceso a Examen Físico / Laboratorios, dentro de la barra */
+.sim-input-tool-btn {
+  position: relative;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: #FFFFFF;
+  color: var(--ink3);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+.sim-input-tool-btn:hover { transform: translate3d(0, -1px, 0); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); }
+.sim-input-tool-exam:hover { color: #059669; border-color: #10B981; background: rgba(16, 185, 129, 0.08); }
+.sim-input-tool-lab:hover { color: #D97706; border-color: #F59E0B; background: rgba(245, 158, 11, 0.08); }
+.sim-input-tool-badge {
+  position: absolute;
+  top: -4px; right: -4px;
+  min-width: 16px; height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: #10B981;
+  color: #FFFFFF;
+  font-size: 0.58rem;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--surface);
+}
+.sim-input-tool-lab .sim-input-tool-badge { background: #F59E0B; }
+
+/* Chips de sugerencias apiladas a cada lado del campo */
+.sim-input-chip-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .sim-suggestion-chip {
   background: rgba(0, 179, 248, 0.07);
   border: 1px solid rgba(0, 179, 248, 0.22);
   color: var(--ink2);
   font-family: var(--font);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  padding: 5px 11px;
+  padding: 4px 10px;
   border-radius: var(--r-ful);
   cursor: pointer;
   transition: all 0.14s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
+  max-width: 150px;
+  text-align: left;
 }
 .sim-suggestion-chip:hover:not(:disabled) {
   background: rgba(0, 179, 248, 0.14);
@@ -2109,50 +2153,42 @@
 .sim-suggestions-refresh:hover:not(:disabled) { color: var(--p); border-color: var(--p); transform: rotate(140deg); }
 .sim-suggestions-refresh:disabled { opacity: 0.5; cursor: default; }
 
-.sim-input-row {
-  display: flex; align-items: flex-end; gap: 6px;
-  background: #F4F6FA;
-  border-radius: 22px;
-  padding: 7px 7px 7px 16px;
-  border: 1px solid var(--border2);
-  width: min(calc(100% - 160px), 880px);
-  margin: 0 auto;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+.sim-input-field-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
-.sim-input-row:focus-within {
-  border-color: var(--p);
-  box-shadow: 0 0 0 3px rgba(0, 179, 248, 0.12);
-}
-.sim-input-attach {
-  background: none; border: none; cursor: pointer;
-  color: var(--ink3); display: flex; align-items: center;
-  transition: color 0.14s; padding: 4px;
-}
-.sim-input-attach:hover { color: var(--ink2); }
 .sim-input-field {
-  flex: 1; border: none; background: none;
-  font-size: 0.82rem; color: var(--ink); outline: none;
+  width: 100%;
+  border: none; background: none;
+  font-size: 0.86rem; color: var(--ink); outline: none;
   font-family: var(--font);
   resize: none;
   line-height: 1.45;
   max-height: 120px;
-  padding: 6px 0;
+  padding: 7px 28px 7px 4px;
+  caret-color: var(--p);
 }
 .sim-input-field::placeholder { color: var(--ink3); }
 .sim-input-clear {
+  position: absolute;
+  right: 2px; top: 50%;
+  transform: translateY(-50%);
   background: var(--border);
   border: none; cursor: pointer;
   color: var(--ink2);
-  width: 22px; height: 22px;
+  width: 20px; height: 20px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  margin-bottom: 6px;
   transition: background 0.14s ease;
 }
 .sim-input-clear:hover { background: var(--border2); color: var(--ink); }
+
 .sim-input-send {
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   background: #1a3a5c; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   color: #fff; transition: background 0.14s;
@@ -2160,95 +2196,30 @@
 }
 .sim-input-send:hover:not(:disabled) { background: #0d2a4a; }
 .sim-input-send:disabled { background: var(--ink3); cursor: default; }
+
 .sim-input-tip {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   font-size: 0.68rem; color: var(--ink3);
-  margin: 6px auto 0;
-  width: min(calc(100% - 160px), 880px);
-  padding: 0 4px;
+  margin: 7px auto 0;
+  width: min(calc(100% - 80px), 980px);
+  padding: 0 14px;
 }
+.sim-input-tip-sep { opacity: 0.6; margin: 0 2px; }
 
-/* ── Footer: Examen Físico y Laboratorios a la izquierda, Terminar a la derecha ── */
+/* ── Footer: solo el botón de Terminar entrevista ── */
 .sim-chat-footer {
   background: var(--surface);
   border-top: 1px solid var(--border);
   padding: 10px clamp(24px, 4vw, 48px);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   flex-shrink: 0;
   flex-wrap: wrap;
-}
-
-.sim-footer-actions-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sim-footer-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 13px;
-  border-radius: var(--r-md, 8px);
-  font-family: var(--font);
-  font-size: 0.76rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--ink);
-  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.sim-footer-action-btn:hover {
-  transform: translate3d(0, -1px, 0);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-
-.sim-footer-action-exam {
-  border-color: rgba(16, 185, 129, 0.35);
-  background: rgba(16, 185, 129, 0.06);
-  color: #059669;
-}
-
-.sim-footer-action-exam:hover {
-  background: rgba(16, 185, 129, 0.14);
-  border-color: #10B981;
-}
-
-.sim-footer-action-lab {
-  border-color: rgba(245, 158, 11, 0.35);
-  background: rgba(245, 158, 11, 0.06);
-  color: #D97706;
-}
-
-.sim-footer-action-lab:hover {
-  background: rgba(245, 158, 11, 0.14);
-  border-color: #F59E0B;
-}
-
-.sim-footer-action-badge {
-  font-size: 0.62rem;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 999px;
-  line-height: 1.2;
-}
-
-.sim-footer-action-exam .sim-footer-action-badge {
-  background: #10B981;
-  color: #FFFFFF;
-}
-
-.sim-footer-action-lab .sim-footer-action-badge {
-  background: #F59E0B;
-  color: #FFFFFF;
 }
 
 /* ── Layout a pantalla completa de la consulta ── */
