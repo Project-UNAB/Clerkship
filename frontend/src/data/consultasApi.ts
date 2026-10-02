@@ -275,6 +275,14 @@ export interface ExplorarResult {
   clave: string;
   etiqueta: string;
   resultado: string;
+  /** Técnica/método del laboratorio o de la exploración (texto fijo del catálogo, no inventado por IA). */
+  tecnica: string;
+  /** Tipo de muestra (solo paraclínicos de laboratorio; null en exámenes físicos e imágenes/procedimientos). */
+  muestra: string | null;
+  /** Fecha y hora (servidor) en que se "tomó" la muestra o se realizó la maniobra. */
+  fecha_hora_toma: string;
+  /** Fecha y hora en que el resultado queda disponible (toma + demora_segundos). */
+  fecha_hora_resultado: string;
   /** Segundos "de laboratorio" sugeridos antes de mostrar el resultado (0 para examen físico). */
   demora_segundos: number;
   /** true en maniobras con contacto físico (palpación, Murphy, tacto rectal, etc.):

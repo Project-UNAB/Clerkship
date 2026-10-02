@@ -90,66 +90,82 @@ CATALOGO_EXAMEN_FISICO = {
 CATALOGO_PARACLINICOS = {
     "hemograma": {
         "etiqueta": "Hemograma completo", "grupo": "Laboratorio", "demora": 5,
+        "tecnica": "Citometría de flujo", "muestra": "Sangre total (EDTA)",
         "normal": "Hb 14.0 g/dL, Hto 42 %, leucocitos 7.300/mm3 (neutrofilos 58 %, linfocitos 32 %), plaquetas 265.000/mm3.",
     },
     "pcr": {
         "etiqueta": "Proteína C reactiva", "grupo": "Laboratorio", "demora": 4,
+        "tecnica": "Inmunoturbidimetría", "muestra": "Suero",
         "normal": "PCR 0.3 mg/dL (VR < 0.5 mg/dL).",
     },
     "perfil_hepatico": {
         "etiqueta": "Perfil hepático", "grupo": "Laboratorio", "demora": 6,
+        "tecnica": "Test cinético / Espectrofotometría", "muestra": "Suero",
         "normal": "ALT 24 U/L, AST 22 U/L, fosfatasa alcalina 82 U/L, GGT 28 U/L, bilirrubina total 0.7 mg/dL (directa 0.2 mg/dL), albumina 4.2 g/dL.",
     },
     "amilasa_lipasa": {
         "etiqueta": "Amilasa y lipasa", "grupo": "Laboratorio", "demora": 5,
+        "tecnica": "Test cinético colorimétrico", "muestra": "Suero",
         "normal": "Amilasa 68 U/L (VR 28-100), lipasa 34 U/L (VR 13-60).",
     },
     "funcion_renal_electrolitos": {
         "etiqueta": "Función renal y electrolitos", "grupo": "Laboratorio", "demora": 5,
+        "tecnica": "Espectrofotometría / Potenciometría ión-selectivo", "muestra": "Suero",
         "normal": "Creatinina 0.9 mg/dL, BUN 14 mg/dL, Na 139 mEq/L, K 4.1 mEq/L, Cl 102 mEq/L.",
     },
     "tiempos_coagulacion": {
         "etiqueta": "Tiempos de coagulación", "grupo": "Laboratorio", "demora": 5,
+        "tecnica": "Coagulometría óptica", "muestra": "Plasma citratado",
         "normal": "TP 12.1 s, INR 1.0, TPT 30 s.",
     },
     "uroanalisis": {
         "etiqueta": "Uroanálisis", "grupo": "Laboratorio", "demora": 4,
+        "tecnica": "Química seca automatizada + microscopía", "muestra": "Orina espontánea",
         "normal": "Densidad 1.015, pH 6, sin leucocituria, sin hematuria, nitritos negativos, bilirrubina negativa.",
     },
     "prueba_embarazo": {
         "etiqueta": "Prueba de embarazo (beta-hCG)", "grupo": "Laboratorio", "demora": 4,
+        "tecnica": "Inmunoensayo cualitativo", "muestra": "Suero",
         "normal": "Beta-hCG cualitativa negativa.",
     },
     "sangre_oculta_heces": {
         "etiqueta": "Sangre oculta en heces", "grupo": "Laboratorio", "demora": 5,
+        "tecnica": "Inmunocromatografía", "muestra": "Materia fecal",
         "normal": "Sangre oculta en heces negativa.",
     },
     "coprologico": {
         "etiqueta": "Coprológico", "grupo": "Laboratorio", "demora": 5,
+        "tecnica": "Examen macroscópico y microscópico directo", "muestra": "Materia fecal",
         "normal": "Heces blandas, sin moco ni sangre, sin leucocitos, no se observan parasitos.",
     },
     "prueba_h_pylori": {
         "etiqueta": "Antígeno fecal H. pylori", "grupo": "Laboratorio", "demora": 5,
+        "tecnica": "Inmunocromatografía", "muestra": "Materia fecal",
         "normal": "Antigeno fecal para Helicobacter pylori negativo.",
     },
     "rx_abdomen": {
         "etiqueta": "Radiografía de abdomen", "grupo": "Imágenes", "demora": 6,
+        "tecnica": "Radiología digital simple", "muestra": "N/A",
         "normal": "Patron gaseoso intestinal normal, sin niveles hidroaereos, sin neumoperitoneo.",
     },
     "ecografia_abdominal": {
         "etiqueta": "Ecografía abdominal", "grupo": "Imágenes", "demora": 7,
+        "tecnica": "Ultrasonografía en tiempo real", "muestra": "N/A",
         "normal": "Higado de tamano y ecogenicidad normales, vesicula de paredes delgadas sin calculos, via biliar no dilatada, pancreas sin alteraciones, sin liquido libre.",
     },
     "tac_abdomen": {
         "etiqueta": "TAC de abdomen contrastado", "grupo": "Imágenes", "demora": 8,
+        "tecnica": "Tomografía multicorte contrastada", "muestra": "N/A",
         "normal": "Sin alteraciones significativas en organos solidos, asas intestinales ni retroperitoneo.",
     },
     "endoscopia_digestiva_alta": {
         "etiqueta": "Endoscopia digestiva alta", "grupo": "Procedimientos", "demora": 8,
+        "tecnica": "Videoendoscopia digestiva alta", "muestra": "N/A",
         "normal": "Esofago, estomago y duodeno con mucosa de aspecto normal, sin lesiones.",
     },
     "colonoscopia": {
         "etiqueta": "Colonoscopia", "grupo": "Procedimientos", "demora": 8,
+        "tecnica": "Videocolonoscopia", "muestra": "N/A",
         "normal": "Colon y recto con mucosa de aspecto normal hasta ileon terminal.",
     },
 }

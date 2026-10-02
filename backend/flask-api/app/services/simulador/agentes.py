@@ -15,6 +15,7 @@ tampoco se guarda: es 100% derivable del caso, se reconstruye en cada turno.
 
 import logging
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from app.services.simulador import mock
@@ -322,12 +323,28 @@ def explorar(caso_completo_oculto: dict, tipo: str, clave: str) -> dict:
         resultado = (caso_completo_oculto.get("paraclinicos") or {}).get(clave) or definicion["normal"]
 
     requiere_reaccion = definicion.get("contacto") is True
+    demora_segundos = (definicion.get("demora") or 4) if tipo == "paraclinico" else 0
+    ahora = datetime.now(timezone.utc)
+    fecha_hora_toma = ahora.strftime("%d/%m/%Y %I:%M:%S %p")
+    fecha_hora_resultado = (ahora + timedelta(seconds=demora_segundos)).strftime("%d/%m/%Y %I:%M:%S %p")
+
+    if tipo == "paraclinico":
+        tecnica = definicion.get("tecnica", "Técnica de laboratorio estándar")
+        muestra = definicion.get("muestra", "N/A")
+    else:
+        tecnica = "Toma de signos vitales (monitor multiparámetro)" if clave == "signos_vitales" else "Exploración física directa (inspección/palpación/percusión/auscultación)"
+        muestra = None
+
     return {
         "tipo": tipo,
         "clave": clave,
         "etiqueta": definicion["etiqueta"],
         "resultado": resultado,
-        "demora_segundos": (definicion.get("demora") or 4) if tipo == "paraclinico" else 0,
+        "tecnica": tecnica,
+        "muestra": muestra,
+        "fecha_hora_toma": fecha_hora_toma,
+        "fecha_hora_resultado": fecha_hora_resultado,
+        "demora_segundos": demora_segundos,
         "requiere_reaccion_paciente": requiere_reaccion,
         "mensaje_para_paciente": f"[Exploracion fisica: {definicion.get('accion')}]" if requiere_reaccion else None,
     }

@@ -3049,18 +3049,19 @@
   margin: 0 -16px 10px;
 }
 
+/* Lista de resultados en formato de informe de laboratorio: una fila por
+   prueba, con nombre + tecnica en el encabezado y fecha/muestra como
+   metadatos, igual a un reporte clinico real (no una grilla de tarjetas). */
 .sim-sheet-results-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0;
+  display: flex;
+  flex-direction: column;
   margin-top: 0;
   border-top: 1px solid #1A1A1A;
-  border-left: 1px solid #1A1A1A;
 }
 
 .sim-sheet-result-card {
   background: #FFFFFF;
-  border: none;
+  border-left: 1px solid #1A1A1A;
   border-right: 1px solid #1A1A1A;
   border-bottom: 1px solid #1A1A1A;
   border-radius: 0;
@@ -3068,14 +3069,38 @@
   box-shadow: none;
 }
 
+.sim-src-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .sim-src-name {
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
+  color: #111;
+}
+
+.sim-src-tecnica {
+  font-size: 0.68rem;
+  font-weight: 600;
   color: #5B6572;
-  display: block;
-  margin-bottom: 3px;
+  white-space: nowrap;
+}
+
+.sim-src-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border);
+  font-size: 0.66rem;
+  color: #5B6572;
 }
 
 .sim-src-val {
@@ -3083,7 +3108,7 @@
   color: #111;
   font-weight: 600;
   line-height: 1.5;
-  margin: 0;
+  margin: 8px 0 0;
 }
 
 .sim-sheet-grid-2 {

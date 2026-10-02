@@ -31,6 +31,9 @@ interface ExploredEntry {
   clave: string;
   etiqueta: string;
   resultado: string;
+  tecnica?: string;
+  muestra?: string | null;
+  fecha_hora_resultado?: string;
   procesando?: boolean;
 }
 
@@ -54,6 +57,27 @@ function groupByGrupo(items: CatalogoItem[]): [string, CatalogoItem[]][] {
 }
 
 export type ClinicalModule = 'anamnesis' | 'examen_fisico' | 'paraclinicos' | 'completo';
+
+/* ── Tarjeta de resultado tipo "informe de laboratorio" real: nombre de la
+   prueba, técnica/muestra (fijas del catálogo, no inventadas por IA) y
+   fecha/hora de resultado, igual al formato de un reporte clínico impreso. */
+function LabResultCard({ e, procesandoLabel }: { e: ExploredEntry; procesandoLabel: string }) {
+  return (
+    <div className="sim-sheet-result-card">
+      <div className="sim-src-head">
+        <span className="sim-src-name">{e.etiqueta}</span>
+        {e.tecnica && <span className="sim-src-tecnica">Técnica: {e.tecnica}</span>}
+      </div>
+      {!e.procesando && (e.fecha_hora_resultado || (e.muestra && e.muestra !== 'N/A')) && (
+        <div className="sim-src-meta">
+          {e.muestra && e.muestra !== 'N/A' && <span>Muestra: {e.muestra}</span>}
+          {e.fecha_hora_resultado && <span>Fecha y hora de resultado: {e.fecha_hora_resultado}</span>}
+        </div>
+      )}
+      <p className="sim-src-val">{e.procesando ? procesandoLabel : e.resultado}</p>
+    </div>
+  );
+}
 
 /* ── Historia Clínica Electrónica Oficial (EHR Formulario Médico Formal) ── */
 function HistoriaClinicaEHR({
@@ -361,10 +385,7 @@ function HistoriaClinicaEHR({
                           </div>
                           <div className="sim-sheet-results-grid">
                             {doneExamen.map(e => (
-                              <div key={`res-ef-${e.clave}`} className="sim-sheet-result-card">
-                                <span className="sim-src-name">{e.etiqueta}</span>
-                                <p className="sim-src-val">{e.procesando ? 'Explorando...' : e.resultado}</p>
-                              </div>
+                              <LabResultCard key={`res-ef-${e.clave}`} e={e} procesandoLabel="Explorando..." />
                             ))}
                           </div>
                         </div>
@@ -425,10 +446,7 @@ function HistoriaClinicaEHR({
                           </div>
                           <div className="sim-sheet-results-grid">
                             {doneParaclinicos.map(e => (
-                              <div key={`res-pc-${e.clave}`} className="sim-sheet-result-card">
-                                <span className="sim-src-name">{e.etiqueta}</span>
-                                <p className="sim-src-val">{e.procesando ? 'Procesando en laboratorio...' : e.resultado}</p>
-                              </div>
+                              <LabResultCard key={`res-pc-${e.clave}`} e={e} procesandoLabel="Procesando en laboratorio..." />
                             ))}
                           </div>
                         </div>
@@ -472,10 +490,7 @@ function HistoriaClinicaEHR({
                         ) : (
                           <div className="sim-sheet-results-grid">
                             {doneExamen.map(e => (
-                              <div key={`full-ef-${e.clave}`} className="sim-sheet-result-card">
-                                <span className="sim-src-name">{e.etiqueta}</span>
-                                <p className="sim-src-val">{e.resultado}</p>
-                              </div>
+                              <LabResultCard key={`full-ef-${e.clave}`} e={e} procesandoLabel="Explorando..." />
                             ))}
                           </div>
                         )}
@@ -491,10 +506,7 @@ function HistoriaClinicaEHR({
                         ) : (
                           <div className="sim-sheet-results-grid">
                             {doneParaclinicos.map(e => (
-                              <div key={`full-pc-${e.clave}`} className="sim-sheet-result-card">
-                                <span className="sim-src-name">{e.etiqueta}</span>
-                                <p className="sim-src-val">{e.resultado}</p>
-                              </div>
+                              <LabResultCard key={`full-pc-${e.clave}`} e={e} procesandoLabel="Procesando en laboratorio..." />
                             ))}
                           </div>
                         )}
@@ -1170,7 +1182,10 @@ export default function SimulacionPage() {
       const reveal = () => {
         setExplored(prev => ({
           ...prev,
-          [key]: { tipo, clave: item.clave, etiqueta: res.etiqueta, resultado: res.resultado, procesando: false },
+          [key]: {
+            tipo, clave: item.clave, etiqueta: res.etiqueta, resultado: res.resultado, procesando: false,
+            tecnica: res.tecnica, muestra: res.muestra, fecha_hora_resultado: res.fecha_hora_resultado,
+          },
         }));
       };
       if (revealDelayMs > 0) setTimeout(reveal, revealDelayMs); else reveal();
