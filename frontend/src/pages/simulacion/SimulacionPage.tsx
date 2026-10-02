@@ -700,9 +700,10 @@ function Interview({
         </div>
       ) : (
         <div className="sim-input-area">
-          {/* Barra única tipo chat de IA: herramientas clínicas a la izquierda,
-              sugerencias a los dos lados del campo, envío a la derecha */}
-          <div className="sim-input-bar">
+          {/* Contenedor general: las herramientas y sugerencias quedan AFUERA
+              del recuadro de texto, no metidas adentro — el recuadro solo
+              sirve para escribir, minimalista y suave. */}
+          <div className="sim-input-container">
             <div className="sim-input-side sim-input-side-left">
               {onOpenModule && (
                 <>
@@ -712,7 +713,7 @@ function Interview({
                     onClick={() => onOpenModule('examen_fisico')}
                     title="Abrir Examen Físico Dirigido"
                   >
-                    <Stethoscope size={16} />
+                    <Stethoscope size={15} />
                     {doneExamenCount > 0 && <span className="sim-input-tool-badge">{doneExamenCount}</span>}
                   </button>
                   <button
@@ -721,7 +722,7 @@ function Interview({
                     onClick={() => onOpenModule('paraclinicos')}
                     title="Abrir Laboratorios y Estudios Paraclínicos"
                   >
-                    <FlaskConical size={16} />
+                    <FlaskConical size={15} />
                     {doneParaclinicosCount > 0 && <span className="sim-input-tool-badge">{doneParaclinicosCount}</span>}
                   </button>
                 </>
@@ -742,7 +743,7 @@ function Interview({
               </div>
             </div>
 
-            <div className="sim-input-field-wrap">
+            <div className="sim-input-pill">
               <textarea
                 ref={textareaRef}
                 className="sim-input-field"
@@ -763,6 +764,9 @@ function Interview({
                   <X size={13} />
                 </button>
               )}
+              <button className="sim-input-send" onClick={send} disabled={!input.trim() || sending}>
+                {sending ? <Loader2 size={15} className="sim-spin" /> : <Send size={15} />}
+              </button>
             </div>
 
             <div className="sim-input-side sim-input-side-right">
@@ -788,9 +792,6 @@ function Interview({
                 disabled={sending}
               >
                 <Shuffle size={13} />
-              </button>
-              <button className="sim-input-send" onClick={send} disabled={!input.trim() || sending}>
-                {sending ? <Loader2 size={15} className="sim-spin" /> : <Send size={15} />}
               </button>
             </div>
           </div>

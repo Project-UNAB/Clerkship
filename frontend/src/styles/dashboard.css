@@ -2052,24 +2052,17 @@
   flex-shrink: 0;
 }
 
-/* ── Barra única tipo chat de IA: herramientas clínicas + sugerencias a los
-   lados, campo de texto en el centro, envío a la derecha ── */
-.sim-input-bar {
+/* ── Contenedor general del área de escritura: las herramientas y
+   sugerencias viven AFUERA del recuadro de texto, como columnas suaves
+   a cada lado — el recuadro en sí queda minimal, solo para escribir. ── */
+.sim-input-container {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: #F4F6FA;
-  border-radius: 26px;
-  padding: 7px 10px;
-  border: 1px solid var(--border2);
-  width: min(calc(100% - 80px), 980px);
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 1040px;
   margin: 0 auto;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
-}
-.sim-input-bar:focus-within {
-  border-color: var(--p);
-  box-shadow: 0 0 0 3px rgba(0, 179, 248, 0.12);
-  background: #FFFFFF;
 }
 
 .sim-input-side {
@@ -2079,103 +2072,116 @@
   flex-shrink: 0;
 }
 
-/* Botones redondos de acceso a Examen Físico / Laboratorios, dentro de la barra */
+/* Botones ghost, muy suaves, de acceso a Examen Físico / Laboratorios */
 .sim-input-tool-btn {
   position: relative;
-  width: 34px; height: 34px;
+  width: 32px; height: 32px;
   border-radius: 50%;
-  border: 1px solid var(--border2);
-  background: #FFFFFF;
+  border: none;
+  background: transparent;
   color: var(--ink3);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
 }
-.sim-input-tool-btn:hover { transform: translate3d(0, -1px, 0); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); }
-.sim-input-tool-exam:hover { color: #059669; border-color: #10B981; background: rgba(16, 185, 129, 0.08); }
-.sim-input-tool-lab:hover { color: #D97706; border-color: #F59E0B; background: rgba(245, 158, 11, 0.08); }
+.sim-input-tool-btn:hover { background: var(--surface2); transform: translate3d(0, -1px, 0); }
+.sim-input-tool-exam:hover { color: #059669; background: rgba(16, 185, 129, 0.08); }
+.sim-input-tool-lab:hover { color: #D97706; background: rgba(245, 158, 11, 0.08); }
 .sim-input-tool-badge {
   position: absolute;
-  top: -4px; right: -4px;
-  min-width: 16px; height: 16px;
+  top: -3px; right: -3px;
+  min-width: 15px; height: 15px;
   padding: 0 3px;
   border-radius: 999px;
   background: #10B981;
   color: #FFFFFF;
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   border: 1.5px solid var(--surface);
 }
 .sim-input-tool-lab .sim-input-tool-badge { background: #F59E0B; }
 
-/* Chips de sugerencias apiladas a cada lado del campo */
+/* Chips de sugerencias apiladas, muy suaves (sin borde azul fuerte) */
 .sim-input-chip-stack {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 .sim-suggestion-chip {
-  background: rgba(0, 179, 248, 0.07);
-  border: 1px solid rgba(0, 179, 248, 0.22);
-  color: var(--ink2);
+  background: var(--surface2);
+  border: 1px solid transparent;
+  color: var(--ink3);
   font-family: var(--font);
-  font-size: 0.68rem;
+  font-size: 0.67rem;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: var(--r-ful);
   cursor: pointer;
-  transition: all 0.14s ease;
+  transition: all 0.16s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 150px;
+  max-width: 140px;
   text-align: left;
 }
 .sim-suggestion-chip:hover:not(:disabled) {
-  background: rgba(0, 179, 248, 0.14);
-  border-color: var(--p);
-  color: var(--ink);
+  background: rgba(0, 179, 248, 0.09);
+  color: var(--p-dk);
 }
 .sim-suggestion-chip:disabled { opacity: 0.5; cursor: default; }
 .sim-suggestions-refresh {
   background: none;
-  border: 1px solid var(--border2);
+  border: none;
   color: var(--ink3);
-  width: 26px; height: 26px;
+  width: 24px; height: 24px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: all 0.14s ease;
+  transition: all 0.18s ease;
   flex-shrink: 0;
 }
-.sim-suggestions-refresh:hover:not(:disabled) { color: var(--p); border-color: var(--p); transform: rotate(140deg); }
+.sim-suggestions-refresh:hover:not(:disabled) { color: var(--p); background: var(--surface2); transform: rotate(140deg); }
 .sim-suggestions-refresh:disabled { opacity: 0.5; cursor: default; }
 
-.sim-input-field-wrap {
-  position: relative;
-  flex: 1;
+/* El recuadro de texto en sí: minimalista, suave, sin nada más adentro
+   que el campo, el botón de borrar y el de enviar. */
+.sim-input-pill {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  gap: 6px;
+  background: #F6F7FA;
+  border-radius: 24px;
+  padding: 6px 6px 6px 18px;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  flex: 1;
   min-width: 0;
+  max-width: 640px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
+.sim-input-pill:focus-within {
+  background: #FFFFFF;
+  border-color: rgba(0, 179, 248, 0.35);
+  box-shadow: 0 0 0 4px rgba(0, 179, 248, 0.08), 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
 .sim-input-field {
+  flex: 1;
   width: 100%;
+  min-width: 0;
   border: none; background: none;
-  font-size: 0.86rem; color: var(--ink); outline: none;
+  font-size: 0.85rem; color: var(--ink); outline: none;
   font-family: var(--font);
   resize: none;
   line-height: 1.45;
   max-height: 120px;
-  padding: 7px 28px 7px 4px;
+  padding: 7px 0;
   caret-color: var(--p);
 }
 .sim-input-field::placeholder { color: var(--ink3); }
 .sim-input-clear {
-  position: absolute;
-  right: 2px; top: 50%;
-  transform: translateY(-50%);
   background: var(--border);
   border: none; cursor: pointer;
   color: var(--ink2);
@@ -2183,28 +2189,31 @@
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  margin-bottom: 7px;
   transition: background 0.14s ease;
 }
 .sim-input-clear:hover { background: var(--border2); color: var(--ink); }
 
 .sim-input-send {
-  width: 36px; height: 36px; border-radius: 50%;
+  width: 34px; height: 34px; border-radius: 50%;
   background: #1a3a5c; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   color: #fff; transition: background 0.14s;
   flex-shrink: 0;
 }
 .sim-input-send:hover:not(:disabled) { background: #0d2a4a; }
-.sim-input-send:disabled { background: var(--ink3); cursor: default; }
+.sim-input-send:disabled { background: var(--border2); color: var(--ink3); cursor: default; }
 
 .sim-input-tip {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 4px;
-  font-size: 0.68rem; color: var(--ink3);
-  margin: 7px auto 0;
-  width: min(calc(100% - 80px), 980px);
+  font-size: 0.66rem; color: var(--ink3);
+  margin: 8px auto 0;
+  width: 100%;
+  max-width: 1040px;
   padding: 0 14px;
 }
 .sim-input-tip-sep { opacity: 0.6; margin: 0 2px; }
