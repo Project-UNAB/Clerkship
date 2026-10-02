@@ -1,6 +1,6 @@
 import {
   useState, useRef, useEffect, useCallback,
-  type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type CSSProperties, type ForwardRefExoticComponent, type RefAttributes,
+  type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type ReactElement, type CSSProperties, type ForwardRefExoticComponent, type RefAttributes,
 } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -213,7 +213,7 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
   // libro se arman acá como un array ya 100% filtrado, nunca como JSX
   // condicional directo dentro de <HTMLFlipBook>, o truena con
   // "argument must be a React element".
-  const paginas: JSX.Element[] = [
+  const paginas: ReactElement[] = [
     <div className="sim-doc-page sim-doc-cover" key="portada">
       <img src={logoUrl} alt="Clerkship" className="sim-doc-cover-logo" />
       <h2>Historia Clínica</h2>
@@ -299,8 +299,8 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
   }
 
   return (
-    <div className="sim-docs-backdrop" onClick={onClose}>
-      <div className="sim-docs-modal" onClick={e => e.stopPropagation()}>
+    <div className="sim-docs-backdrop">
+      <div className="sim-docs-modal">
         <div className="sim-docs-modal-head">
           <span className="sim-docs-modal-title"><FolderOpen size={15} /> Carpeta de Documentos · {c.paciente.nombre}</span>
           <div className="sim-docs-modal-actions">
