@@ -168,6 +168,8 @@ export interface DatosPaciente {
   documento?: string | null;
   telefono?: string | null;
   tipo_sangre?: string | null;
+  /** Avatar humano (DiceBear "avataaars") que coincide con el sexo del paciente. */
+  avatar_url?: string | null;
 }
 
 /** Identidad pre-generada (GET /api/consultas/ficha-previa), determinista y
@@ -185,6 +187,7 @@ export interface IdentidadPaciente {
   tipo_sangre: string;
   peso_kg: number;
   ocupacion?: string;
+  avatar_url?: string;
 }
 
 export function getFichaPrevia(): Promise<IdentidadPaciente> {

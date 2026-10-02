@@ -32,6 +32,7 @@ from app.services.simulador.guardrails import (
     validar_caso,
     validar_signos_vitales,
 )
+from app.services.simulador.identidad import avatar_url_por_defecto
 from app.services.simulador.modelo import llamar_modelo, parsear_json
 from app.services.simulador.prompts import (
     construir_prompt_evaluador,
@@ -92,9 +93,13 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
                 "nombre": identidad_forzada["nombre"], "edad": identidad_forzada["edad"],
                 "sexo": identidad_forzada["sexo"], "peso_kg": identidad_forzada.get("peso_kg") or caso["datos_paciente"]["peso_kg"],
             })
-            for campo in ("documento", "telefono", "tipo_sangre", "ocupacion"):
+            for campo in ("documento", "telefono", "tipo_sangre", "ocupacion", "avatar_url"):
                 if identidad_forzada.get(campo):
                     caso["datos_paciente"][campo] = identidad_forzada[campo]
+        if not caso["datos_paciente"].get("avatar_url"):
+            caso["datos_paciente"]["avatar_url"] = avatar_url_por_defecto(
+                caso["datos_paciente"]["nombre"], caso["datos_paciente"]["sexo"]
+            )
         return _finalizar_caso(
             caso, subtema, dificultad, avisos,
             provider_used="Mock", model_used=None,
@@ -129,9 +134,14 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
     # Documento/telefono/tipo de sangre no los escribe el modelo (no afectan
     # la narrativa clinica) -- se pegan tal cual de la identidad pre-generada.
     if identidad_forzada:
-        for campo in ("documento", "telefono", "tipo_sangre", "ocupacion"):
+        for campo in ("documento", "telefono", "tipo_sangre", "ocupacion", "avatar_url"):
             if identidad_forzada.get(campo):
                 caso["datos_paciente"][campo] = identidad_forzada[campo]
+
+    # Respaldo si no vino identidad_forzada (o vino sin avatar_url): igual se
+    # arma un avatar humano acorde al sexo, nunca se deja el caso sin avatar.
+    if not caso["datos_paciente"].get("avatar_url"):
+        caso["datos_paciente"]["avatar_url"] = avatar_url_por_defecto(caso["datos_paciente"]["nombre"], sexo)
 
     if not isinstance(caso.get("id_caso"), str) or not caso["id_caso"]:
         caso["id_caso"] = "GI-" + uuid.uuid4().hex[:8].upper()

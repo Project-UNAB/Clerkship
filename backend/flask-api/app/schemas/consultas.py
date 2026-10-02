@@ -21,6 +21,7 @@ class IdentidadPacienteInput(BaseSchema):
     telefono: Optional[str] = None
     tipo_sangre: Optional[str] = None
     ocupacion: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 
 class CreateConsultationRequest(BaseSchema):

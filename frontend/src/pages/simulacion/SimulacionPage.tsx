@@ -10,7 +10,7 @@ import {
   ensureCourseId, createConsultation, retryUntilGemini, getConsultation, getFichaPrevia,
   sendMessage as sendPatientMessage, finishConsultation, explorar,
   type CaseDetails, type CatalogoItem, type TipoExploracion,
-  type EvaluationResult, type Difficulty, type IdentidadPaciente,
+  type EvaluationResult, type Difficulty, type IdentidadPaciente, type DatosPaciente,
 } from '../../data/consultasApi';
 
 /* ═══════════════════════════════════════════════════════════
@@ -212,10 +212,10 @@ function CaseSheet({
 
 /* ── Entrevista (chat con el Agente 2) ── */
 function Interview({
-  messages, onSend, onFinish, sending, estadoEmocional, consultaTerminada,
+  messages, onSend, onFinish, sending, estadoEmocional, consultaTerminada, paciente,
 }: {
   messages: ChatMsg[]; onSend: (t: string) => void; onFinish: () => void; sending: boolean;
-  estadoEmocional: string | null; consultaTerminada: boolean;
+  estadoEmocional: string | null; consultaTerminada: boolean; paciente: DatosPaciente | null;
 }) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -232,10 +232,16 @@ function Interview({
   return (
     <div className="sim-chat-col">
       <div className="sim-agent-header">
-        <div className="sim-agent-logo-wrap"><img src={logoUrl} alt="Paciente" /></div>
+        <div className="sim-agent-logo-wrap">
+          <img src={paciente?.avatar_url || logoUrl} alt="Paciente" />
+        </div>
         <div>
-          <span className="sim-agent-name">Paciente virtual</span>
-          <span className="sim-agent-online"><span className="sim-agent-dot" /> en línea</span>
+          <span className="sim-agent-name">{paciente?.nombre || 'Paciente virtual'}</span>
+          <span className="sim-agent-online">
+            {paciente?.edad != null
+              ? `${paciente.edad} años${paciente.ocupacion ? ` · ${paciente.ocupacion}` : ''}`
+              : <><span className="sim-agent-dot" /> en línea</>}
+          </span>
         </div>
         {estadoEmocional && <span className="sim-emo-badge">{estadoEmocional}</span>}
       </div>
@@ -249,7 +255,7 @@ function Interview({
             className={`sim-bubble-wrap${m.role === 'student' ? ' sim-bubble-wrap-student' : ''}`}
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
           >
-            {m.role === 'patient' && <div className="sim-bubble-avatar"><img src={logoUrl} alt="" /></div>}
+            {m.role === 'patient' && <div className="sim-bubble-avatar"><img src={paciente?.avatar_url || logoUrl} alt="" /></div>}
             <div>
               <div className={`sim-bubble sim-bubble-${m.role}`}>{m.text}</div>
               <div className="sim-bubble-meta">{fmtTime(m.ts)}</div>
@@ -258,7 +264,7 @@ function Interview({
         ))}
         {sending && (
           <div className="sim-bubble-wrap">
-            <div className="sim-bubble-avatar"><img src={logoUrl} alt="" /></div>
+            <div className="sim-bubble-avatar"><img src={paciente?.avatar_url || logoUrl} alt="" /></div>
             <div className="sim-bubble sim-bubble-patient">
               <div className="sim-typing-dots"><span /><span /><span /></div>
             </div>
@@ -513,8 +519,13 @@ function CaseGenerationLoader({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.85, delay: 0.3 }}
               >
-                <span className="sim-pac-label">Paciente</span>
-                <h3 className="sim-pac-name">{fichaPrevia.nombre}</h3>
+                {fichaPrevia.avatar_url && (
+                  <img src={fichaPrevia.avatar_url} alt="" className="sim-pac-avatar" />
+                )}
+                <div>
+                  <span className="sim-pac-label">Paciente</span>
+                  <h3 className="sim-pac-name">{fichaPrevia.nombre}</h3>
+                </div>
               </motion.div>
 
               <motion.div
@@ -922,7 +933,7 @@ export default function SimulacionPage() {
             <div className="sim-2col">
               <Interview
                 messages={messages} onSend={handleSend} onFinish={() => setPhase('diagnosis')} sending={sending}
-                estadoEmocional={estadoEmocional} consultaTerminada={consultaTerminada}
+                estadoEmocional={estadoEmocional} consultaTerminada={consultaTerminada} paciente={caseDetails?.paciente || null}
               />
               <CaseSheet c={caseDetails} explored={explored} onExplorar={handleExplorar} disabled={sending} messages={messages} />
             </div>

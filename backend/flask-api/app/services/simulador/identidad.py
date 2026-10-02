@@ -16,6 +16,7 @@ mismo paciente que termina en la consulta.
 """
 
 import random
+from urllib.parse import urlencode
 
 NOMBRES_F = [
     "Maria Fernanda Ortiz", "Luz Marina Rueda", "Diana Carolina Pardo", "Gloria Esperanza Suarez",
@@ -42,6 +43,37 @@ OCUPACIONES_M = [
     "Arquitecto", "Conductor", "Auxiliar logístico", "Electricista",
 ]
 
+# Avatar humano (DiceBear 9.x, estilo "avataaars" — mismo que ya usa la app
+# para usuarios reales, ver frontend/src/components/auth/AvatarPickerStep.tsx)
+# que coincida con el sexo del paciente. Nombres de variante verificados
+# contra el esquema real de DiceBear (@dicebear/styles/avataaars), no
+# inventados: cada "top" (peinado) de esa lista existe tal cual en la API.
+# Se excluyen a proposito hat/turban/hijab/winterHat* -- son prendas
+# culturales o de clima, no deberian asignarse por una suposicion de sexo.
+_DICEBEAR_BASE = "https://api.dicebear.com/9.x/avataaars/svg"
+_TOPS_F = [
+    "bigHair", "bob", "bun", "curly", "curvy", "frida", "frizzle",
+    "longButNotTooLong", "miaWallace", "straight01", "straight02", "straightAndStrand",
+]
+_TOPS_M = [
+    "dreads", "dreads01", "dreads02", "fro", "froBand", "shaggy", "shaggyMullet",
+    "shavedSides", "shortCurly", "shortFlat", "shortRound", "shortWaved", "sides",
+    "theCaesar", "theCaesarAndSidePart",
+]
+_BG_COLORS = ["b6e3f4", "c0aede", "d1d4f9", "ffd5dc", "ffdfbf", "c9f2c7"]
+
+
+def avatar_url_por_defecto(seed: str, sexo: str) -> str:
+    """Arma la URL del avatar — DiceBear resuelve el peinado final de forma
+    determinista a partir del seed (misma seed = mismo avatar siempre), solo
+    restringido a la lista de peinados del sexo correspondiente."""
+    params = [("seed", seed)]
+    for top in (_TOPS_F if sexo == "F" else _TOPS_M):
+        params.append(("top[]", top))
+    params.append(("facialHairProbability", "0" if sexo == "F" else "35"))
+    params.append(("backgroundColor", random.choice(_BG_COLORS)))
+    return f"{_DICEBEAR_BASE}?{urlencode(params)}"
+
 
 def peso_por_defecto(edad: int, sexo: str) -> float:
     """Formula compartida para un peso corporal plausible cuando falta o es
@@ -67,4 +99,5 @@ def generar_identidad() -> dict:
         "telefono": telefono,
         "tipo_sangre": tipo_sangre,
         "peso_kg": peso_por_defecto(edad, sexo),
+        "avatar_url": avatar_url_por_defecto(documento, sexo),
     }

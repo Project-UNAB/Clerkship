@@ -136,6 +136,7 @@ def _public_case_view(caso: dict) -> dict:
             "documento": dp.get("documento"),
             "telefono": dp.get("telefono"),
             "tipo_sangre": dp.get("tipo_sangre"),
+            "avatar_url": dp.get("avatar_url"),
         },
         "estado_emocional_inicial": caso.get("estado_emocional_inicial"),
         "presentacion_inicial": caso.get("presentacion_inicial"),
