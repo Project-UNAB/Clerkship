@@ -107,9 +107,54 @@ function LabResultCard({ e, procesandoLabel }: { e: ExploredEntry; procesandoLab
   );
 }
 
-/* ── Historia Clínica Electrónica Oficial (EHR Formulario Médico Formal) ── */
-function HistoriaClinicaEHR({
-  c, explored, onExplorar, disabled, messages, activeModule, onSelectModule, onClose,
+/* ── Dock Lateral: Módulos Clínicos Independientes ── */
+function HistoriaClinicaEHRDock({
+  activeModule,
+  onSelectModule,
+}: {
+  activeModule: ClinicalModule | null;
+  onSelectModule: (module: ClinicalModule | null) => void;
+}) {
+  return (
+    <aside className="sim-ehr-dock" aria-label="Módulos Clínicos Independientes">
+      {/* 1. Anamnesis */}
+      <button
+        type="button"
+        className={`sim-ehr-dock-item sim-dock-anam${activeModule === 'anamnesis' ? ' is-active' : ''}`}
+        onClick={() => onSelectModule(activeModule === 'anamnesis' ? null : 'anamnesis')}
+        title="Abrir Anamnesis y Motivo de Consulta"
+      >
+        <div className="sim-ehr-dock-icon">
+          <ClipboardList size={16} />
+        </div>
+        <div className="sim-ehr-dock-label-wrap">
+          <span className="sim-ehr-dock-title">Anamnesis</span>
+          <span className="sim-ehr-dock-sub">Motivo & Cuadro</span>
+        </div>
+      </button>
+
+      {/* 2. Expediente Completo */}
+      <button
+        type="button"
+        className={`sim-ehr-dock-item sim-dock-comp${activeModule === 'completo' ? ' is-active' : ''}`}
+        onClick={() => onSelectModule(activeModule === 'completo' ? null : 'completo')}
+        title="Abrir Expediente Consolidado (Epicrisis)"
+      >
+        <div className="sim-ehr-dock-icon">
+          <FileText size={16} />
+        </div>
+        <div className="sim-ehr-dock-label-wrap">
+          <span className="sim-ehr-dock-title">Expediente</span>
+          <span className="sim-ehr-dock-sub">Epicrisis Global</span>
+        </div>
+      </button>
+    </aside>
+  );
+}
+
+/* ── Panel Lateral Derecho: Formulario de Historia Clínica Electrónica Oficial ── */
+function HistoriaClinicaEHRPanel({
+  c, explored, onExplorar, disabled, messages, activeModule, onClose,
 }: {
   c: CaseDetails;
   explored: Record<string, ExploredEntry>;
@@ -117,7 +162,6 @@ function HistoriaClinicaEHR({
   disabled: boolean;
   messages: ChatMsg[];
   activeModule: ClinicalModule | null;
-  onSelectModule: (module: ClinicalModule | null) => void;
   onClose: () => void;
 }) {
   const notasHistoria = messages.filter(m => m.role === 'patient');
@@ -140,183 +184,160 @@ function HistoriaClinicaEHR({
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
-  const MODULE_META: Record<ClinicalModule, { title: string; subtitle: string }> = {
+  const MODULE_HEADER_INFO: Record<ClinicalModule, {
+    title: string;
+    subtitle: string;
+    icon: typeof ClipboardList;
+    iconClass: string;
+  }> = {
     anamnesis: {
-      title: 'B. ANAMNESIS Y MOTIVO DE CONSULTA',
+      title: 'Anamnesis y Motivo de Consulta',
       subtitle: `Interrogatorio Clínico · Folio N°: HC-${c.paciente.documento || '105661040'}`,
-    },
-    examen_fisico: {
-      title: 'C. EXAMEN FÍSICO DIRIGIDO Y SIGNOS VITALES',
-      subtitle: `Exploración Física Determinista · Folio N°: HC-${c.paciente.documento || '105661040'}`,
-    },
-    paraclinicos: {
-      title: 'D. ÓRDENES PARACLÍNICAS Y LABORATORIO',
-      subtitle: `Estudios Diagnósticos e Imágenes · Folio N°: HC-${c.paciente.documento || '105661040'}`,
+      icon: ClipboardList,
+      iconClass: 'sim-module-icon-anamnesis',
     },
     completo: {
-      title: 'E. REGISTRO CONSOLIDADO (EPICRISIS)',
-      subtitle: `Consolidado Clínico Global · Folio N°: HC-${c.paciente.documento || '105661040'}`,
+      title: 'Expediente Clínico Consolidado',
+      subtitle: `Filiación y Epicrisis · Folio N°: HC-${c.paciente.documento || '105661040'}`,
+      icon: FileText,
+      iconClass: 'sim-module-icon-completo',
+    },
+    examen_fisico: {
+      title: 'Examen Físico Dirigido',
+      subtitle: 'Exploración física determinista y signos vitales',
+      icon: Stethoscope,
+      iconClass: 'sim-module-icon-examen_fisico',
+    },
+    paraclinicos: {
+      title: 'Órdenes Paraclínicas y Laboratorio',
+      subtitle: 'Estudios diagnósticos, laboratorio e imágenes',
+      icon: FlaskConical,
+      iconClass: 'sim-module-icon-paraclinicos',
     },
   };
 
-  const currentMeta = activeModule ? MODULE_META[activeModule] : MODULE_META.anamnesis;
   const fechaHoy = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
-    <>
-      {/* ── Dock Lateral: Módulos Clínicos Independientes ── */}
-      <aside className="sim-ehr-dock" aria-label="Módulos Clínicos Independientes">
-        {/* 1. Anamnesis */}
-        <button
-          type="button"
-          className={`sim-ehr-dock-item sim-dock-anam${activeModule === 'anamnesis' ? ' is-active' : ''}`}
-          onClick={() => onSelectModule(activeModule === 'anamnesis' ? null : 'anamnesis')}
-          title="Abrir Anamnesis y Motivo de Consulta"
+    <AnimatePresence>
+      {isOpen && activeModule && (
+        <motion.aside
+          key={`ehr-panel-${activeModule}`}
+          className={`sim-ehr-panel sim-ehr-panel-${activeModule}`}
+          style={{ width: 'clamp(400px, 30vw, 480px)' }}
+          initial={{ opacity: 0, x: 48 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 48 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="sim-ehr-dock-icon">
-            <ClipboardList size={16} />
-          </div>
-          <div className="sim-ehr-dock-label-wrap">
-            <span className="sim-ehr-dock-title">Anamnesis</span>
-            <span className="sim-ehr-dock-sub">Motivo & Cuadro</span>
-          </div>
-        </button>
-
-        {/* 2. Expediente Completo */}
-        <button
-          type="button"
-          className={`sim-ehr-dock-item sim-dock-comp${activeModule === 'completo' ? ' is-active' : ''}`}
-          onClick={() => onSelectModule(activeModule === 'completo' ? null : 'completo')}
-          title="Abrir Expediente Consolidado (Epicrisis)"
-        >
-          <div className="sim-ehr-dock-icon">
-            <FileText size={16} />
-          </div>
-          <div className="sim-ehr-dock-label-wrap">
-            <span className="sim-ehr-dock-title">Expediente</span>
-            <span className="sim-ehr-dock-sub">Epicrisis Global</span>
-          </div>
-        </button>
-      </aside>
-
-      {/* ── Modal Central: Formulario de Historia Clínica Electrónica Oficial ── */}
-      <AnimatePresence>
-        {isOpen && activeModule && (
-          <div className="sim-ehr-backdrop" onClick={onClose}>
-            <motion.div
-              className={`sim-ehr-modal sim-ehr-modal-${activeModule}`}
-              onClick={e => e.stopPropagation()}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.14, ease: 'easeOut' }}
-            >
-              {/* Encabezado Formal del Módulo Clínico (estilo formato clínico impreso) */}
-              <div className="ehr-modal-header">
-                <div className="ehr-header-brand">
-                  <img src={logoUrl} alt="Clerkship" className="ehr-logo-img" />
-                  <div className="ehr-header-brand-text">
-                    <span className="ehr-inst-name">CLÍNICA CLERKSHIP</span>
-                    <span className="ehr-inst-tag">Simulación Clínica · Educación Médica</span>
-                  </div>
-                </div>
-
-                <div className="ehr-header-right">
-                  <div className="ehr-header-title-block">
-                    <h3 className="ehr-inst-title">HISTORIA CLÍNICA</h3>
-                    <span className="ehr-status-pill">
-                      <span className="ehr-pulse-dot" /> EN CONSULTA
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="ehr-close-btn"
-                    onClick={onClose}
-                    title="Cerrar módulo (Esc)"
-                  >
-                    <X size={15} />
-                    <span>Cerrar</span>
-                    <span className="ehr-esc-key">ESC</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* ── Sección A: Identificación y Filiación del Paciente — SOLO en el Expediente
-                   consolidado (es el único "documento" completo tipo hoja clínica impresa;
-                   los módulos sueltos de Anamnesis/Examen/Paraclínicos no la repiten) ── */}
-              {activeModule === 'completo' && (
-              <div className="ehr-patient-section">
-                <div className="ehr-section-kicker">A. IDENTIFICACIÓN Y FILIACIÓN DEL PACIENTE</div>
-                <div className="ehr-patient-form-grid">
-                  <div className="ehr-form-cell ehr-form-cell-wide">
-                    <span className="ehr-cell-lbl">Apellidos y Nombres</span>
-                    <strong className="ehr-cell-val">{c.paciente.nombre}</strong>
-                  </div>
-                  <div className="ehr-form-cell">
-                    <span className="ehr-cell-lbl">Documento de Identidad</span>
-                    <span className="ehr-cell-val">{c.paciente.documento || 'CC 105661040'}</span>
-                  </div>
-                  <div className="ehr-form-cell">
-                    <span className="ehr-cell-lbl">Edad</span>
-                    <span className="ehr-cell-val">{c.paciente.edad} años</span>
-                  </div>
-
-                  <div className="ehr-form-cell ehr-form-cell-wide">
-                    <span className="ehr-cell-lbl">Sexo</span>
-                    <div className="ehr-checkbox-row">
-                      <span className={`ehr-checkbox-item${c.paciente.sexo === 'M' ? ' checked' : ''}`}>
-                        <span className="ehr-checkbox-box">{c.paciente.sexo === 'M' && <Check size={10} strokeWidth={3} />}</span>
-                        Masculino
-                      </span>
-                      <span className={`ehr-checkbox-item${c.paciente.sexo === 'F' ? ' checked' : ''}`}>
-                        <span className="ehr-checkbox-box">{c.paciente.sexo === 'F' && <Check size={10} strokeWidth={3} />}</span>
-                        Femenino
-                      </span>
+          <div className="sim-ehr-panel-inner">
+            {/* Encabezado Propio e Independiente de la Opción Seleccionada */}
+            {(() => {
+              const info = MODULE_HEADER_INFO[activeModule];
+              const IconComp = info.icon;
+              return (
+                <div className="sim-module-header">
+                  <div className="sim-module-header-left">
+                    <div className={`sim-module-icon-wrap ${info.iconClass}`}>
+                      <IconComp size={18} />
+                    </div>
+                    <div className="sim-module-text-wrap">
+                      <h3 className="sim-module-title">{info.title}</h3>
+                      <span className="sim-module-subtitle">{info.subtitle}</span>
                     </div>
                   </div>
-                  <div className="ehr-form-cell">
-                    <span className="ehr-cell-lbl">Ocupación Habitual</span>
-                    <span className="ehr-cell-val">{c.paciente.ocupacion || 'Docente universitaria'}</span>
-                  </div>
-                  <div className="ehr-form-cell">
-                    <span className="ehr-cell-lbl">Grupo Sanguíneo y Rh</span>
-                    <span className="ehr-cell-val">Tipo {c.paciente.tipo_sangre || 'B+'}</span>
-                  </div>
 
-                  <div className="ehr-form-cell">
-                    <span className="ehr-cell-lbl">Biometría / Peso</span>
-                    <span className="ehr-cell-val">{c.paciente.peso_kg || 62.1} kg</span>
-                  </div>
-                  <div className="ehr-form-cell">
-                    <span className="ehr-cell-lbl">Teléfono de Contacto</span>
-                    <span className="ehr-cell-val">{c.paciente.telefono || '311 777 3967'}</span>
-                  </div>
-                  <div className="ehr-form-cell">
-                    <span className="ehr-cell-lbl">Modalidad de Atención</span>
-                    <span className="ehr-cell-val">Consulta Externa</span>
-                  </div>
-                  <div className="ehr-form-cell">
-                    <span className="ehr-cell-lbl">Fecha de Consulta</span>
-                    <span className="ehr-cell-val">{fechaHoy}</span>
+                  <div className="sim-module-header-right">
+                    {activeModule === 'anamnesis' && (
+                      <span className="sim-module-live-badge">
+                        <span className="sim-pulse-dot" /> EN CONSULTA
+                      </span>
+                    )}
+                    {activeModule === 'examen_fisico' && doneExamen.length > 0 && (
+                      <span className="sim-sheet-progress-pill">{doneExamen.length} exploradas</span>
+                    )}
+                    {activeModule === 'paraclinicos' && doneParaclinicos.length > 0 && (
+                      <span className="sim-sheet-progress-pill">{doneParaclinicos.length} solicitados</span>
+                    )}
+                    <button
+                      type="button"
+                      className="ehr-close-btn"
+                      onClick={onClose}
+                      title="Cerrar módulo (Esc)"
+                    >
+                      <X size={15} />
+                      <span>Cerrar</span>
+                      <span className="ehr-esc-key">ESC</span>
+                    </button>
                   </div>
                 </div>
-              </div>
+              );
+            })()}
+
+            {/* Cuerpo de la Información Independiente de la Opción */}
+            <div className="ehr-form-body">
+              {/* Sección de Identificación y Filiación — solo en Expediente */}
+              {activeModule === 'completo' && (
+                <div className="ehr-patient-section">
+                  <div className="ehr-section-kicker">A. IDENTIFICACIÓN Y FILIACIÓN DEL PACIENTE</div>
+                  <div className="ehr-patient-form-grid">
+                    <div className="ehr-form-cell ehr-form-cell-wide">
+                      <span className="ehr-cell-lbl">Apellidos y Nombres</span>
+                      <strong className="ehr-cell-val">{c.paciente.nombre}</strong>
+                    </div>
+                    <div className="ehr-form-cell">
+                      <span className="ehr-cell-lbl">Documento de Identidad</span>
+                      <span className="ehr-cell-val">{c.paciente.documento || 'CC 105661040'}</span>
+                    </div>
+                    <div className="ehr-form-cell">
+                      <span className="ehr-cell-lbl">Edad</span>
+                      <span className="ehr-cell-val">{c.paciente.edad} años</span>
+                    </div>
+
+                    <div className="ehr-form-cell ehr-form-cell-wide">
+                      <span className="ehr-cell-lbl">Sexo</span>
+                      <div className="ehr-checkbox-row">
+                        <span className={`ehr-checkbox-item${c.paciente.sexo === 'M' ? ' checked' : ''}`}>
+                          <span className="ehr-checkbox-box">{c.paciente.sexo === 'M' && <Check size={10} strokeWidth={3} />}</span>
+                          Masculino
+                        </span>
+                        <span className={`ehr-checkbox-item${c.paciente.sexo === 'F' ? ' checked' : ''}`}>
+                          <span className="ehr-checkbox-box">{c.paciente.sexo === 'F' && <Check size={10} strokeWidth={3} />}</span>
+                          Femenino
+                        </span>
+                      </div>
+                    </div>
+                    <div className="ehr-form-cell">
+                      <span className="ehr-cell-lbl">Ocupación Habitual</span>
+                      <span className="ehr-cell-val">{c.paciente.ocupacion || 'Docente universitaria'}</span>
+                    </div>
+                    <div className="ehr-form-cell">
+                      <span className="ehr-cell-lbl">Grupo Sanguíneo y Rh</span>
+                      <span className="ehr-cell-val">Tipo {c.paciente.tipo_sangre || 'B+'}</span>
+                    </div>
+
+                    <div className="ehr-form-cell">
+                      <span className="ehr-cell-lbl">Biometría / Peso</span>
+                      <span className="ehr-cell-val">{c.paciente.peso_kg || 62.1} kg</span>
+                    </div>
+                    <div className="ehr-form-cell">
+                      <span className="ehr-cell-lbl">Teléfono de Contacto</span>
+                      <span className="ehr-cell-val">{c.paciente.telefono || '311 777 3967'}</span>
+                    </div>
+                    <div className="ehr-form-cell">
+                      <span className="ehr-cell-lbl">Modalidad de Atención</span>
+                      <span className="ehr-cell-val">Consulta Externa</span>
+                    </div>
+                    <div className="ehr-form-cell">
+                      <span className="ehr-cell-lbl">Fecha de Consulta</span>
+                      <span className="ehr-cell-val">{fechaHoy}</span>
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {/* Encabezado del módulo: solo para los accesos rápidos sueltos
-                  (Anamnesis/Examen/Paraclínicos) — el Expediente ya queda identificado
-                  por la Sección A y no necesita este rótulo adicional */}
-              {activeModule !== 'completo' && (
-                <>
-                  <div className="ehr-section-kicker ehr-section-kicker-module">{currentMeta.title}</div>
-                  <p className="ehr-module-subtitle">{currentMeta.subtitle}</p>
-                </>
-              )}
-
-              {/* Cuerpo del Formulario Clínico Independiente */}
-              <div className="ehr-form-body">
-                {/* 1. MÓDULO INDEPENDIENTE: ANAMNESIS */}
-                {activeModule === 'anamnesis' && (
+              {/* 1. MÓDULO INDEPENDIENTE: ANAMNESIS */}
+              {activeModule === 'anamnesis' && (
                     <div className="sim-sheet-page-content">
                       <div className="sim-sheet-card">
                         <div className="sim-sheet-card-head">
@@ -542,11 +563,10 @@ function HistoriaClinicaEHR({
                     </div>
                   )}
                 </div>
-            </motion.div>
-          </div>
+              </div>
+          </motion.aside>
         )}
       </AnimatePresence>
-    </>
   );
 }
 
@@ -554,6 +574,7 @@ function HistoriaClinicaEHR({
 function Interview({
   messages, onSend, onFinish, sending, estadoEmocional, consultaTerminada, paciente,
   onOpenModule, doneExamenCount = 0, doneParaclinicosCount = 0, onBack,
+  activeModule, onCloseModule, caseDetails, explored, onExplorar,
 }: {
   messages: ChatMsg[]; onSend: (t: string) => void; onFinish: () => void; sending: boolean;
   estadoEmocional: string | null; consultaTerminada: boolean; paciente: DatosPaciente | null;
@@ -561,6 +582,11 @@ function Interview({
   doneExamenCount?: number;
   doneParaclinicosCount?: number;
   onBack?: () => void;
+  activeModule?: ClinicalModule | null;
+  onCloseModule?: () => void;
+  caseDetails?: CaseDetails | null;
+  explored?: Record<string, ExploredEntry>;
+  onExplorar?: (tipo: TipoExploracion, item: CatalogoItem) => void;
 }) {
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>(() => elegirSugerencias(4));
@@ -660,56 +686,53 @@ function Interview({
           {estadoEmocional && <span className="sim-emo-badge">{estadoEmocional}</span>}
         </div>
 
-        {onOpenModule && (
-          <div className="sim-ehr-header-actions-group">
-            <button
-              type="button"
-              className="sim-ehr-header-btn"
-              onClick={() => onOpenModule('anamnesis')}
-              title="Abrir Anamnesis y Motivo de Consulta"
-            >
-              <ClipboardList size={13} />
-              <span>Anamnesis</span>
-            </button>
-
-            <button
-              type="button"
-              className="sim-ehr-header-btn sim-ehr-header-btn-muted"
-              onClick={() => onOpenModule('completo')}
-              title="Abrir Expediente Clínico Completo"
-            >
-              <FileText size={13} />
-              <span>Expediente</span>
-            </button>
-          </div>
-        )}
+        <button type="button" className="sim-header-finish-btn" onClick={onFinish}>
+          <span>Terminar entrevista y emitir diagnóstico</span>
+          <ChevronRight size={15} />
+        </button>
       </div>
 
-      <div className="sim-chat-messages">
-        {messages.map((m, i) => m.role === 'nota' ? (
-          <div key={i} className="sim-explora-nota">{m.text}</div>
-        ) : (
-          <motion.div
-            key={i}
-            className={`sim-bubble-wrap${m.role === 'student' ? ' sim-bubble-wrap-student' : ''}`}
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
-          >
-            {m.role === 'patient' && <div className="sim-bubble-avatar"><img src={paciente?.avatar_url || logoUrl} alt="" /></div>}
-            <div>
-              <div className={`sim-bubble sim-bubble-${m.role}`}>{m.text}</div>
-              <div className="sim-bubble-meta">{fmtTime(m.ts)}</div>
+      <div className={`sim-chat-messages${activeModule ? ' has-ehr-split' : ''}`}>
+        {/* Flujo de conversación (SIEMPRE EN EL CENTRO) */}
+        <div className="sim-chat-bubbles-stream">
+          {messages.map((m, i) => m.role === 'nota' ? (
+            <div key={i} className="sim-explora-nota">{m.text}</div>
+          ) : (
+            <motion.div
+              key={i}
+              className={`sim-bubble-wrap${m.role === 'student' ? ' sim-bubble-wrap-student' : ''}`}
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
+            >
+              {m.role === 'patient' && <div className="sim-bubble-avatar"><img src={paciente?.avatar_url || logoUrl} alt="" /></div>}
+              <div>
+                <div className={`sim-bubble sim-bubble-${m.role}`}>{m.text}</div>
+                <div className="sim-bubble-meta">{fmtTime(m.ts)}</div>
+              </div>
+            </motion.div>
+          ))}
+          {sending && (
+            <div className="sim-bubble-wrap">
+              <div className="sim-bubble-avatar"><img src={paciente?.avatar_url || logoUrl} alt="" /></div>
+              <div className="sim-bubble sim-bubble-patient">
+                <div className="sim-typing-dots"><span /><span /><span /></div>
+              </div>
             </div>
-          </motion.div>
-        ))}
-        {sending && (
-          <div className="sim-bubble-wrap">
-            <div className="sim-bubble-avatar"><img src={paciente?.avatar_url || logoUrl} alt="" /></div>
-            <div className="sim-bubble sim-bubble-patient">
-              <div className="sim-typing-dots"><span /><span /><span /></div>
-            </div>
-          </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Panel Clínico EHR (A LA DERECHA) */}
+        {caseDetails && activeModule && onCloseModule && explored && onExplorar && (
+          <HistoriaClinicaEHRPanel
+            c={caseDetails}
+            explored={explored}
+            onExplorar={onExplorar}
+            disabled={sending}
+            messages={messages}
+            activeModule={activeModule}
+            onClose={onCloseModule}
+          />
         )}
-        <div ref={bottomRef} />
       </div>
 
       {consultaTerminada ? (
@@ -812,13 +835,6 @@ function Interview({
           </div>
         </div>
       )}
-
-      {/* ── Footer: Terminar consulta ── */}
-      <div className="sim-chat-footer">
-        <button className="sim-btn-next sim-btn-next-sm" onClick={onFinish}>
-          Terminar entrevista y emitir diagnóstico <ChevronRight size={15} />
-        </button>
-      </div>
     </div>
   );
 }
@@ -1437,7 +1453,7 @@ export default function SimulacionPage() {
           )}
 
           {phase === 'interview' && (
-            <div className="sim-interview-layout">
+            <div className={`sim-interview-layout${activeClinicalModule ? ' has-ehr-split' : ''}`}>
               <Interview
                 messages={messages} onSend={handleSend} onFinish={() => setPhase('diagnosis')} sending={sending}
                 estadoEmocional={estadoEmocional} consultaTerminada={consultaTerminada} paciente={caseDetails?.paciente || null}
@@ -1445,11 +1461,16 @@ export default function SimulacionPage() {
                 doneExamenCount={Object.values(explored).filter(e => e.tipo === 'examen_fisico').length}
                 doneParaclinicosCount={Object.values(explored).filter(e => e.tipo === 'paraclinico').length}
                 onBack={() => navigate('/casos')}
+                activeModule={activeClinicalModule}
+                onCloseModule={() => setActiveClinicalModule(null)}
+                caseDetails={caseDetails}
+                explored={explored}
+                onExplorar={handleExplorar}
               />
               {caseDetails && (
-                <HistoriaClinicaEHR
-                  c={caseDetails} explored={explored} onExplorar={handleExplorar} disabled={sending} messages={messages}
-                  activeModule={activeClinicalModule} onSelectModule={setActiveClinicalModule} onClose={() => setActiveClinicalModule(null)}
+                <HistoriaClinicaEHRDock
+                  activeModule={activeClinicalModule}
+                  onSelectModule={setActiveClinicalModule}
                 />
               )}
             </div>

@@ -1985,14 +1985,31 @@
 
 /* Chat messages area */
 .sim-chat-messages {
-  flex: 1; overflow-y: auto;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  position: relative;
+  background: var(--surface, #FFFFFF);
+}
+
+.sim-chat-bubbles-stream {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
   box-sizing: border-box;
-  width: min(calc(100% - 160px), 880px);
+  width: 100%;
+  max-width: 780px;
   margin-left: auto;
   margin-right: auto;
-  padding: 28px clamp(16px, 3vw, 36px) 20px;
-  display: flex; flex-direction: column; gap: 18px;
-  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+  padding: 24px clamp(20px, 3vw, 40px) 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
 }
 
 /* Bubbles */
@@ -2224,18 +2241,6 @@
 .sim-suggestions-refresh:disabled { opacity: 0.5; cursor: default; }
 
 /* ── Footer: solo el botón de Terminar entrevista ── */
-.sim-chat-footer {
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  padding: 10px clamp(24px, 4vw, 48px);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-
 /* ── Layout a pantalla completa de la consulta ── */
 .sim-interview-layout {
   flex: 1;
@@ -2270,63 +2275,40 @@
   gap: 12px;
 }
 
-/* Botón de acceso directo en el header del chat */
 /* ══════════════════════════════════════════════════════════════
    HISTORIA CLÍNICA ELECTRÓNICA (EHR) — SISTEMA FORMAL Y MINIMALISTA
    ══════════════════════════════════════════════════════════════ */
 
-/* ── Botones de Acceso a Módulos en el Header del Chat ── */
-.sim-ehr-header-actions-group {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-}
-
-.sim-ehr-header-btn {
+/* ── Botón de "Terminar entrevista" en el header del chat — antes vivía
+   solo. en un footer aparte; ahora queda a la derecha del header, junto
+   al nombre del paciente, ya que Anamnesis/Expediente pasaron al dock
+   lateral y a la barra de escritura. ── */
+.sim-header-finish-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
-  border-radius: var(--r-md, 8px);
-  background: rgba(0, 179, 248, 0.08);
-  color: var(--p-dk);
-  border: 1px solid rgba(0, 179, 248, 0.28);
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: var(--r-ful);
+  background: #1a3a5c;
+  color: #FFFFFF;
+  border: none;
   font-family: var(--font);
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
-  will-change: transform;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
-
-.sim-ehr-header-btn:hover {
-  background: rgba(0, 179, 248, 0.16);
-  border-color: var(--p);
+.sim-header-finish-btn:hover {
+  background: #0d2a4a;
   transform: translate3d(0, -1px, 0);
-  box-shadow: 0 2px 8px rgba(0, 179, 248, 0.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.14);
 }
-
-.sim-ehr-header-btn-muted {
-  background: var(--bg);
-  border-color: var(--border);
-  color: var(--ink2);
-}
-
-.sim-ehr-header-btn-muted:hover {
-  background: rgba(0, 179, 248, 0.08);
-  border-color: var(--p);
-  color: var(--ink);
-}
-
-.sim-ehr-count-badge {
-  background: #10B981;
-  color: #FFFFFF;
-  font-size: 0.62rem;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 999px;
-  line-height: 1.2;
+@media (max-width: 860px) {
+  .sim-header-finish-btn span { display: none; }
+  .sim-header-finish-btn { padding: 9px; }
 }
 
 /* ── Dock Lateral: Módulos Clínicos Independientes (Centrado Verticalmente) ── */
@@ -2351,27 +2333,35 @@
   background: var(--surface);
   border-radius: 12px 0 0 12px;
   box-shadow: -4px 6px 20px rgba(15, 23, 42, 0.08);
-  padding: 7px 12px 7px 9px;
+  padding: 6px 12px 6px 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 10px;
   font-family: var(--font);
-  transform: translate3d(calc(100% - 46px), 0, 0);
+  transform: translate3d(calc(100% - 44px), 0, 0);
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
   will-change: transform;
   outline: none;
 }
 
-.sim-ehr-dock-item:hover,
-.sim-ehr-dock-item.is-active {
-  transform: translate3d(0, 0, 0);
-  box-shadow: -6px 10px 28px rgba(0, 179, 248, 0.2);
+/* Solo se despliega y muestra todo el texto cuando el cursor está encima (:hover) */
+.sim-ehr-dock-item:hover {
+  transform: translate3d(0, 0, 0) !important;
+  box-shadow: -6px 10px 28px rgba(0, 179, 248, 0.25);
   border-color: rgba(0, 179, 248, 0.5);
+  z-index: 10;
 }
 
+/* Cuando está seleccionada/activa, permanece ESCONDIDA (no muestra todo el texto)
+   Solo muestra el acento en la pestaña retraída */
 .sim-ehr-dock-item.is-active {
   border-left: 3px solid var(--p);
+  border-color: rgba(0, 179, 248, 0.45);
+}
+
+.sim-ehr-dock-item.is-active:not(:hover) {
+  transform: translate3d(calc(100% - 44px), 0, 0);
 }
 
 .sim-ehr-dock-icon {
@@ -2386,7 +2376,7 @@
 }
 
 .sim-ehr-dock-item:hover .sim-ehr-dock-icon {
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 
 /* Acentos específicos para cada opción clínica independiente */
@@ -2407,12 +2397,23 @@
   color: #6366F1;
 }
 
+/* El texto permanece completamente oculto/invisible salvo cuando el cursor está encima */
 .sim-ehr-dock-label-wrap {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   white-space: nowrap;
   min-width: 95px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(8px, 0, 0);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.sim-ehr-dock-item:hover .sim-ehr-dock-label-wrap {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
 }
 
 .sim-ehr-dock-title {
@@ -2440,7 +2441,165 @@
   line-height: 1.2;
 }
 
-/* ── Modal Overlay y Contenedor del Formulario EHR (Ultra Optimizado, 0 Lag) ── */
+/* ── Panel Lateral Derecho Independiente (Posicionado absoluto para que el chat permanezca 100% fijo) ── */
+.sim-ehr-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  border-left: 1px solid var(--border);
+  border-right: none;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 25;
+  box-shadow: -6px 0 28px rgba(15, 23, 42, 0.08);
+}
+
+.sim-ehr-panel-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-width: 400px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+/* ── Encabezado Propio e Independiente de cada Opción Clínica ── */
+.sim-module-header {
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sim-module-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sim-module-text-wrap {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sim-module-icon-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sim-module-icon-anamnesis {
+  background: rgba(0, 179, 248, 0.12);
+  color: #00B3F8;
+}
+.sim-module-icon-completo {
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366F1;
+}
+.sim-module-icon-examen_fisico {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+}
+.sim-module-icon-paraclinicos {
+  background: rgba(245, 158, 11, 0.12);
+  color: #F59E0B;
+}
+
+.sim-module-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sim-module-subtitle {
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--ink3);
+  line-height: 1.2;
+  margin-top: 1px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sim-module-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sim-module-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.sim-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  animation: simPulse 1.8s infinite;
+}
+
+.sim-ehr-panel .ehr-form-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 24px;
+  background: #FFFFFF;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+
+.sim-ehr-panel-completo .sim-ehr-panel-inner {
+  background: #FCFDFD;
+}
+
+/* Cuando una opción clínica independiente se abre a la derecha, las opciones
+   del dock lateral se adaptan acoplándose al lateral izquierdo del panel abierto,
+   manteniéndose 100% independientes, visibles y conmutables con 1 solo clic */
+.has-ehr-split .sim-ehr-dock {
+  right: clamp(400px, 30vw, 480px) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateY(-50%) translate3d(0, 0, 0) !important;
+  transition: right 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease !important;
+}
+
+/* Modal legacy fallback */
 .sim-ehr-backdrop {
   position: fixed;
   inset: 0;
@@ -2453,9 +2612,6 @@
   contain: strict;
 }
 
-/* Modal base: panel liviano de app (para los accesos rapidos sueltos —
-   Anamnesis / Examen Fisico / Paraclinicos). El aspecto de "hoja de papel
-   real" queda reservado unicamente al Expediente consolidado, mas abajo. */
 .sim-ehr-modal {
   width: 740px;
   max-width: 95vw;
