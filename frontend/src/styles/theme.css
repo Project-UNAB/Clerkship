@@ -1698,6 +1698,17 @@ html.theme-animating .crono-gantt-card {
   border: none !important;
   box-shadow: none !important;
 }
+
+[data-theme="dark"] .sim-agent-back-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #CBD5E1 !important;
+}
+[data-theme="dark"] .sim-agent-back-btn:hover {
+  background: rgba(0, 179, 248, 0.14) !important;
+  border-color: rgba(0, 179, 248, 0.4) !important;
+  color: #38BDF8 !important;
+}
 [data-theme="dark"] .sim-ehr-header-btn {
   background: rgba(0, 179, 248, 0.12) !important;
   color: #38BDF8 !important;
@@ -1718,11 +1729,23 @@ html.theme-animating .crono-gantt-card {
   border-color: rgba(255, 255, 255, 0.12) !important;
   box-shadow: -4px 8px 24px rgba(0, 0, 0, 0.5) !important;
 }
+[data-theme="dark"] .sim-ehr-dock-left .sim-ehr-dock-item {
+  box-shadow: 4px 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
 [data-theme="dark"] .sim-ehr-dock-item:hover,
 [data-theme="dark"] .sim-ehr-dock-item.is-active {
   background: #16243A !important;
   border-color: rgba(0, 179, 248, 0.6) !important;
   box-shadow: -6px 12px 30px rgba(0, 0, 0, 0.7) !important;
+}
+[data-theme="dark"] .sim-ehr-dock-left .sim-ehr-dock-item:hover,
+[data-theme="dark"] .sim-ehr-dock-left .sim-ehr-dock-item.is-active {
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow: 6px 12px 30px rgba(0, 0, 0, 0.7) !important;
+}
+[data-theme="dark"] .sim-ehr-dock-left .sim-ehr-dock-item.sim-dock-para:hover,
+[data-theme="dark"] .sim-ehr-dock-left .sim-ehr-dock-item.sim-dock-para.is-active {
+  border-color: rgba(245, 158, 11, 0.6) !important;
 }
 [data-theme="dark"] .sim-ehr-dock-title {
   color: #F8FAFC !important;
@@ -1730,14 +1753,27 @@ html.theme-animating .crono-gantt-card {
 [data-theme="dark"] .sim-ehr-dock-sub {
   color: #94A3B8 !important;
 }
-[data-theme="dark"] .sim-ehr-modal {
+[data-theme="dark"] .sim-ehr-modal,
+[data-theme="dark"] .sim-ehr-panel,
+[data-theme="dark"] .sim-ehr-panel-inner {
   background: #0F172A !important;
-  border-color: rgba(0, 179, 248, 0.35) !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
+[data-theme="dark"] .sim-module-header,
 [data-theme="dark"] .ehr-modal-header {
   background: #111C2E !important;
   border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .sim-module-title {
+  color: #F8FAFC !important;
+}
+[data-theme="dark"] .sim-module-subtitle {
+  color: #94A3B8 !important;
+}
+[data-theme="dark"] .sim-module-live-badge {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34D399 !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
 }
 [data-theme="dark"] .ehr-inst-title {
   color: #F8FAFC !important;
@@ -1858,10 +1894,11 @@ html.theme-animating .crono-gantt-card {
   color: #FFFFFF !important;
 }
 
-/* ── LOGO CLERKSHIP Y AVATARES BLANCOS EN MODO OSCURO (100%) ── */
+/* ── LOGO CLERKSHIP BLANCO EN MODO OSCURO (100%) ──
+   OJO: .sim-agent-logo-wrap img / .sim-bubble-avatar img NO van aqui —
+   son la foto/avatar real del paciente (DiceBear), no el logo; invertirlas
+   las deja como una silueta blanca ilegible. */
 [data-theme="dark"] .sim-tb-logo,
-[data-theme="dark"] .sim-agent-logo-wrap img,
-[data-theme="dark"] .sim-bubble-avatar img,
 [data-theme="dark"] .sidebar-logo img,
 [data-theme="dark"] .auth-logo img,
 [data-theme="dark"] .dash-logo img {
