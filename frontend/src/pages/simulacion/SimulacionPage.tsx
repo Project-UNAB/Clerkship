@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, CheckCircle, Send, ChevronRight, Info, ArrowLeft, Stethoscope,
   Loader2, AlertTriangle, TrendingUp, Award, User, Eye, ClipboardList, FileText,
-  X, FlaskConical, Sparkles, Shuffle, CornerDownLeft,
+  X, FlaskConical, Sparkles, Shuffle,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import logoUrl from '../../assets/Logo Clerkship.svg';
@@ -810,9 +810,6 @@ function Interview({
               </button>
             </div>
           </div>
-          <p className="sim-input-tip">
-            <CornerDownLeft size={11} /> Enter envía · Shift+Enter salto de línea · ↑ repite tu última pregunta
-          </p>
         </div>
       )}
 

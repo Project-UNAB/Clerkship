@@ -2151,19 +2151,6 @@
 .sim-input-send:hover:not(:disabled) { background: #0d2a4a; }
 .sim-input-send:disabled { background: var(--border2); color: var(--ink3); cursor: default; }
 
-.sim-input-tip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  font-size: 0.66rem; color: var(--ink3);
-  margin: 8px auto 0;
-  width: 100%;
-  max-width: 920px;
-  padding: 0 14px;
-}
-
 /* ── Popover de preguntas sugeridas: se abre flotando arriba del dock,
    no estorba el recuadro de escritura mientras está cerrado ── */
 .sim-suggestions-pop {
