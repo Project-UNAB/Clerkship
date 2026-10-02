@@ -3574,6 +3574,193 @@
   border-bottom: none;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   CARPETA DE DOCUMENTOS — visor tipo revista con animación real de
+   pasar hoja (react-pageflip), páginas proporción tamaño carta.
+   ══════════════════════════════════════════════════════════════ */
+.sim-input-tool-docs:hover:not(:disabled) {
+  color: var(--p-dk);
+  background: rgba(0, 179, 248, 0.1);
+}
+
+.sim-docs-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 22, 0.72);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.sim-docs-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-height: 100%;
+}
+
+.sim-docs-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.sim-docs-modal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.sim-docs-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sim-docs-modal-actions > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+.sim-docs-modal-actions > button:hover { background: rgba(255, 255, 255, 0.18); }
+
+.sim-docs-close {
+  width: auto !important;
+  padding: 0 14px;
+  border-radius: var(--r-ful) !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.sim-docs-book-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sim-docs-flipbook {
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5);
+}
+
+/* Cada hoja del libro: proporción tamaño carta (8.5 x 11), fondo real de
+   papel aunque el resto de la app esté en modo oscuro — por eso redefine
+   las variables de tema localmente a valores fijos "papel claro" para que
+   los componentes reutilizados (LabResultCard, LabDepartmentSheet, grilla
+   de identificación) se vean igual sin importar el tema activo. */
+.sim-doc-page {
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface2: #F1F3F5;
+  --ink: #1A1A1A;
+  --ink2: #333333;
+  --ink3: #5B6572;
+  --border: #E2E8F0;
+  --border2: #E2E8F0;
+  background: #FFFFFF;
+  color: #1A1A1A;
+  border: 1px solid #D8DBDF;
+  padding: 22px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.sim-doc-page-lab {
+  padding: 0;
+  overflow: hidden;
+}
+.sim-doc-page-lab .sim-lab-sheet {
+  border: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.sim-doc-page-lab .sim-lab-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sim-doc-page-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #111;
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #1A1A1A;
+}
+
+.sim-doc-sub-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #111;
+  margin: 16px 0 8px;
+}
+
+.sim-doc-id-grid {
+  border-left-color: #1A1A1A;
+  border-top-color: #1A1A1A;
+}
+.sim-doc-id-grid .ehr-form-cell {
+  background: #FFFFFF;
+  border-right-color: #1A1A1A;
+  border-bottom-color: #1A1A1A;
+}
+.sim-doc-id-grid .ehr-cell-lbl { color: #5B6572; }
+.sim-doc-id-grid .ehr-cell-val { color: #111; }
+
+/* Portada */
+.sim-doc-cover {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  background: linear-gradient(165deg, #FFFFFF 0%, #F1F5F9 100%);
+}
+.sim-doc-cover-logo { height: 54px; width: auto; margin-bottom: 10px; }
+.sim-doc-cover h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sim-doc-cover-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a3a5c;
+  margin: 4px 0 0;
+}
+.sim-doc-cover-meta {
+  font-size: 0.74rem;
+  color: #64748B;
+  margin: 2px 0 0;
+}
+
+@media (max-width: 560px) {
+  .sim-docs-modal-title span { display: none; }
+}
+
 /* ── Stage 1 — full width presentation ── */
 .sim-stage1-wrap {
   flex: 1; overflow-y: auto;

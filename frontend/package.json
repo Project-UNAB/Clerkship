@@ -23,6 +23,7 @@
     "pdfjs-dist": "^5.6.205",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-pageflip": "^2.0.3",
     "react-router-dom": "^7.14.2",
     "three": "^0.184.0",
     "xlsx": "^0.18.5"

@@ -1,12 +1,34 @@
-import { useState, useRef, useEffect, useCallback, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import {
+  useState, useRef, useEffect, useCallback,
+  type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type CSSProperties, type ForwardRefExoticComponent, type RefAttributes,
+} from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Check, CheckCircle, Send, ChevronRight, Info, ArrowLeft, Stethoscope,
+  Check, CheckCircle, Send, ChevronRight, ChevronLeft, Info, ArrowLeft, Stethoscope,
   Loader2, AlertTriangle, TrendingUp, Award, User, Eye, ClipboardList, FileText,
-  X, FlaskConical, Sparkles, Shuffle,
+  X, FlaskConical, Sparkles, Shuffle, FolderOpen,
 } from 'lucide-react';
+import HTMLFlipBookRaw from 'react-pageflip';
 import { useNavigate, useParams } from 'react-router-dom';
 import logoUrl from '../../assets/Logo Clerkship.svg';
+
+/* El tipado de react-pageflip exige TODAS las propiedades de configuracion
+   como requeridas (defecto de la libreria, no del componente real: a nivel
+   de ejecucion las rellena internamente la clase PageFlip). Se relaja aqui
+   una sola vez a un set de props realmente opcionales, en vez de pelear con
+   el tipo original en cada uso. */
+const HTMLFlipBook = HTMLFlipBookRaw as unknown as ForwardRefExoticComponent<{
+  width: number; height: number;
+  size?: 'fixed' | 'stretch';
+  minWidth?: number; maxWidth?: number; minHeight?: number; maxHeight?: number;
+  showCover?: boolean;
+  drawShadow?: boolean;
+  maxShadowOpacity?: number;
+  mobileScrollSupport?: boolean;
+  className?: string;
+  style?: CSSProperties;
+  children: ReactNode;
+} & RefAttributes<{ pageFlip: () => { flipNext: () => void; flipPrev: () => void } }>>;
 import {
   ensureCourseId, createConsultation, retryUntilGemini, getConsultation, getFichaPrevia,
   sendMessage as sendPatientMessage, finishConsultation, explorar,
@@ -156,6 +178,151 @@ function LabDepartmentSheet({ grupo, items, paciente, folio }: {
         {items.map(e => (
           <LabResultCard key={`${grupo}-${e.clave}`} e={e} procesandoLabel="Procesando en laboratorio..." />
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Carpeta de Documentos: historia clínica completa en formato "revista",
+   con animación real de pasar hoja (react-pageflip), tamaño carta y la
+   misma estructura del reporte de laboratorio real (logo Clerkship, orden
+   de servicio, identificación del paciente, una hoja por departamento). ── */
+function DocumentsFlipbook({ c, explored, messages, onClose }: {
+  c: CaseDetails;
+  explored: Record<string, ExploredEntry>;
+  messages: ChatMsg[];
+  onClose: () => void;
+}) {
+  const bookRef = useRef<{ pageFlip: () => { flipNext: () => void; flipPrev: () => void } } | null>(null);
+  const notasHistoria = messages.filter(m => m.role === 'patient');
+  const doneExamen = Object.values(explored).filter(e => e.tipo === 'examen_fisico');
+  const doneParaclinicos = Object.values(explored).filter(e => e.tipo === 'paraclinico');
+  const departamentos = agruparPorDepartamento(doneParaclinicos, c.catalogo_exploracion.paraclinicos);
+  const folio = `HC-${c.paciente.documento || '105661040'}`;
+  const fechaHoy = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
+  }, [onClose]);
+
+  return (
+    <div className="sim-docs-backdrop" onClick={onClose}>
+      <div className="sim-docs-modal" onClick={e => e.stopPropagation()}>
+        <div className="sim-docs-modal-head">
+          <span className="sim-docs-modal-title"><FolderOpen size={15} /> Carpeta de Documentos · {c.paciente.nombre}</span>
+          <div className="sim-docs-modal-actions">
+            <button type="button" onClick={() => bookRef.current?.pageFlip().flipPrev()} title="Página anterior">
+              <ChevronLeft size={16} />
+            </button>
+            <button type="button" onClick={() => bookRef.current?.pageFlip().flipNext()} title="Página siguiente">
+              <ChevronRight size={16} />
+            </button>
+            <button type="button" className="sim-docs-close" onClick={onClose} title="Cerrar (Esc)">
+              <X size={15} /> <span>Cerrar</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="sim-docs-book-wrap">
+          <HTMLFlipBook
+            ref={bookRef}
+            width={420}
+            height={544}
+            size="fixed"
+            minWidth={315} maxWidth={420} minHeight={408} maxHeight={544}
+            showCover
+            drawShadow
+            maxShadowOpacity={0.35}
+            mobileScrollSupport
+            className="sim-docs-flipbook"
+          >
+            {/* Portada */}
+            <div className="sim-doc-page sim-doc-cover">
+              <img src={logoUrl} alt="Clerkship" className="sim-doc-cover-logo" />
+              <h2>Historia Clínica</h2>
+              <p className="sim-doc-cover-name">{c.paciente.nombre}</p>
+              <p className="sim-doc-cover-meta">Folio {folio} · {fechaHoy}</p>
+            </div>
+
+            {/* A. Identificación y Filiación */}
+            <div className="sim-doc-page">
+              <h3 className="sim-doc-page-title">A. Identificación y Filiación del Paciente</h3>
+              <div className="ehr-patient-form-grid sim-doc-id-grid">
+                <div className="ehr-form-cell ehr-form-cell-wide">
+                  <span className="ehr-cell-lbl">Apellidos y Nombres</span>
+                  <strong className="ehr-cell-val">{c.paciente.nombre}</strong>
+                </div>
+                <div className="ehr-form-cell">
+                  <span className="ehr-cell-lbl">Documento de Identidad</span>
+                  <span className="ehr-cell-val">{c.paciente.documento || 'N/A'}</span>
+                </div>
+                <div className="ehr-form-cell">
+                  <span className="ehr-cell-lbl">Edad</span>
+                  <span className="ehr-cell-val">{c.paciente.edad} años</span>
+                </div>
+                <div className="ehr-form-cell">
+                  <span className="ehr-cell-lbl">Sexo</span>
+                  <span className="ehr-cell-val">{c.paciente.sexo === 'F' ? 'Femenino' : 'Masculino'}</span>
+                </div>
+                <div className="ehr-form-cell">
+                  <span className="ehr-cell-lbl">Ocupación</span>
+                  <span className="ehr-cell-val">{c.paciente.ocupacion || 'N/A'}</span>
+                </div>
+                <div className="ehr-form-cell">
+                  <span className="ehr-cell-lbl">Grupo Sanguíneo y Rh</span>
+                  <span className="ehr-cell-val">Tipo {c.paciente.tipo_sangre || 'N/A'}</span>
+                </div>
+                <div className="ehr-form-cell">
+                  <span className="ehr-cell-lbl">Biometría / Peso</span>
+                  <span className="ehr-cell-val">{c.paciente.peso_kg || 'N/A'} kg</span>
+                </div>
+                <div className="ehr-form-cell">
+                  <span className="ehr-cell-lbl">Teléfono</span>
+                  <span className="ehr-cell-val">{c.paciente.telefono || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* B. Anamnesis y Motivo de Consulta */}
+            <div className="sim-doc-page">
+              <h3 className="sim-doc-page-title">B. Anamnesis y Motivo de Consulta</h3>
+              <p className="sim-sheet-card-text"><strong>Motivo:</strong> {c.presentacion_inicial}</p>
+              <p className="sim-sheet-card-text"><strong>Estado emocional:</strong> {c.estado_emocional_inicial || 'Normal'}</p>
+              {notasHistoria.length > 0 && (
+                <>
+                  <h4 className="sim-doc-sub-title">Declaraciones del Paciente</h4>
+                  <ul className="sim-sheet-notes-list">
+                    {notasHistoria.map((m, idx) => (
+                      <li key={idx} className="sim-sheet-note-item">
+                        <span className="sim-sheet-note-time">{fmtTime(m.ts)}</span>
+                        <span className="sim-sheet-note-text">"{m.text}"</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+
+            {/* C. Examen Físico */}
+            {doneExamen.length > 0 && (
+              <div className="sim-doc-page">
+                <h3 className="sim-doc-page-title">C. Examen Físico Dirigido</h3>
+                {doneExamen.map(e => (
+                  <LabResultCard key={e.clave} e={e} procesandoLabel="Explorando..." />
+                ))}
+              </div>
+            )}
+
+            {/* D. Una hoja por departamento de laboratorio solicitado */}
+            {departamentos.map(([grupo, items]) => (
+              <div className="sim-doc-page sim-doc-page-lab" key={grupo}>
+                <LabDepartmentSheet grupo={grupo} items={items} paciente={c.paciente} folio={folio} />
+              </div>
+            ))}
+          </HTMLFlipBook>
+        </div>
       </div>
     </div>
   );
@@ -728,6 +895,7 @@ function Interview({
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>(() => elegirSugerencias(4));
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const historyRef = useRef<string[]>([]);
@@ -961,6 +1129,19 @@ function Interview({
                   <FlaskConical size={16} />
                   {doneParaclinicosCount > 0 && <span className="sim-input-tool-badge">{doneParaclinicosCount}</span>}
                 </button>
+                {caseDetails && explored && (
+                  <button
+                    type="button"
+                    className="sim-input-tool-btn sim-input-tool-docs"
+                    onClick={() => setDocumentsOpen(true)}
+                    title="Abrir carpeta de documentos"
+                  >
+                    <FolderOpen size={16} />
+                    {(doneExamenCount + doneParaclinicosCount) > 0 && (
+                      <span className="sim-input-tool-badge">{doneExamenCount + doneParaclinicosCount}</span>
+                    )}
+                  </button>
+                )}
                 <span className="sim-input-dock-divider" />
               </div>
             )}
@@ -1002,6 +1183,15 @@ function Interview({
             </div>
           </div>
         </div>
+      )}
+
+      {documentsOpen && caseDetails && explored && (
+        <DocumentsFlipbook
+          c={caseDetails}
+          explored={explored}
+          messages={messages}
+          onClose={() => setDocumentsOpen(false)}
+        />
       )}
     </div>
   );
