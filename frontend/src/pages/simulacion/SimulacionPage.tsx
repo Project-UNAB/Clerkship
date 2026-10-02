@@ -22,6 +22,8 @@ const HTMLFlipBook = HTMLFlipBookRaw as unknown as ForwardRefExoticComponent<{
   size?: 'fixed' | 'stretch';
   minWidth?: number; maxWidth?: number; minHeight?: number; maxHeight?: number;
   showCover?: boolean;
+  usePortrait?: boolean;
+  autoSize?: boolean;
   drawShadow?: boolean;
   maxShadowOpacity?: number;
   mobileScrollSupport?: boolean;
@@ -319,11 +321,13 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
         <div className="sim-docs-book-wrap">
           <HTMLFlipBook
             ref={bookRef}
-            width={420}
-            height={544}
-            size="fixed"
-            minWidth={315} maxWidth={420} minHeight={408} maxHeight={544}
+            width={560}
+            height={726}
+            size="stretch"
+            minWidth={460} maxWidth={620} minHeight={596} maxHeight={803}
             showCover
+            usePortrait={false}
+            autoSize={false}
             drawShadow
             maxShadowOpacity={0.35}
             mobileScrollSupport

@@ -3607,8 +3607,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: 100%;
-  max-width: 900px;
+  width: min(94vw, 1300px);
 }
 
 .sim-docs-modal-title {
@@ -3653,6 +3652,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: min(94vw, 1300px);
+  height: min(80vh, 820px);
 }
 
 .sim-docs-flipbook {
