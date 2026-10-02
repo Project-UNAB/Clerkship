@@ -107,16 +107,121 @@ function LabResultCard({ e, procesandoLabel }: { e: ExploredEntry; procesandoLab
   );
 }
 
-/* ── Dock Lateral: Módulos Clínicos Independientes ── */
-function HistoriaClinicaEHRDock({
+/* ── Agrupa los paraclínicos ya solicitados por su departamento real de
+   laboratorio (Química, Hematología, Inmunología/Serología, Uroanálisis,
+   Coprología, Imágenes, Procedimientos), en el mismo orden que el
+   catálogo, para armar una "hoja" independiente por grupo. */
+function agruparPorDepartamento(
+  done: ExploredEntry[], catalogo: CatalogoItem[],
+): [string, ExploredEntry[]][] {
+  const grupos = groupByGrupo(catalogo);
+  return grupos
+    .map(([grupo, items]): [string, ExploredEntry[]] => {
+      const claves = new Set(items.map(it => it.clave));
+      return [grupo, done.filter(e => claves.has(e.clave))];
+    })
+    .filter(([, items]) => items.length > 0);
+}
+
+/* ── Hoja de resultados por departamento, igual a un reporte de
+   laboratorio real (orden de servicio, identificación del paciente y
+   titulo del departamento en mayúsculas), con el logo de Clerkship. ── */
+function LabDepartmentSheet({ grupo, items, paciente, folio }: {
+  grupo: string;
+  items: ExploredEntry[];
+  paciente: DatosPaciente;
+  folio: string;
+}) {
+  return (
+    <div className="sim-lab-sheet">
+      <div className="sim-lab-sheet-header">
+        <img src={logoUrl} alt="Clerkship" className="sim-lab-sheet-logo" />
+        <div className="sim-lab-sheet-header-info">
+          <div className="sim-lab-sheet-orden">
+            <span className="sim-lab-sheet-orden-lbl">Orden de Servicio</span>
+            <strong>{folio}</strong>
+          </div>
+          <div className="sim-lab-sheet-header-grid">
+            <span><strong>Paciente:</strong> {paciente.nombre}</span>
+            <span><strong>Sexo:</strong> {paciente.sexo === 'F' ? 'Femenino' : 'Masculino'}</span>
+            <span><strong>Edad:</strong> {paciente.edad} años</span>
+            <span><strong>Identificación:</strong> {paciente.documento || 'N/A'}</span>
+            <span><strong>Teléfono:</strong> {paciente.telefono || 'N/A'}</span>
+            <span><strong>Cliente:</strong> Clerkship · Simulación Clínica</span>
+          </div>
+        </div>
+      </div>
+      <div className="sim-lab-sheet-title">{grupo}</div>
+      <div className="sim-lab-sheet-body">
+        {items.map(e => (
+          <LabResultCard key={`${grupo}-${e.clave}`} e={e} procesandoLabel="Procesando en laboratorio..." />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Dock Lateral Izquierdo: Examen Físico y Laboratorios ── */
+function HistoriaClinicaEHRDockLeft({
+  activeModule,
+  onSelectModule,
+  doneExamenCount = 0,
+  doneParaclinicosCount = 0,
+}: {
+  activeModule: 'examen_fisico' | 'paraclinicos' | null;
+  onSelectModule: (module: 'examen_fisico' | 'paraclinicos' | null) => void;
+  doneExamenCount?: number;
+  doneParaclinicosCount?: number;
+}) {
+  return (
+    <aside className="sim-ehr-dock sim-ehr-dock-left" aria-label="Módulos Clínicos de Exploración">
+      {/* 1. Examen Físico */}
+      <button
+        type="button"
+        className={`sim-ehr-dock-item sim-dock-exam${activeModule === 'examen_fisico' ? ' is-active' : ''}`}
+        onClick={() => onSelectModule(activeModule === 'examen_fisico' ? null : 'examen_fisico')}
+        title="Abrir Examen Físico Dirigido"
+      >
+        <div className="sim-ehr-dock-icon">
+          <Stethoscope size={16} />
+        </div>
+        <div className="sim-ehr-dock-label-wrap">
+          <span className="sim-ehr-dock-title">Examen Físico</span>
+          <span className="sim-ehr-dock-sub">Exploración & Signos</span>
+        </div>
+        {doneExamenCount > 0 && <span className="sim-dock-badge">{doneExamenCount}</span>}
+      </button>
+
+      {/* 2. Laboratorios / Paraclínicos */}
+      <button
+        type="button"
+        className={`sim-ehr-dock-item sim-dock-para${activeModule === 'paraclinicos' ? ' is-active' : ''}`}
+        onClick={() => onSelectModule(activeModule === 'paraclinicos' ? null : 'paraclinicos')}
+        title="Abrir Laboratorios y Estudios Paraclínicos"
+      >
+        <div className="sim-ehr-dock-icon">
+          <FlaskConical size={16} />
+        </div>
+        <div className="sim-ehr-dock-label-wrap">
+          <span className="sim-ehr-dock-title">Laboratorios</span>
+          <span className="sim-ehr-dock-sub">Órdenes & Paraclínicos</span>
+        </div>
+        {doneParaclinicosCount > 0 && <span className="sim-dock-badge">{doneParaclinicosCount}</span>}
+      </button>
+    </aside>
+  );
+}
+
+/* ── Dock Lateral Derecho: Anamnesis y Expediente Consolidado ── */
+function HistoriaClinicaEHRDockRight({
   activeModule,
   onSelectModule,
 }: {
-  activeModule: ClinicalModule | null;
-  onSelectModule: (module: ClinicalModule | null) => void;
+  activeModule: 'anamnesis' | 'completo' | null;
+  onSelectModule: (module: 'anamnesis' | 'completo' | null) => void;
 }) {
   return (
-    <aside className="sim-ehr-dock" aria-label="Módulos Clínicos Independientes">
+    <aside className="sim-ehr-dock sim-ehr-dock-right" aria-label="Módulos Clínicos Independientes">
       {/* 1. Anamnesis */}
       <button
         type="button"
@@ -218,16 +323,18 @@ function HistoriaClinicaEHRPanel({
 
   const fechaHoy = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
+  const isLeftPanel = activeModule === 'examen_fisico' || activeModule === 'paraclinicos';
+
   return (
     <AnimatePresence>
       {isOpen && activeModule && (
         <motion.aside
           key={`ehr-panel-${activeModule}`}
-          className={`sim-ehr-panel sim-ehr-panel-${activeModule}`}
-          style={{ width: 'clamp(400px, 30vw, 480px)' }}
-          initial={{ opacity: 0, x: 48 }}
+          className={`sim-ehr-panel sim-ehr-panel-${activeModule} ${isLeftPanel ? 'sim-ehr-panel-left' : 'sim-ehr-panel-right'}`}
+          style={{ width: 'clamp(340px, 28vw, 460px)' }}
+          initial={{ opacity: 0, x: isLeftPanel ? -48 : 48 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 48 }}
+          exit={{ opacity: 0, x: isLeftPanel ? -48 : 48 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         >
           <div className="sim-ehr-panel-inner">
@@ -488,16 +595,16 @@ function HistoriaClinicaEHRPanel({
                       </div>
 
                       {doneParaclinicos.length > 0 && (
-                        <div className="sim-sheet-results-panel">
-                          <div className="sim-sheet-card-head">
-                            <Award size={14} />
-                            <h4>Reportes de Laboratorio e Imágenes</h4>
-                          </div>
-                          <div className="sim-sheet-results-grid">
-                            {doneParaclinicos.map(e => (
-                              <LabResultCard key={`res-pc-${e.clave}`} e={e} procesandoLabel="Procesando en laboratorio..." />
-                            ))}
-                          </div>
+                        <div className="sim-lab-sheets-stack">
+                          {agruparPorDepartamento(doneParaclinicos, paraclinicoItems).map(([grupo, items]) => (
+                            <LabDepartmentSheet
+                              key={grupo}
+                              grupo={grupo}
+                              items={items}
+                              paciente={c.paciente}
+                              folio={`HC-${c.paciente.documento || '105661040'}`}
+                            />
+                          ))}
                         </div>
                       )}
                     </div>
@@ -553,9 +660,15 @@ function HistoriaClinicaEHRPanel({
                         {doneParaclinicos.length === 0 ? (
                           <p className="sim-sheet-empty-sub">No se han ordenado estudios paraclínicos.</p>
                         ) : (
-                          <div className="sim-sheet-results-grid">
-                            {doneParaclinicos.map(e => (
-                              <LabResultCard key={`full-pc-${e.clave}`} e={e} procesandoLabel="Procesando en laboratorio..." />
+                          <div className="sim-lab-sheets-stack">
+                            {agruparPorDepartamento(doneParaclinicos, paraclinicoItems).map(([grupo, items]) => (
+                              <LabDepartmentSheet
+                                key={grupo}
+                                grupo={grupo}
+                                items={items}
+                                paciente={c.paciente}
+                                folio={`HC-${c.paciente.documento || '105661040'}`}
+                              />
                             ))}
                           </div>
                         )}
@@ -574,11 +687,12 @@ function HistoriaClinicaEHRPanel({
 function Interview({
   messages, onSend, onFinish, sending, estadoEmocional, consultaTerminada, paciente,
   onOpenModule, doneExamenCount = 0, doneParaclinicosCount = 0, onBack,
-  activeModule, onCloseModule, caseDetails, explored, onExplorar,
+  activeModule, onCloseModule: _onCloseModule, caseDetails, explored, onExplorar,
+  activeLeftModule, activeRightModule, onOpenLeftModule, onOpenRightModule,
 }: {
   messages: ChatMsg[]; onSend: (t: string) => void; onFinish: () => void; sending: boolean;
   estadoEmocional: string | null; consultaTerminada: boolean; paciente: DatosPaciente | null;
-  onOpenModule?: (module: ClinicalModule) => void;
+  onOpenModule?: (module: ClinicalModule | null) => void;
   doneExamenCount?: number;
   doneParaclinicosCount?: number;
   onBack?: () => void;
@@ -587,7 +701,30 @@ function Interview({
   caseDetails?: CaseDetails | null;
   explored?: Record<string, ExploredEntry>;
   onExplorar?: (tipo: TipoExploracion, item: CatalogoItem) => void;
+  activeLeftModule?: 'examen_fisico' | 'paraclinicos' | null;
+  activeRightModule?: 'anamnesis' | 'completo' | null;
+  onOpenLeftModule?: (module: 'examen_fisico' | 'paraclinicos' | null) => void;
+  onOpenRightModule?: (module: 'anamnesis' | 'completo' | null) => void;
 }) {
+  const leftMod = activeLeftModule !== undefined ? activeLeftModule : (activeModule === 'examen_fisico' || activeModule === 'paraclinicos' ? activeModule : null);
+  const rightMod = activeRightModule !== undefined ? activeRightModule : (activeModule === 'anamnesis' || activeModule === 'completo' ? activeModule : null);
+
+  const handleToggleLeft = (m: 'examen_fisico' | 'paraclinicos' | null) => {
+    if (onOpenLeftModule) {
+      onOpenLeftModule(leftMod === m ? null : m);
+    } else if (onOpenModule) {
+      onOpenModule(m);
+    }
+  };
+
+  const handleToggleRight = (m: 'anamnesis' | 'completo' | null) => {
+    if (onOpenRightModule) {
+      onOpenRightModule(rightMod === m ? null : m);
+    } else if (onOpenModule) {
+      onOpenModule(m);
+    }
+  };
+
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>(() => elegirSugerencias(4));
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
@@ -692,7 +829,30 @@ function Interview({
         </button>
       </div>
 
-      <div className={`sim-chat-messages${activeModule ? ' has-ehr-split' : ''}`}>
+      <div className={`sim-chat-messages${rightMod ? ' has-ehr-split has-ehr-split-right' : ''}${leftMod ? ' has-ehr-split has-ehr-split-left' : ''}`}>
+        {/* Dock Lateral Izquierdo: Exámenes Físicos y Laboratorios (Debajo del panel izquierdo) */}
+        {caseDetails && (
+          <HistoriaClinicaEHRDockLeft
+            activeModule={leftMod}
+            onSelectModule={handleToggleLeft}
+            doneExamenCount={doneExamenCount}
+            doneParaclinicosCount={doneParaclinicosCount}
+          />
+        )}
+
+        {/* Panel Clínico Izquierdo (Examen Físico / Laboratorios) */}
+        {caseDetails && leftMod && explored && onExplorar && (
+          <HistoriaClinicaEHRPanel
+            c={caseDetails}
+            explored={explored}
+            onExplorar={onExplorar}
+            disabled={sending}
+            messages={messages}
+            activeModule={leftMod}
+            onClose={() => handleToggleLeft(null)}
+          />
+        )}
+
         {/* Flujo de conversación (SIEMPRE EN EL CENTRO) */}
         <div className="sim-chat-bubbles-stream">
           {messages.map((m, i) => m.role === 'nota' ? (
@@ -721,16 +881,24 @@ function Interview({
           <div ref={bottomRef} />
         </div>
 
-        {/* Panel Clínico EHR (A LA DERECHA) */}
-        {caseDetails && activeModule && onCloseModule && explored && onExplorar && (
+        {/* Dock Lateral Derecho: Anamnesis y Expediente (Debajo del panel derecho) */}
+        {caseDetails && (
+          <HistoriaClinicaEHRDockRight
+            activeModule={rightMod}
+            onSelectModule={handleToggleRight}
+          />
+        )}
+
+        {/* Panel Clínico Derecho (Anamnesis / Expediente) */}
+        {caseDetails && rightMod && explored && onExplorar && (
           <HistoriaClinicaEHRPanel
             c={caseDetails}
             explored={explored}
             onExplorar={onExplorar}
             disabled={sending}
             messages={messages}
-            activeModule={activeModule}
-            onClose={onCloseModule}
+            activeModule={rightMod}
+            onClose={() => handleToggleRight(null)}
           />
         )}
       </div>
@@ -773,12 +941,12 @@ function Interview({
               </div>
             )}
 
-            {onOpenModule && (
+            {(onOpenModule || onOpenLeftModule) && (
               <div className="sim-input-dock-zone sim-input-dock-left">
                 <button
                   type="button"
-                  className="sim-input-tool-btn sim-input-tool-exam"
-                  onClick={() => onOpenModule('examen_fisico')}
+                  className={`sim-input-tool-btn sim-input-tool-exam${leftMod === 'examen_fisico' ? ' is-active' : ''}`}
+                  onClick={() => handleToggleLeft('examen_fisico')}
                   title="Abrir Examen Físico Dirigido"
                 >
                   <Stethoscope size={16} />
@@ -786,8 +954,8 @@ function Interview({
                 </button>
                 <button
                   type="button"
-                  className="sim-input-tool-btn sim-input-tool-lab"
-                  onClick={() => onOpenModule('paraclinicos')}
+                  className={`sim-input-tool-btn sim-input-tool-lab${leftMod === 'paraclinicos' ? ' is-active' : ''}`}
+                  onClick={() => handleToggleLeft('paraclinicos')}
                   title="Abrir Laboratorios y Estudios Paraclínicos"
                 >
                   <FlaskConical size={16} />
@@ -1196,7 +1364,8 @@ export default function SimulacionPage() {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isMock, setIsMock] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0); // >0 = esperando a que Gemini responda
-  const [activeClinicalModule, setActiveClinicalModule] = useState<ClinicalModule | null>(null);
+  const [activeLeftModule, setActiveLeftModule] = useState<'examen_fisico' | 'paraclinicos' | null>(null);
+  const [activeRightModule, setActiveRightModule] = useState<'anamnesis' | 'completo' | null>(null);
   // Identidad administrativa (nombre/edad/documento/telefono/tipo de sangre/peso/ocupacion)
   // generada al instante, sin IA — se muestra mientras el Agente Generador
   // arma el resto del caso real (eso sí tarda, llama a Gemini), y viaja como
@@ -1453,26 +1622,21 @@ export default function SimulacionPage() {
           )}
 
           {phase === 'interview' && (
-            <div className={`sim-interview-layout${activeClinicalModule ? ' has-ehr-split' : ''}`}>
+            <div className={`sim-interview-layout${activeLeftModule || activeRightModule ? ' has-ehr-split' : ''}${activeLeftModule ? ' has-ehr-split-left' : ''}${activeRightModule ? ' has-ehr-split-right' : ''}`}>
               <Interview
                 messages={messages} onSend={handleSend} onFinish={() => setPhase('diagnosis')} sending={sending}
                 estadoEmocional={estadoEmocional} consultaTerminada={consultaTerminada} paciente={caseDetails?.paciente || null}
-                onOpenModule={setActiveClinicalModule}
+                activeLeftModule={activeLeftModule}
+                activeRightModule={activeRightModule}
+                onOpenLeftModule={setActiveLeftModule}
+                onOpenRightModule={setActiveRightModule}
                 doneExamenCount={Object.values(explored).filter(e => e.tipo === 'examen_fisico').length}
                 doneParaclinicosCount={Object.values(explored).filter(e => e.tipo === 'paraclinico').length}
                 onBack={() => navigate('/casos')}
-                activeModule={activeClinicalModule}
-                onCloseModule={() => setActiveClinicalModule(null)}
                 caseDetails={caseDetails}
                 explored={explored}
                 onExplorar={handleExplorar}
               />
-              {caseDetails && (
-                <HistoriaClinicaEHRDock
-                  activeModule={activeClinicalModule}
-                  onSelectModule={setActiveClinicalModule}
-                />
-              )}
             </div>
           )}
 

@@ -3480,6 +3480,100 @@
   color: var(--ink);
 }
 
+/* ── Hoja de resultados por departamento de laboratorio (Química,
+   Hematología, etc.), una por grupo, igual a un reporte real: logo +
+   orden de servicio + identificación del paciente arriba, titulo del
+   departamento en mayuscula, y debajo cada resultado de ese grupo. ── */
+.sim-lab-sheets-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sim-lab-sheet {
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+}
+
+.sim-lab-sheet-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.sim-lab-sheet-logo {
+  height: 30px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.sim-lab-sheet-header-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sim-lab-sheet-orden {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--ink);
+}
+
+.sim-lab-sheet-orden-lbl {
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+}
+
+.sim-lab-sheet-header-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 2px 14px;
+}
+
+.sim-lab-sheet-header-grid span {
+  font-size: 0.68rem;
+  color: var(--ink2);
+}
+
+.sim-lab-sheet-header-grid strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.sim-lab-sheet-title {
+  padding: 8px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--ink);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.sim-lab-sheet-body {
+  display: flex;
+  flex-direction: column;
+}
+.sim-lab-sheet-body .sim-sheet-result-card {
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+.sim-lab-sheet-body .sim-sheet-result-card:last-child {
+  border-bottom: none;
+}
+
 /* ── Stage 1 — full width presentation ── */
 .sim-stage1-wrap {
   flex: 1; overflow-y: auto;
