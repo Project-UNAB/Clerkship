@@ -9,7 +9,7 @@ sin gastar cuota, igual que el modo sin API key del repo original
 import random
 from datetime import datetime, timezone
 
-from app.services.simulador.catalogo import CATALOGO_EXAMEN_FISICO, CATALOGO_PARACLINICOS
+from app.services.simulador.catalogo import CATALOGO_EXAMEN_FISICO, CATALOGO_PARACLINICOS, valor_normal_paraclinico
 
 CASO_DEMO_BASE = {
     "id_caso": "GI-DEMO-001",
@@ -55,9 +55,11 @@ def caso_demo(subtema: str, dificultad: str) -> dict:
         clave: caso["examen_fisico_alterado"].get(clave, d["normal"])
         for clave, d in CATALOGO_EXAMEN_FISICO.items() if clave != "signos_vitales"
     }
+    seed = caso["id_caso"]
+    sexo = caso["datos_paciente"]["sexo"]
     caso["paraclinicos"] = {
-        clave: caso["paraclinicos_alterados"].get(clave, d["normal"])
-        for clave, d in CATALOGO_PARACLINICOS.items()
+        clave: caso["paraclinicos_alterados"].get(clave) or valor_normal_paraclinico(clave, seed, sexo)
+        for clave in CATALOGO_PARACLINICOS
     }
     return caso
 

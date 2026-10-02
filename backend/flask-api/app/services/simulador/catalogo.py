@@ -10,6 +10,7 @@ examen que el estudiante pida tiene siempre una respuesta coherente y
 reproducible.
 """
 
+import random
 import unicodedata
 
 SUBTEMAS = [
@@ -169,6 +170,74 @@ CATALOGO_PARACLINICOS = {
         "normal": "Colon y recto con mucosa de aspecto normal hasta ileon terminal.",
     },
 }
+
+
+def _val(rng: random.Random, lo: float, hi: float, decimales: int = 0):
+    v = rng.uniform(lo, hi)
+    return round(v, decimales) if decimales else int(round(v))
+
+
+def valor_normal_paraclinico(clave: str, seed: str, sexo: str) -> str:
+    """Valor "normal" de un paraclinico, variado de forma determinista por
+    paciente (mismo seed -> mismo valor siempre, para que sea coherente
+    dentro de una misma consulta) en vez del mismo texto fijo para todos.
+    Solo se usa cuando el modelo NO reporto ese examen como alterado;
+    para pruebas cualitativas (negativo/positivo) no hay nada que variar,
+    asi que se deja el texto fijo del catalogo."""
+    rng = random.Random(f"{seed}:{clave}")
+    sexo = "F" if (sexo or "F").upper().startswith("F") else "M"
+
+    if clave == "hemograma":
+        hb = _val(rng, 12.0, 15.5, 1) if sexo == "F" else _val(rng, 13.5, 17.5, 1)
+        hto = _val(rng, 36, 46) if sexo == "F" else _val(rng, 40, 52)
+        leucos = _val(rng, 450, 1100) * 10
+        neutro = _val(rng, 45, 65)
+        linfo = _val(rng, 20, 40)
+        plaquetas = _val(rng, 1500, 4000) * 100
+        return (f"Hb {hb} g/dL, Hto {hto} %, leucocitos {leucos}/mm3 "
+                f"(neutrofilos {neutro} %, linfocitos {linfo} %), plaquetas {plaquetas}/mm3.")
+
+    if clave == "pcr":
+        pcr = _val(rng, 0.0, 0.5, 1)
+        return f"PCR {pcr} mg/dL (VR < 0.5 mg/dL)."
+
+    if clave == "perfil_hepatico":
+        alt = _val(rng, 7, 40)
+        ast = _val(rng, 8, 38)
+        falc = _val(rng, 44, 120)
+        ggt = _val(rng, 8, 38)
+        bili_t = _val(rng, 0.3, 1.0, 1)
+        bili_d = round(bili_t * rng.uniform(0.2, 0.35), 1)
+        alb = _val(rng, 3.8, 5.0, 1)
+        return (f"ALT {alt} U/L, AST {ast} U/L, fosfatasa alcalina {falc} U/L, GGT {ggt} U/L, "
+                f"bilirrubina total {bili_t} mg/dL (directa {bili_d} mg/dL), albumina {alb} g/dL.")
+
+    if clave == "amilasa_lipasa":
+        amilasa = _val(rng, 28, 100)
+        lipasa = _val(rng, 13, 60)
+        return f"Amilasa {amilasa} U/L (VR 28-100), lipasa {lipasa} U/L (VR 13-60)."
+
+    if clave == "funcion_renal_electrolitos":
+        creat = _val(rng, 0.6, 1.0, 1) if sexo == "F" else _val(rng, 0.7, 1.3, 1)
+        bun = _val(rng, 7, 20)
+        na = _val(rng, 135, 145)
+        k = _val(rng, 3.5, 5.0, 1)
+        cl = _val(rng, 98, 107)
+        return f"Creatinina {creat} mg/dL, BUN {bun} mg/dL, Na {na} mEq/L, K {k} mEq/L, Cl {cl} mEq/L."
+
+    if clave == "tiempos_coagulacion":
+        tp = _val(rng, 11, 13.5, 1)
+        inr = _val(rng, 0.9, 1.1, 2)
+        tpt = _val(rng, 25, 35)
+        return f"TP {tp} s, INR {inr}, TPT {tpt} s."
+
+    if clave == "uroanalisis":
+        densidad = _val(rng, 1.005, 1.030, 3)
+        ph = _val(rng, 5, 8, 1)
+        return f"Densidad {densidad}, pH {ph}, sin leucocituria, sin hematuria, nitritos negativos, bilirrubina negativa."
+
+    return CATALOGO_PARACLINICOS[clave]["normal"]
+
 
 PERFILES_DIFICULTAD = {
     "facil": {

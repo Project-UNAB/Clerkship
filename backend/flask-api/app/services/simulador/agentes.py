@@ -23,6 +23,7 @@ from app.services.simulador.catalogo import (
     CATALOGO_EXAMEN_FISICO,
     CATALOGO_PARACLINICOS,
     normalizar,
+    valor_normal_paraclinico,
 )
 from app.services.simulador.guardrails import (
     aplicar_guardrails_paciente,
@@ -162,10 +163,12 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
         for clave, d in CATALOGO_EXAMEN_FISICO.items() if clave != "signos_vitales"
     }
     caso["paraclinicos"] = {}
+    seed_paraclinicos = caso["datos_paciente"].get("documento") or caso["id_caso"]
     for clave, d in CATALOGO_PARACLINICOS.items():
-        normal = d["normal"]
         if clave == "prueba_embarazo" and sexo == "M":
             normal = "No aplica: paciente de sexo masculino."
+        else:
+            normal = valor_normal_paraclinico(clave, seed_paraclinicos, sexo)
         caso["paraclinicos"][clave] = caso["paraclinicos_alterados"].get(clave) or normal
 
     todas_claves = set(CATALOGO_EXAMEN_FISICO) | set(CATALOGO_PARACLINICOS)
