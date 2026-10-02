@@ -321,10 +321,10 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
         <div className="sim-docs-book-wrap">
           <HTMLFlipBook
             ref={bookRef}
-            width={560}
-            height={726}
+            width={680}
+            height={880}
             size="stretch"
-            minWidth={460} maxWidth={620} minHeight={596} maxHeight={803}
+            minWidth={550} maxWidth={850} minHeight={712} maxHeight={1100}
             showCover
             usePortrait={false}
             autoSize={false}
