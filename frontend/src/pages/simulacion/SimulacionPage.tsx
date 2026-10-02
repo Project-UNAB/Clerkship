@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, CheckCircle, Send, ChevronRight, Info, ArrowLeft, Stethoscope,
   Loader2, AlertTriangle, TrendingUp, Award, User, Eye, ClipboardList, FileText,
+  X, FlaskConical,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import logoUrl from '../../assets/Logo Clerkship.svg';
@@ -52,170 +53,478 @@ function groupByGrupo(items: CatalogoItem[]): [string, CatalogoItem[]][] {
   return Array.from(map.entries());
 }
 
-/* ── Panel derecho: ficha del caso + catálogo de exploración clínica ── */
-function CaseSheet({
-  c, explored, onExplorar, disabled, messages,
+export type ClinicalModule = 'anamnesis' | 'examen_fisico' | 'paraclinicos' | 'completo';
+
+/* ── Historia Clínica Electrónica Oficial (EHR Formulario Médico Formal) ── */
+function HistoriaClinicaEHR({
+  c, explored, onExplorar, disabled, messages, activeModule, onSelectModule, onClose,
 }: {
   c: CaseDetails;
   explored: Record<string, ExploredEntry>;
   onExplorar: (tipo: TipoExploracion, item: CatalogoItem) => void;
   disabled: boolean;
-  /** Lo que el paciente realmente fue diciendo en la charla — el "Historial
-   *  médico" no inventa nada aparte, es esto mismo presentado como notas
-   *  clínicas: se va llenando solo a medida que el estudiante pregunta. */
   messages: ChatMsg[];
+  activeModule: ClinicalModule | null;
+  onSelectModule: (module: ClinicalModule | null) => void;
+  onClose: () => void;
 }) {
   const notasHistoria = messages.filter(m => m.role === 'patient');
-  const [tab, setTab] = useState<TipoExploracion>('examen_fisico');
-  const items = tab === 'examen_fisico' ? c.catalogo_exploracion.examen_fisico : c.catalogo_exploracion.paraclinicos;
-  const groups = groupByGrupo(items);
-  const doneList = Object.values(explored).filter(e => e.tipo === tab);
+
+  const examenItems = c.catalogo_exploracion.examen_fisico;
+  const paraclinicoItems = c.catalogo_exploracion.paraclinicos;
+  const examenGroups = groupByGrupo(examenItems);
+  const paraclinicoGroups = groupByGrupo(paraclinicoItems);
+
+  const doneExamen = Object.values(explored).filter(e => e.tipo === 'examen_fisico');
+  const doneParaclinicos = Object.values(explored).filter(e => e.tipo === 'paraclinico');
+  const isOpen = activeModule !== null;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
+  const MODULE_META: Record<ClinicalModule, { title: string; subtitle: string }> = {
+    anamnesis: {
+      title: 'B. ANAMNESIS Y MOTIVO DE CONSULTA',
+      subtitle: `Interrogatorio Clínico · Folio N°: HC-${c.paciente.documento || '105661040'}`,
+    },
+    examen_fisico: {
+      title: 'C. EXAMEN FÍSICO DIRIGIDO Y SIGNOS VITALES',
+      subtitle: `Exploración Física Determinista · Folio N°: HC-${c.paciente.documento || '105661040'}`,
+    },
+    paraclinicos: {
+      title: 'D. ÓRDENES PARACLÍNICAS Y LABORATORIO',
+      subtitle: `Estudios Diagnósticos e Imágenes · Folio N°: HC-${c.paciente.documento || '105661040'}`,
+    },
+    completo: {
+      title: 'E. REGISTRO CONSOLIDADO (EPICRISIS)',
+      subtitle: `Consolidado Clínico Global · Folio N°: HC-${c.paciente.documento || '105661040'}`,
+    },
+  };
+
+  const currentMeta = activeModule ? MODULE_META[activeModule] : MODULE_META.anamnesis;
+  const fechaHoy = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
-    <aside className="sim-hc-panel">
-      <div className="sim-hc-header">
-        <h2 className="sim-hc-title">Ficha del paciente</h2>
-      </div>
-      <div className="sim-hc-sections">
-        <div className="sim-hc-section">
-          <div className="sim-hc-sec-head">
-            <span className="sim-hc-sec-num-title"><User size={13} /> Paciente</span>
+    <>
+      {/* ── Dock Lateral: Módulos Clínicos Independientes ── */}
+      <aside className="sim-ehr-dock" aria-label="Módulos Clínicos Independientes">
+        {/* 1. Anamnesis */}
+        <button
+          type="button"
+          className={`sim-ehr-dock-item sim-dock-anam${activeModule === 'anamnesis' ? ' is-active' : ''}`}
+          onClick={() => onSelectModule(activeModule === 'anamnesis' ? null : 'anamnesis')}
+          title="Abrir Anamnesis y Motivo de Consulta"
+        >
+          <div className="sim-ehr-dock-icon">
+            <ClipboardList size={16} />
           </div>
-          <div className="sim-hc-sec-body">
-            <p>{c.paciente.nombre}</p>
-            <p className="sim-hc-sub">
-              {[
-                c.paciente.edad != null ? `${c.paciente.edad} años` : null,
-                c.paciente.sexo === 'F' ? 'Femenino' : c.paciente.sexo === 'M' ? 'Masculino' : null,
-                c.paciente.ocupacion,
-                c.paciente.peso_kg != null ? `${c.paciente.peso_kg} kg` : null,
-              ].filter(Boolean).join(' · ')}
-            </p>
-            {(c.paciente.documento || c.paciente.telefono || c.paciente.tipo_sangre) && (
-              <p className="sim-hc-sub">
-                {[
-                  c.paciente.documento,
-                  c.paciente.telefono,
-                  c.paciente.tipo_sangre ? `Tipo ${c.paciente.tipo_sangre}` : null,
-                ].filter(Boolean).join(' · ')}
-              </p>
-            )}
+          <div className="sim-ehr-dock-label-wrap">
+            <span className="sim-ehr-dock-title">Anamnesis</span>
+            <span className="sim-ehr-dock-sub">Motivo & Cuadro</span>
           </div>
-        </div>
+        </button>
 
-        <div className="sim-hc-section">
-          <div className="sim-hc-sec-head">
-            <span className="sim-hc-sec-num-title"><Info size={13} /> Estado emocional inicial</span>
+        {/* 2. Expediente Completo */}
+        <button
+          type="button"
+          className={`sim-ehr-dock-item sim-dock-comp${activeModule === 'completo' ? ' is-active' : ''}`}
+          onClick={() => onSelectModule(activeModule === 'completo' ? null : 'completo')}
+          title="Abrir Expediente Consolidado (Epicrisis)"
+        >
+          <div className="sim-ehr-dock-icon">
+            <FileText size={16} />
           </div>
-          <div className="sim-hc-sec-body">
-            <p style={{ textTransform: 'capitalize' }}>{c.estado_emocional_inicial}</p>
+          <div className="sim-ehr-dock-label-wrap">
+            <span className="sim-ehr-dock-title">Expediente</span>
+            <span className="sim-ehr-dock-sub">Epicrisis Global</span>
           </div>
-        </div>
+        </button>
+      </aside>
 
-        <div className="sim-hc-section">
-          <div className="sim-hc-sec-head">
-            <span className="sim-hc-sec-num-title"><Stethoscope size={13} /> Presentación inicial</span>
-          </div>
-          <div className="sim-hc-sec-body">
-            <p>{c.presentacion_inicial}</p>
-          </div>
-        </div>
-
-        <div className="sim-hc-section">
-          <div className="sim-hc-sec-head">
-            <span className="sim-hc-sec-num-title"><ClipboardList size={13} /> Historial médico</span>
-          </div>
-          <div className="sim-hc-sec-body">
-            {notasHistoria.length === 0 ? (
-              <p className="sim-hc-hist-empty">Todavía no le preguntaste nada — esta sección se va llenando con lo que el paciente te va contando.</p>
-            ) : (
-              <ul className="sim-hc-hist-list">
-                {notasHistoria.map((m, i) => (
-                  <li key={i} className="sim-hc-hist-item">
-                    <span className="sim-hc-hist-time">{fmtTime(m.ts)}</span>
-                    <span className="sim-hc-hist-text">"{m.text}"</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        <div className="sim-hc-section">
-          <div className="sim-explora-tabs">
-            <button
-              type="button"
-              className={`sim-explora-tab${tab === 'examen_fisico' ? ' active' : ''}`}
-              onClick={() => setTab('examen_fisico')}
+      {/* ── Modal Central: Formulario de Historia Clínica Electrónica Oficial ── */}
+      <AnimatePresence>
+        {isOpen && activeModule && (
+          <div className="sim-ehr-backdrop" onClick={onClose}>
+            <motion.div
+              className={`sim-ehr-modal sim-ehr-modal-${activeModule}`}
+              onClick={e => e.stopPropagation()}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.14, ease: 'easeOut' }}
             >
-              <Stethoscope size={13} /> Examen físico
-            </button>
-            <button
-              type="button"
-              className={`sim-explora-tab${tab === 'paraclinico' ? ' active' : ''}`}
-              onClick={() => setTab('paraclinico')}
-            >
-              <Award size={13} /> Paraclínicos
-            </button>
-          </div>
+              {/* Encabezado Formal del Módulo Clínico (estilo formato clínico impreso) */}
+              <div className="ehr-modal-header">
+                <div className="ehr-header-brand">
+                  <img src={logoUrl} alt="Clerkship" className="ehr-logo-img" />
+                  <div className="ehr-header-brand-text">
+                    <span className="ehr-inst-name">CLÍNICA CLERKSHIP</span>
+                    <span className="ehr-inst-tag">Simulación Clínica · Educación Médica</span>
+                  </div>
+                </div>
 
-          <div className="sim-exam-grid-area">
-            {groups.map(([grupo, its]) => (
-              <div key={grupo} className="sim-exam-cat">
-                <span className="sim-exam-cat-label">{grupo}</span>
-                <div className="sim-exam-btn-row">
-                  {its.map(it => {
-                    const key = `${tab}:${it.clave}`;
-                    const entry = explored[key];
-                    const procesando = !!entry?.procesando;
-                    const done = !!entry && !procesando;
-                    return (
-                      <button
-                        key={it.clave}
-                        type="button"
-                        className={`sim-exam-btn${done ? ' sim-exam-btn-done' : ''}`}
-                        disabled={disabled || procesando}
-                        onClick={() => onExplorar(tab, it)}
-                      >
-                        {procesando
-                          ? <Loader2 size={12} className="sim-spin" />
-                          : done ? <CheckCircle size={12} /> : null}
-                        {it.etiqueta}
-                      </button>
-                    );
-                  })}
+                <div className="ehr-header-right">
+                  <div className="ehr-header-title-block">
+                    <h3 className="ehr-inst-title">HISTORIA CLÍNICA</h3>
+                    <span className="ehr-status-pill">
+                      <span className="ehr-pulse-dot" /> EN CONSULTA
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="ehr-close-btn"
+                    onClick={onClose}
+                    title="Cerrar módulo (Esc)"
+                  >
+                    <X size={15} />
+                    <span>Cerrar</span>
+                    <span className="ehr-esc-key">ESC</span>
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {doneList.length > 0 && (
-            <div className="sim-exam-results" style={{ marginTop: 12 }}>
-              <span className="sim-exam-results-title">Resultados</span>
-              {doneList.map(e => (
-                <div key={`${e.tipo}:${e.clave}`} className="sim-exam-result-row">
-                  <span className="sim-exam-result-name">{e.etiqueta}</span>
-                  <span className="sim-exam-result-val">{e.procesando ? 'Procesando…' : e.resultado}</span>
+              {/* ── Sección A: Identificación y Filiación del Paciente (siempre visible, como en un formato clínico impreso) ── */}
+              <div className="ehr-patient-section">
+                <div className="ehr-section-kicker">A. IDENTIFICACIÓN Y FILIACIÓN DEL PACIENTE</div>
+                <div className="ehr-patient-form-grid">
+                  <div className="ehr-form-cell ehr-form-cell-wide">
+                    <span className="ehr-cell-lbl">Apellidos y Nombres</span>
+                    <strong className="ehr-cell-val">{c.paciente.nombre}</strong>
+                  </div>
+                  <div className="ehr-form-cell">
+                    <span className="ehr-cell-lbl">Documento de Identidad</span>
+                    <span className="ehr-cell-val">{c.paciente.documento || 'CC 105661040'}</span>
+                  </div>
+                  <div className="ehr-form-cell">
+                    <span className="ehr-cell-lbl">Edad</span>
+                    <span className="ehr-cell-val">{c.paciente.edad} años</span>
+                  </div>
+
+                  <div className="ehr-form-cell ehr-form-cell-wide">
+                    <span className="ehr-cell-lbl">Sexo</span>
+                    <div className="ehr-checkbox-row">
+                      <span className={`ehr-checkbox-item${c.paciente.sexo === 'M' ? ' checked' : ''}`}>
+                        <span className="ehr-checkbox-box">{c.paciente.sexo === 'M' && <Check size={10} strokeWidth={3} />}</span>
+                        Masculino
+                      </span>
+                      <span className={`ehr-checkbox-item${c.paciente.sexo === 'F' ? ' checked' : ''}`}>
+                        <span className="ehr-checkbox-box">{c.paciente.sexo === 'F' && <Check size={10} strokeWidth={3} />}</span>
+                        Femenino
+                      </span>
+                    </div>
+                  </div>
+                  <div className="ehr-form-cell">
+                    <span className="ehr-cell-lbl">Ocupación Habitual</span>
+                    <span className="ehr-cell-val">{c.paciente.ocupacion || 'Docente universitaria'}</span>
+                  </div>
+                  <div className="ehr-form-cell">
+                    <span className="ehr-cell-lbl">Grupo Sanguíneo y Rh</span>
+                    <span className="ehr-cell-val">Tipo {c.paciente.tipo_sangre || 'B+'}</span>
+                  </div>
+
+                  <div className="ehr-form-cell">
+                    <span className="ehr-cell-lbl">Biometría / Peso</span>
+                    <span className="ehr-cell-val">{c.paciente.peso_kg || 62.1} kg</span>
+                  </div>
+                  <div className="ehr-form-cell">
+                    <span className="ehr-cell-lbl">Teléfono de Contacto</span>
+                    <span className="ehr-cell-val">{c.paciente.telefono || '311 777 3967'}</span>
+                  </div>
+                  <div className="ehr-form-cell">
+                    <span className="ehr-cell-lbl">Modalidad de Atención</span>
+                    <span className="ehr-cell-val">Consulta Externa</span>
+                  </div>
+                  <div className="ehr-form-cell">
+                    <span className="ehr-cell-lbl">Fecha de Consulta</span>
+                    <span className="ehr-cell-val">{fechaHoy}</span>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
 
-        <p className="sim-input-tip" style={{ padding: '0 4px' }}>
-          Los antecedentes y la historia del cuadro los obtenés preguntándole al paciente.
-        </p>
-      </div>
-    </aside>
+              {/* Hoja del Módulo Clínico Independiente Seleccionado */}
+              <div className="ehr-section-kicker ehr-section-kicker-module">{currentMeta.title}</div>
+              <p className="ehr-module-subtitle">{currentMeta.subtitle}</p>
+
+              {/* Cuerpo del Formulario Clínico Independiente */}
+              <div className="ehr-form-body">
+                {/* 1. MÓDULO INDEPENDIENTE: ANAMNESIS */}
+                {activeModule === 'anamnesis' && (
+                    <div className="sim-sheet-page-content">
+                      <div className="sim-sheet-card">
+                        <div className="sim-sheet-card-head">
+                          <Info size={14} />
+                          <h4>Motivo de Consulta y Presentación Inicial</h4>
+                        </div>
+                        <p className="sim-sheet-card-text">{c.presentacion_inicial}</p>
+                      </div>
+
+                      <div className="sim-sheet-card">
+                        <div className="sim-sheet-card-head">
+                          <User size={14} />
+                          <h4>Estado Emocional Inicial del Paciente</h4>
+                        </div>
+                        <p className="sim-sheet-card-text" style={{ textTransform: 'capitalize' }}>
+                          {c.estado_emocional_inicial || 'Colaborador y ansioso'}
+                        </p>
+                      </div>
+
+                      <div className="sim-sheet-card">
+                        <div className="sim-sheet-card-head">
+                          <ClipboardList size={14} />
+                          <h4>Notas Clínicas del Interrogatorio (Respuestas del Paciente)</h4>
+                        </div>
+                        {notasHistoria.length === 0 ? (
+                          <div className="sim-sheet-empty-box">
+                            <p>Todavía no has interrogado al paciente.</p>
+                            <span>Cierra esta carpeta y dialoga con él en el chat central. A medida que responda, sus declaraciones se transcribirán automáticamente en esta hoja.</span>
+                          </div>
+                        ) : (
+                          <ul className="sim-sheet-notes-list">
+                            {notasHistoria.map((m, idx) => (
+                              <li key={idx} className="sim-sheet-note-item">
+                                <span className="sim-sheet-note-time">{fmtTime(m.ts)}</span>
+                                <span className="sim-sheet-note-text">"{m.text}"</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* HOJA 2: Examen Físico */}
+                  {activeModule === 'examen_fisico' && (
+                    <div className="sim-sheet-page-content">
+                      <div className="sim-sheet-section-banner">
+                        <div>
+                          <h4>Exploración Física Dirigida</h4>
+                          <p>Haz clic en cada maniobra para solicitarla al simulador clínico determinista.</p>
+                        </div>
+                        {doneExamen.length > 0 && (
+                          <span className="sim-sheet-progress-pill">{doneExamen.length} exploradas</span>
+                        )}
+                      </div>
+
+                      <div className="sim-exam-categories-grid">
+                        {examenGroups.map(([grupo, items]) => (
+                          <div key={grupo} className="sim-sheet-cat-box">
+                            <span className="sim-sheet-cat-title">{grupo}</span>
+                            <div className="sim-sheet-btn-wrap">
+                              {items.map(it => {
+                                const key = `examen_fisico:${it.clave}`;
+                                const entry = explored[key];
+                                const procesando = !!entry?.procesando;
+                                const done = !!entry && !procesando;
+                                return (
+                                  <button
+                                    key={it.clave}
+                                    type="button"
+                                    className={`sim-sheet-exam-btn${done ? ' sim-sheet-exam-btn-done' : ''}`}
+                                    disabled={disabled || procesando}
+                                    onClick={() => onExplorar('examen_fisico', it)}
+                                  >
+                                    {procesando ? (
+                                      <Loader2 size={12} className="sim-spin" />
+                                    ) : done ? (
+                                      <CheckCircle size={12} />
+                                    ) : null}
+                                    <span>{it.etiqueta}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {doneExamen.length > 0 && (
+                        <div className="sim-sheet-results-panel">
+                          <div className="sim-sheet-card-head">
+                            <Stethoscope size={14} />
+                            <h4>Hallazgos del Examen Físico</h4>
+                          </div>
+                          <div className="sim-sheet-results-grid">
+                            {doneExamen.map(e => (
+                              <div key={`res-ef-${e.clave}`} className="sim-sheet-result-card">
+                                <span className="sim-src-name">{e.etiqueta}</span>
+                                <p className="sim-src-val">{e.procesando ? 'Explorando...' : e.resultado}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* HOJA 3: Paraclínicos */}
+                  {activeModule === 'paraclinicos' && (
+                    <div className="sim-sheet-page-content">
+                      <div className="sim-sheet-section-banner">
+                        <div>
+                          <h4>Estudios Paraclínicos y Exámenes Complementarios</h4>
+                          <p>Ordena los laboratorios, imágenes o trazos diagnósticos necesarios para el caso.</p>
+                        </div>
+                        {doneParaclinicos.length > 0 && (
+                          <span className="sim-sheet-progress-pill">{doneParaclinicos.length} ordenados</span>
+                        )}
+                      </div>
+
+                      <div className="sim-exam-categories-grid">
+                        {paraclinicoGroups.map(([grupo, items]) => (
+                          <div key={grupo} className="sim-sheet-cat-box">
+                            <span className="sim-sheet-cat-title">{grupo}</span>
+                            <div className="sim-sheet-btn-wrap">
+                              {items.map(it => {
+                                const key = `paraclinico:${it.clave}`;
+                                const entry = explored[key];
+                                const procesando = !!entry?.procesando;
+                                const done = !!entry && !procesando;
+                                return (
+                                  <button
+                                    key={it.clave}
+                                    type="button"
+                                    className={`sim-sheet-exam-btn${done ? ' sim-sheet-exam-btn-done' : ''}`}
+                                    disabled={disabled || procesando}
+                                    onClick={() => onExplorar('paraclinico', it)}
+                                  >
+                                    {procesando ? (
+                                      <Loader2 size={12} className="sim-spin" />
+                                    ) : done ? (
+                                      <CheckCircle size={12} />
+                                    ) : null}
+                                    <span>{it.etiqueta}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {doneParaclinicos.length > 0 && (
+                        <div className="sim-sheet-results-panel">
+                          <div className="sim-sheet-card-head">
+                            <Award size={14} />
+                            <h4>Reportes de Laboratorio e Imágenes</h4>
+                          </div>
+                          <div className="sim-sheet-results-grid">
+                            {doneParaclinicos.map(e => (
+                              <div key={`res-pc-${e.clave}`} className="sim-sheet-result-card">
+                                <span className="sim-src-name">{e.etiqueta}</span>
+                                <p className="sim-src-val">{e.procesando ? 'Procesando en laboratorio...' : e.resultado}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* HOJA 4: Expediente Completo */}
+                  {activeModule === 'completo' && (
+                    <div className="sim-sheet-page-content">
+                      <div className="sim-sheet-card">
+                        <div className="sim-sheet-card-head">
+                          <User size={14} />
+                          <h4>1. Datos Generales del Paciente</h4>
+                        </div>
+                        <div className="sim-sheet-grid-2">
+                          <p><strong>Nombre:</strong> {c.paciente.nombre}</p>
+                          <p><strong>Edad y Sexo:</strong> {c.paciente.edad} años, {c.paciente.sexo === 'F' ? 'Femenino' : 'Masculino'}</p>
+                          <p><strong>Ocupación:</strong> {c.paciente.ocupacion || 'Docente'}</p>
+                          <p><strong>Documento:</strong> {c.paciente.documento || 'CC 105661040'}</p>
+                          <p><strong>Contacto:</strong> {c.paciente.telefono || '311 777 3967'}</p>
+                          <p><strong>Grupo y Factor:</strong> {c.paciente.tipo_sangre || 'B+'}</p>
+                          <p><strong>Peso Corporal:</strong> {c.paciente.peso_kg || 62.1} kg</p>
+                        </div>
+                      </div>
+
+                      <div className="sim-sheet-card">
+                        <div className="sim-sheet-card-head">
+                          <Info size={14} />
+                          <h4>2. Anamnesis y Cuadro Actual</h4>
+                        </div>
+                        <p className="sim-sheet-card-text"><strong>Motivo:</strong> {c.presentacion_inicial}</p>
+                        <p className="sim-sheet-card-text"><strong>Estado emocional:</strong> {c.estado_emocional_inicial || 'Normal'}</p>
+                        <h5 style={{ margin: '14px 0 6px', fontSize: '0.8rem', color: 'var(--ink)' }}>Declaraciones del Paciente:</h5>
+                        {notasHistoria.length === 0 ? (
+                          <p className="sim-sheet-empty-sub">Sin respuestas registradas en el interrogatorio.</p>
+                        ) : (
+                          <ul className="sim-sheet-notes-list">
+                            {notasHistoria.map((m, idx) => (
+                              <li key={idx} className="sim-sheet-note-item">
+                                <span className="sim-sheet-note-time">{fmtTime(m.ts)}</span>
+                                <span className="sim-sheet-note-text">"{m.text}"</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      <div className="sim-sheet-card">
+                        <div className="sim-sheet-card-head">
+                          <Stethoscope size={14} />
+                          <h4>3. Resumen de Examen Físico</h4>
+                        </div>
+                        {doneExamen.length === 0 ? (
+                          <p className="sim-sheet-empty-sub">No se han realizado maniobras de exploración física.</p>
+                        ) : (
+                          <div className="sim-sheet-results-grid">
+                            {doneExamen.map(e => (
+                              <div key={`full-ef-${e.clave}`} className="sim-sheet-result-card">
+                                <span className="sim-src-name">{e.etiqueta}</span>
+                                <p className="sim-src-val">{e.resultado}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="sim-sheet-card">
+                        <div className="sim-sheet-card-head">
+                          <Award size={14} />
+                          <h4>4. Resumen de Paraclínicos</h4>
+                        </div>
+                        {doneParaclinicos.length === 0 ? (
+                          <p className="sim-sheet-empty-sub">No se han ordenado estudios paraclínicos.</p>
+                        ) : (
+                          <div className="sim-sheet-results-grid">
+                            {doneParaclinicos.map(e => (
+                              <div key={`full-pc-${e.clave}`} className="sim-sheet-result-card">
+                                <span className="sim-src-name">{e.etiqueta}</span>
+                                <p className="sim-src-val">{e.resultado}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
-/* ── Entrevista (chat con el Agente 2) ── */
+/* ── Entrevista (chat con el Agente 2, centrado en pantalla) ── */
 function Interview({
   messages, onSend, onFinish, sending, estadoEmocional, consultaTerminada, paciente,
+  onOpenModule, doneExamenCount = 0, doneParaclinicosCount = 0,
 }: {
   messages: ChatMsg[]; onSend: (t: string) => void; onFinish: () => void; sending: boolean;
   estadoEmocional: string | null; consultaTerminada: boolean; paciente: DatosPaciente | null;
+  onOpenModule?: (module: ClinicalModule) => void;
+  doneExamenCount?: number;
+  doneParaclinicosCount?: number;
 }) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -230,20 +539,46 @@ function Interview({
   };
 
   return (
-    <div className="sim-chat-col">
+    <div className="sim-chat-col sim-chat-col-centered">
       <div className="sim-agent-header">
-        <div className="sim-agent-logo-wrap">
-          <img src={paciente?.avatar_url || logoUrl} alt="Paciente" />
+        <div className="sim-agent-info-group">
+          <div className="sim-agent-logo-wrap">
+            <img src={paciente?.avatar_url || logoUrl} alt="Paciente" />
+          </div>
+          <div>
+            <span className="sim-agent-name">{paciente?.nombre || 'Paciente virtual'}</span>
+            <span className="sim-agent-online">
+              {paciente?.edad != null
+                ? `${paciente.edad} años${paciente.ocupacion ? ` · ${paciente.ocupacion}` : ''}`
+                : <><span className="sim-agent-dot" /> en línea</>}
+            </span>
+          </div>
+          {estadoEmocional && <span className="sim-emo-badge">{estadoEmocional}</span>}
         </div>
-        <div>
-          <span className="sim-agent-name">{paciente?.nombre || 'Paciente virtual'}</span>
-          <span className="sim-agent-online">
-            {paciente?.edad != null
-              ? `${paciente.edad} años${paciente.ocupacion ? ` · ${paciente.ocupacion}` : ''}`
-              : <><span className="sim-agent-dot" /> en línea</>}
-          </span>
-        </div>
-        {estadoEmocional && <span className="sim-emo-badge">{estadoEmocional}</span>}
+
+        {onOpenModule && (
+          <div className="sim-ehr-header-actions-group">
+            <button
+              type="button"
+              className="sim-ehr-header-btn"
+              onClick={() => onOpenModule('anamnesis')}
+              title="Abrir Anamnesis y Motivo de Consulta"
+            >
+              <ClipboardList size={13} />
+              <span>Anamnesis</span>
+            </button>
+
+            <button
+              type="button"
+              className="sim-ehr-header-btn sim-ehr-header-btn-muted"
+              onClick={() => onOpenModule('completo')}
+              title="Abrir Expediente Clínico Completo"
+            >
+              <FileText size={13} />
+              <span>Expediente</span>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="sim-chat-messages">
@@ -295,7 +630,38 @@ function Interview({
         </div>
       )}
 
+      {/* ── Footer: Examen Físico, Laboratorios y Terminar Consulta ── */}
       <div className="sim-chat-footer">
+        {onOpenModule && (
+          <div className="sim-footer-actions-left">
+            <button
+              type="button"
+              className="sim-footer-action-btn sim-footer-action-exam"
+              onClick={() => onOpenModule('examen_fisico')}
+              title="Abrir Examen Físico Dirigido"
+            >
+              <Stethoscope size={14} />
+              <span>Examen Físico</span>
+              {doneExamenCount > 0 && (
+                <span className="sim-footer-action-badge">{doneExamenCount}</span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              className="sim-footer-action-btn sim-footer-action-lab"
+              onClick={() => onOpenModule('paraclinicos')}
+              title="Abrir Laboratorios y Estudios Paraclínicos"
+            >
+              <FlaskConical size={14} />
+              <span>Laboratorios</span>
+              {doneParaclinicosCount > 0 && (
+                <span className="sim-footer-action-badge">{doneParaclinicosCount}</span>
+              )}
+            </button>
+          </div>
+        )}
+
         <button className="sim-btn-next sim-btn-next-sm" onClick={onFinish}>
           Terminar entrevista y emitir diagnóstico <ChevronRight size={15} />
         </button>
@@ -662,6 +1028,7 @@ export default function SimulacionPage() {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isMock, setIsMock] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0); // >0 = esperando a que Gemini responda
+  const [activeClinicalModule, setActiveClinicalModule] = useState<ClinicalModule | null>(null);
   // Identidad administrativa (nombre/edad/documento/telefono/tipo de sangre/peso/ocupacion)
   // generada al instante, sin IA — se muestra mientras el Agente Generador
   // arma el resto del caso real (eso sí tarda, llama a Gemini), y viaja como
@@ -930,12 +1297,20 @@ export default function SimulacionPage() {
           )}
 
           {phase === 'interview' && (
-            <div className="sim-2col">
+            <div className="sim-interview-layout">
               <Interview
                 messages={messages} onSend={handleSend} onFinish={() => setPhase('diagnosis')} sending={sending}
                 estadoEmocional={estadoEmocional} consultaTerminada={consultaTerminada} paciente={caseDetails?.paciente || null}
+                onOpenModule={setActiveClinicalModule}
+                doneExamenCount={Object.values(explored).filter(e => e.tipo === 'examen_fisico').length}
+                doneParaclinicosCount={Object.values(explored).filter(e => e.tipo === 'paraclinico').length}
               />
-              <CaseSheet c={caseDetails} explored={explored} onExplorar={handleExplorar} disabled={sending} messages={messages} />
+              {caseDetails && (
+                <HistoriaClinicaEHR
+                  c={caseDetails} explored={explored} onExplorar={handleExplorar} disabled={sending} messages={messages}
+                  activeModule={activeClinicalModule} onSelectModule={setActiveClinicalModule} onClose={() => setActiveClinicalModule(null)}
+                />
+              )}
             </div>
           )}
 

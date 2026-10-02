@@ -1935,8 +1935,8 @@
 
 /* Agent header */
 .sim-agent-header {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 76px 14px 24px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -1962,7 +1962,8 @@
 /* Chat messages area */
 .sim-chat-messages {
   flex: 1; overflow-y: auto;
-  padding: 20px 20px 12px;
+  padding: 24px 28px 16px 28px;
+  margin-right: 68px; /* Margen derecho que respeta el dock de opciones laterales */
   display: flex; flex-direction: column; gap: 16px;
   scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
 }
@@ -1970,7 +1971,7 @@
 /* Bubbles */
 .sim-bubble-wrap {
   display: flex; align-items: flex-start; gap: 10px;
-  max-width: 78%;
+  max-width: min(78%, 880px);
 }
 .sim-bubble-wrap-student {
   align-self: flex-end; flex-direction: row-reverse;
@@ -2020,7 +2021,7 @@
 .sim-input-area {
   background: var(--surface);
   border-top: 1px solid var(--border);
-  padding: 12px 16px 8px;
+  padding: 12px 76px 10px 24px;
   flex-shrink: 0;
 }
 .sim-input-row {
@@ -2055,55 +2056,1018 @@
   font-size: 0.69rem; color: var(--ink3);
   margin: 6px 2px 0;
 }
+
+/* ── Footer: Examen Físico y Laboratorios a la izquierda, Terminar a la derecha ── */
 .sim-chat-footer {
   background: var(--surface);
   border-top: 1px solid var(--border);
-  padding: 10px 16px;
-  display: flex; justify-content: flex-end;
+  padding: 10px 76px 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.sim-footer-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sim-footer-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  border-radius: var(--r-md, 8px);
+  font-family: var(--font);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.sim-footer-action-btn:hover {
+  transform: translate3d(0, -1px, 0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.sim-footer-action-exam {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.06);
+  color: #059669;
+}
+
+.sim-footer-action-exam:hover {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: #10B981;
+}
+
+.sim-footer-action-lab {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.06);
+  color: #D97706;
+}
+
+.sim-footer-action-lab:hover {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: #F59E0B;
+}
+
+.sim-footer-action-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+
+.sim-footer-action-exam .sim-footer-action-badge {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+.sim-footer-action-lab .sim-footer-action-badge {
+  background: #F59E0B;
+  color: #FFFFFF;
+}
+
+/* ── Layout a pantalla completa de la consulta ── */
+.sim-interview-layout {
+  flex: 1;
+  display: flex;
+  justify-content: stretch;
+  align-items: stretch;
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+  background: var(--surface, #FFFFFF);
+}
+
+.sim-chat-col-centered {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface, #FFFFFF);
+  border-left: none;
+  border-right: none;
+  box-shadow: none;
+  position: relative;
+  z-index: 1;
+}
+
+.sim-agent-info-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Botón de acceso directo en el header del chat */
+/* ══════════════════════════════════════════════════════════════
+   HISTORIA CLÍNICA ELECTRÓNICA (EHR) — SISTEMA FORMAL Y MINIMALISTA
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Botones de Acceso a Módulos en el Header del Chat ── */
+.sim-ehr-header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.sim-ehr-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--r-md, 8px);
+  background: rgba(0, 179, 248, 0.08);
+  color: var(--p-dk);
+  border: 1px solid rgba(0, 179, 248, 0.28);
+  font-family: var(--font);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+  will-change: transform;
+}
+
+.sim-ehr-header-btn:hover {
+  background: rgba(0, 179, 248, 0.16);
+  border-color: var(--p);
+  transform: translate3d(0, -1px, 0);
+  box-shadow: 0 2px 8px rgba(0, 179, 248, 0.15);
+}
+
+.sim-ehr-header-btn-muted {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--ink2);
+}
+
+.sim-ehr-header-btn-muted:hover {
+  background: rgba(0, 179, 248, 0.08);
+  border-color: var(--p);
+  color: var(--ink);
+}
+
+.sim-ehr-count-badge {
+  background: #10B981;
+  color: #FFFFFF;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+
+/* ── Dock Lateral: Módulos Clínicos Independientes (Centrado Verticalmente) ── */
+.sim-ehr-dock {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  user-select: none;
+  pointer-events: none;
+}
+
+.sim-ehr-dock-item {
+  pointer-events: auto;
+  border: 1px solid var(--border);
+  border-right: none;
+  background: var(--surface);
+  border-radius: 12px 0 0 12px;
+  box-shadow: -4px 6px 20px rgba(15, 23, 42, 0.08);
+  padding: 7px 12px 7px 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font);
+  transform: translate3d(calc(100% - 46px), 0, 0);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  will-change: transform;
+  outline: none;
+}
+
+.sim-ehr-dock-item:hover,
+.sim-ehr-dock-item.is-active {
+  transform: translate3d(0, 0, 0);
+  box-shadow: -6px 10px 28px rgba(0, 179, 248, 0.2);
+  border-color: rgba(0, 179, 248, 0.5);
+}
+
+.sim-ehr-dock-item.is-active {
+  border-left: 3px solid var(--p);
+}
+
+.sim-ehr-dock-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.sim-ehr-dock-item:hover .sim-ehr-dock-icon {
+  transform: scale(1.08);
+}
+
+/* Acentos específicos para cada opción clínica independiente */
+.sim-dock-anam .sim-ehr-dock-icon {
+  background: rgba(0, 179, 248, 0.12);
+  color: #00B3F8;
+}
+.sim-dock-exam .sim-ehr-dock-icon {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+}
+.sim-dock-para .sim-ehr-dock-icon {
+  background: rgba(245, 158, 11, 0.12);
+  color: #F59E0B;
+}
+.sim-dock-comp .sim-ehr-dock-icon {
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366F1;
+}
+
+.sim-ehr-dock-label-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  white-space: nowrap;
+  min-width: 95px;
+}
+
+.sim-ehr-dock-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.sim-ehr-dock-sub {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--ink3);
+  line-height: 1.2;
+}
+
+.sim-dock-badge {
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  background: #10B981;
+  padding: 1px 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+/* ── Modal Overlay y Contenedor del Formulario EHR (Ultra Optimizado, 0 Lag) ── */
+.sim-ehr-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  contain: strict;
+}
+
+.sim-ehr-modal {
+  width: 740px;
+  max-width: 95vw;
+  max-height: 85vh;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  contain: content;
+}
+
+.sim-ehr-modal-anamnesis {
+  width: 620px;
+  max-height: 78vh;
+}
+
+.sim-ehr-modal-examen_fisico,
+.sim-ehr-modal-paraclinicos {
+  width: 760px;
+  max-height: 85vh;
+}
+
+.sim-ehr-modal-completo {
+  width: 860px;
+  max-height: 90vh;
+}
+
+/* Encabezado formal del hospital / EHR — estilo formato clínico impreso (logo + título) */
+.ehr-modal-header {
+  padding: 14px 24px;
+  border-bottom: 2px solid #1A1A1A;
+  background: #FFFFFF;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.ehr-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ehr-logo-img {
+  height: 34px;
+  width: auto;
   flex-shrink: 0;
 }
 
-/* ── Historia Clínica panel ── */
-.sim-hc-panel {
+.ehr-header-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ehr-inst-name {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #111;
+}
+
+.ehr-inst-tag {
+  font-size: 0.62rem;
+  color: var(--ink3);
+}
+
+.ehr-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ehr-header-title-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.ehr-inst-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #111;
+  margin: 0;
+}
+
+.ehr-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.ehr-pulse-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10B981;
+}
+
+.ehr-inst-sub {
+  font-size: 0.72rem;
+  color: var(--ink3);
+  margin: 2px 0 0;
+}
+
+.ehr-inst-sub strong {
+  color: var(--ink2);
+}
+
+.ehr-module-subtitle {
+  font-size: 0.72rem;
+  color: var(--ink3);
+  margin: 0;
+  padding: 6px 24px 10px;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.ehr-close-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--ink2);
+  padding: 5px 12px;
+  border-radius: var(--r-md, 8px);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.ehr-close-btn:hover {
+  background: var(--border);
+  color: var(--ink);
+}
+
+.ehr-esc-key {
+  font-size: 0.58rem;
+  font-weight: 800;
   background: var(--surface);
-  overflow-y: auto; display: flex; flex-direction: column;
-  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  color: var(--ink3);
 }
-.sim-hc-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 20px 14px;
-  flex-shrink: 0; border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; background: var(--surface); z-index: 2;
+
+/* ── Ficha de Filiación e Identificación (formato de formulario clínico impreso, tipo tabla) ── */
+.ehr-patient-section {
+  padding: 0;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
-.sim-hc-title { font-size: 1rem; font-weight: 700; color: var(--ink); }
-.sim-hc-summary-btn {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 0.75rem; font-weight: 500; color: var(--ink2);
-  background: var(--surface2); border: 1px solid var(--border2);
-  border-radius: var(--r-ful); padding: 5px 12px; cursor: pointer;
-  transition: background 0.14s;
+
+.ehr-section-kicker {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #111;
+  text-transform: uppercase;
+  padding: 6px 24px;
+  background: #F1F3F5;
+  border-top: 1px solid #1A1A1A;
+  border-bottom: 1px solid #1A1A1A;
 }
-.sim-hc-summary-btn:hover { background: var(--border2); }
-.sim-hc-sections { padding: 8px 20px 24px; display: flex; flex-direction: column; }
-.sim-hc-section {
-  padding: 14px 0; border-bottom: 1px solid var(--border);
+
+.ehr-section-kicker-module {
+  margin-top: 0;
 }
-.sim-hc-section:last-child { border-bottom: none; }
-.sim-hc-sec-head {
-  display: flex; align-items: center; justify-content: space-between;
+
+.ehr-patient-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-left: 1px solid #1A1A1A;
+  border-top: 1px solid #1A1A1A;
+  margin: 0 24px;
+  width: calc(100% - 48px);
+}
+
+.ehr-form-cell {
+  background: #FFFFFF;
+  border-right: 1px solid #1A1A1A;
+  border-bottom: 1px solid #1A1A1A;
+  border-radius: 0;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ehr-form-cell-wide {
+  grid-column: span 2;
+}
+
+.ehr-cell-lbl {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5B6572;
+}
+
+.ehr-cell-val {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ehr-checkbox-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 2px;
+}
+
+.ehr-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #5B6572;
+}
+
+.ehr-checkbox-item.checked {
+  color: #111;
+  font-weight: 800;
+}
+
+.ehr-checkbox-box {
+  width: 13px;
+  height: 13px;
+  border: 1.4px solid #1A1A1A;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #111;
+  background: #FFFFFF;
+}
+
+.ehr-checkbox-item.checked .ehr-checkbox-box {
+  background: #111;
+  color: #FFFFFF;
+}
+
+/* ── Barra de Navegación del Formulario Clínico ── */
+.ehr-form-nav {
+  display: flex;
+  gap: 4px;
+  padding: 8px 22px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.ehr-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ink3);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  white-space: nowrap;
+}
+
+.ehr-nav-btn:hover {
+  background: var(--surface2);
+  color: var(--ink);
+}
+
+.ehr-nav-btn.active {
+  background: rgba(0, 179, 248, 0.08);
+  border-color: rgba(0, 179, 248, 0.4);
+  color: var(--p-dk);
+}
+
+.ehr-nav-count {
+  background: #10B981;
+  color: #FFFFFF;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+/* ── Cuerpo del Formulario ── */
+.ehr-form-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 22px;
+  background: var(--surface);
+  overscroll-behavior: contain;
+}
+
+.sim-sheet-inst-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sim-sheet-logo-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(0, 179, 248, 0.1);
+  color: var(--p);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sim-sheet-inst-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.sim-sheet-inst-sub {
+  font-size: 0.7rem;
+  color: var(--ink3);
+  margin: 2px 0 0;
+}
+
+.sim-sheet-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--r-ful);
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* Banner de datos administrativos del paciente */
+.sim-sheet-patient-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 10px 22px;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  flex-shrink: 0;
+}
+
+.sim-sheet-p-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sim-sp-label {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sim-sp-val {
+  font-size: 0.77rem;
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tabs para pasar de hoja en el legajador */
+.sim-sheet-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 22px 0;
+  background: #F1F5F9;
+  border-bottom: 1.5px solid #CBD5E1;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.sim-sheet-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 8px 8px 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent;
+  color: var(--ink3);
+  font-size: 0.77rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.sim-sheet-tab:hover {
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.sim-sheet-tab.active {
+  background: #FFFFFF;
+  color: var(--p);
+  border-color: #CBD5E1;
+  border-top: 2.5px solid var(--p);
+  font-weight: 700;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.sim-sheet-tab-count {
+  background: #10B981;
+  color: #FFF;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+/* Contenido scrollable de las hojas del legajador */
+.sim-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  background: #FFFFFF;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+
+.sim-sheet-page-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sim-sheet-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.sim-sheet-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
   margin-bottom: 8px;
 }
-.sim-hc-sec-num-title { font-size: 0.85rem; font-weight: 700; color: var(--ink); }
-.sim-hc-check { color: #10B981; }
-.sim-hc-sec-body {
-  font-size: 0.77rem; color: var(--ink2); line-height: 1.7;
-  margin: 0; padding: 0; list-style: none;
-  display: flex; flex-direction: column; gap: 2px;
+
+.sim-sheet-card-head h4 {
+  font-size: 0.84rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
 }
-.sim-hc-sec-body p { margin: 0; }
-.sim-hc-sec-body li { display: flex; gap: 5px; }
-.sim-hc-sec-body li::before { content: '•'; color: var(--ink3); flex-shrink: 0; }
-.sim-hc-sec-body strong { color: var(--ink); font-weight: 600; }
+
+.sim-sheet-card-text {
+  font-size: 0.81rem;
+  color: var(--ink2);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.sim-sheet-empty-box {
+  background: var(--surface);
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.sim-sheet-empty-box p {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink2);
+  margin: 0 0 4px;
+}
+
+.sim-sheet-empty-box span {
+  font-size: 0.72rem;
+  color: var(--ink3);
+}
+
+.sim-sheet-empty-sub {
+  font-size: 0.76rem;
+  color: var(--ink3);
+  font-style: italic;
+  margin: 4px 0 0;
+}
+
+.sim-sheet-notes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-sheet-note-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.sim-sheet-note-time {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--p);
+  background: rgba(0, 179, 248, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.sim-sheet-note-text {
+  font-size: 0.78rem;
+  color: var(--ink);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.sim-sheet-section-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-left: 3px solid var(--p);
+}
+
+.sim-sheet-section-banner h4 {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 2px;
+}
+
+.sim-sheet-section-banner p {
+  font-size: 0.73rem;
+  color: var(--ink3);
+  margin: 0;
+}
+
+.sim-sheet-progress-pill {
+  background: #10B981;
+  color: #FFF;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--r-ful);
+}
+
+.sim-exam-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.sim-sheet-cat-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-sheet-cat-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--p-dk);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sim-sheet-btn-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sim-sheet-exam-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.sim-sheet-exam-btn:hover:not(:disabled) {
+  border-color: var(--p);
+  color: var(--p);
+  background: rgba(0, 179, 248, 0.06);
+}
+
+.sim-sheet-exam-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sim-sheet-exam-btn-done {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #059669;
+}
+
+.sim-sheet-results-panel {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid #10B981;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 8px;
+}
+
+.sim-sheet-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.sim-sheet-result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.sim-src-name {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #065F46;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.sim-src-val {
+  font-size: 0.77rem;
+  color: var(--ink);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sim-sheet-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px 16px;
+  margin-top: 6px;
+}
+
+.sim-sheet-grid-2 p {
+  font-size: 0.78rem;
+  color: var(--ink2);
+  margin: 0;
+}
+
+.sim-sheet-grid-2 strong {
+  color: var(--ink);
+}
 
 /* ── Stage 1 — full width presentation ── */
 .sim-stage1-wrap {

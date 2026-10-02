@@ -1689,6 +1689,142 @@ html.theme-animating .crono-gantt-card {
   color: #CBD5E1 !important;
 }
 
+/* Layout de Consulta a Pantalla Completa (Modo Oscuro) */
+[data-theme="dark"] .sim-interview-layout {
+  background: #0B0F19 !important;
+}
+[data-theme="dark"] .sim-chat-col-centered {
+  background: #0B0F19 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .sim-ehr-header-btn {
+  background: rgba(0, 179, 248, 0.12) !important;
+  color: #38BDF8 !important;
+  border-color: rgba(0, 179, 248, 0.35) !important;
+}
+[data-theme="dark"] .sim-footer-action-exam {
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #34D399 !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+[data-theme="dark"] .sim-footer-action-lab {
+  background: rgba(245, 158, 11, 0.12) !important;
+  color: #FBBF24 !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+[data-theme="dark"] .sim-ehr-dock-item {
+  background: #111C2E !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: -4px 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+[data-theme="dark"] .sim-ehr-dock-item:hover,
+[data-theme="dark"] .sim-ehr-dock-item.is-active {
+  background: #16243A !important;
+  border-color: rgba(0, 179, 248, 0.6) !important;
+  box-shadow: -6px 12px 30px rgba(0, 0, 0, 0.7) !important;
+}
+[data-theme="dark"] .sim-ehr-dock-title {
+  color: #F8FAFC !important;
+}
+[data-theme="dark"] .sim-ehr-dock-sub {
+  color: #94A3B8 !important;
+}
+[data-theme="dark"] .sim-ehr-modal {
+  background: #0F172A !important;
+  border-color: rgba(0, 179, 248, 0.35) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+}
+[data-theme="dark"] .ehr-modal-header {
+  background: #111C2E !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .ehr-inst-title {
+  color: #F8FAFC !important;
+}
+[data-theme="dark"] .ehr-close-btn {
+  background: #1E293B !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #CBD5E1 !important;
+}
+[data-theme="dark"] .ehr-patient-section {
+  background: #0B1120 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .ehr-form-cell {
+  background: #111C2E !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .ehr-cell-val {
+  color: #F8FAFC !important;
+}
+[data-theme="dark"] .ehr-form-nav {
+  background: #0F172A !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .ehr-nav-btn {
+  color: #94A3B8 !important;
+}
+[data-theme="dark"] .ehr-nav-btn.active {
+  background: rgba(0, 179, 248, 0.15) !important;
+  color: #38BDF8 !important;
+}
+[data-theme="dark"] .ehr-form-body {
+  background: #0F172A !important;
+}
+[data-theme="dark"] .sim-sheet-header {
+  background: #1E293B !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .sim-sheet-inst-title {
+  color: #F8FAFC !important;
+}
+[data-theme="dark"] .sim-sheet-patient-strip {
+  background: #141E33 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .sim-sp-val {
+  color: #F8FAFC !important;
+}
+[data-theme="dark"] .sim-sheet-tabs {
+  background: #0B0F19 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .sim-sheet-tab.active {
+  background: #0F172A !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: var(--p) !important;
+}
+[data-theme="dark"] .sim-sheet-body {
+  background: #0F172A !important;
+}
+[data-theme="dark"] .sim-sheet-card {
+  background: #1E293B !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .sim-sheet-card-head h4,
+[data-theme="dark"] .sim-sheet-note-text,
+[data-theme="dark"] .sim-src-val {
+  color: #F8FAFC !important;
+}
+[data-theme="dark"] .sim-sheet-note-item {
+  background: #141E33 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .sim-sheet-cat-box {
+  background: #1E293B !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .sim-sheet-exam-btn {
+  background: #141E33 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #E2E8F0 !important;
+}
+[data-theme="dark"] .sim-sheet-result-card {
+  background: #141E33 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
 [data-theme="dark"] .sim-exam-btn-done,
 [data-theme="dark"] .sim-test-done {
   background: rgba(16, 185, 129, 0.2) !important;
