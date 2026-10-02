@@ -207,6 +207,97 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
     return () => window.removeEventListener('keydown', onEsc);
   }, [onClose]);
 
+  // react-pageflip clona cada hijo directo con React.cloneElement SIN filtrar
+  // antes los "false"/"null" que deja un `{cond && <div/>}` (a diferencia de
+  // como React los ignora al renderizar normal) — por eso las páginas del
+  // libro se arman acá como un array ya 100% filtrado, nunca como JSX
+  // condicional directo dentro de <HTMLFlipBook>, o truena con
+  // "argument must be a React element".
+  const paginas: JSX.Element[] = [
+    <div className="sim-doc-page sim-doc-cover" key="portada">
+      <img src={logoUrl} alt="Clerkship" className="sim-doc-cover-logo" />
+      <h2>Historia Clínica</h2>
+      <p className="sim-doc-cover-name">{c.paciente.nombre}</p>
+      <p className="sim-doc-cover-meta">Folio {folio} · {fechaHoy}</p>
+    </div>,
+
+    <div className="sim-doc-page" key="identificacion">
+      <h3 className="sim-doc-page-title">A. Identificación y Filiación del Paciente</h3>
+      <div className="ehr-patient-form-grid sim-doc-id-grid">
+        <div className="ehr-form-cell ehr-form-cell-wide">
+          <span className="ehr-cell-lbl">Apellidos y Nombres</span>
+          <strong className="ehr-cell-val">{c.paciente.nombre}</strong>
+        </div>
+        <div className="ehr-form-cell">
+          <span className="ehr-cell-lbl">Documento de Identidad</span>
+          <span className="ehr-cell-val">{c.paciente.documento || 'N/A'}</span>
+        </div>
+        <div className="ehr-form-cell">
+          <span className="ehr-cell-lbl">Edad</span>
+          <span className="ehr-cell-val">{c.paciente.edad} años</span>
+        </div>
+        <div className="ehr-form-cell">
+          <span className="ehr-cell-lbl">Sexo</span>
+          <span className="ehr-cell-val">{c.paciente.sexo === 'F' ? 'Femenino' : 'Masculino'}</span>
+        </div>
+        <div className="ehr-form-cell">
+          <span className="ehr-cell-lbl">Ocupación</span>
+          <span className="ehr-cell-val">{c.paciente.ocupacion || 'N/A'}</span>
+        </div>
+        <div className="ehr-form-cell">
+          <span className="ehr-cell-lbl">Grupo Sanguíneo y Rh</span>
+          <span className="ehr-cell-val">Tipo {c.paciente.tipo_sangre || 'N/A'}</span>
+        </div>
+        <div className="ehr-form-cell">
+          <span className="ehr-cell-lbl">Biometría / Peso</span>
+          <span className="ehr-cell-val">{c.paciente.peso_kg || 'N/A'} kg</span>
+        </div>
+        <div className="ehr-form-cell">
+          <span className="ehr-cell-lbl">Teléfono</span>
+          <span className="ehr-cell-val">{c.paciente.telefono || 'N/A'}</span>
+        </div>
+      </div>
+    </div>,
+
+    <div className="sim-doc-page" key="anamnesis">
+      <h3 className="sim-doc-page-title">B. Anamnesis y Motivo de Consulta</h3>
+      <p className="sim-sheet-card-text"><strong>Motivo:</strong> {c.presentacion_inicial}</p>
+      <p className="sim-sheet-card-text"><strong>Estado emocional:</strong> {c.estado_emocional_inicial || 'Normal'}</p>
+      {notasHistoria.length > 0 && (
+        <>
+          <h4 className="sim-doc-sub-title">Declaraciones del Paciente</h4>
+          <ul className="sim-sheet-notes-list">
+            {notasHistoria.map((m, idx) => (
+              <li key={idx} className="sim-sheet-note-item">
+                <span className="sim-sheet-note-time">{fmtTime(m.ts)}</span>
+                <span className="sim-sheet-note-text">"{m.text}"</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>,
+  ];
+
+  if (doneExamen.length > 0) {
+    paginas.push(
+      <div className="sim-doc-page" key="examen-fisico">
+        <h3 className="sim-doc-page-title">C. Examen Físico Dirigido</h3>
+        {doneExamen.map(e => (
+          <LabResultCard key={e.clave} e={e} procesandoLabel="Explorando..." />
+        ))}
+      </div>,
+    );
+  }
+
+  for (const [grupo, items] of departamentos) {
+    paginas.push(
+      <div className="sim-doc-page sim-doc-page-lab" key={grupo}>
+        <LabDepartmentSheet grupo={grupo} items={items} paciente={c.paciente} folio={folio} />
+      </div>,
+    );
+  }
+
   return (
     <div className="sim-docs-backdrop" onClick={onClose}>
       <div className="sim-docs-modal" onClick={e => e.stopPropagation()}>
@@ -238,89 +329,7 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
             mobileScrollSupport
             className="sim-docs-flipbook"
           >
-            {/* Portada */}
-            <div className="sim-doc-page sim-doc-cover">
-              <img src={logoUrl} alt="Clerkship" className="sim-doc-cover-logo" />
-              <h2>Historia Clínica</h2>
-              <p className="sim-doc-cover-name">{c.paciente.nombre}</p>
-              <p className="sim-doc-cover-meta">Folio {folio} · {fechaHoy}</p>
-            </div>
-
-            {/* A. Identificación y Filiación */}
-            <div className="sim-doc-page">
-              <h3 className="sim-doc-page-title">A. Identificación y Filiación del Paciente</h3>
-              <div className="ehr-patient-form-grid sim-doc-id-grid">
-                <div className="ehr-form-cell ehr-form-cell-wide">
-                  <span className="ehr-cell-lbl">Apellidos y Nombres</span>
-                  <strong className="ehr-cell-val">{c.paciente.nombre}</strong>
-                </div>
-                <div className="ehr-form-cell">
-                  <span className="ehr-cell-lbl">Documento de Identidad</span>
-                  <span className="ehr-cell-val">{c.paciente.documento || 'N/A'}</span>
-                </div>
-                <div className="ehr-form-cell">
-                  <span className="ehr-cell-lbl">Edad</span>
-                  <span className="ehr-cell-val">{c.paciente.edad} años</span>
-                </div>
-                <div className="ehr-form-cell">
-                  <span className="ehr-cell-lbl">Sexo</span>
-                  <span className="ehr-cell-val">{c.paciente.sexo === 'F' ? 'Femenino' : 'Masculino'}</span>
-                </div>
-                <div className="ehr-form-cell">
-                  <span className="ehr-cell-lbl">Ocupación</span>
-                  <span className="ehr-cell-val">{c.paciente.ocupacion || 'N/A'}</span>
-                </div>
-                <div className="ehr-form-cell">
-                  <span className="ehr-cell-lbl">Grupo Sanguíneo y Rh</span>
-                  <span className="ehr-cell-val">Tipo {c.paciente.tipo_sangre || 'N/A'}</span>
-                </div>
-                <div className="ehr-form-cell">
-                  <span className="ehr-cell-lbl">Biometría / Peso</span>
-                  <span className="ehr-cell-val">{c.paciente.peso_kg || 'N/A'} kg</span>
-                </div>
-                <div className="ehr-form-cell">
-                  <span className="ehr-cell-lbl">Teléfono</span>
-                  <span className="ehr-cell-val">{c.paciente.telefono || 'N/A'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* B. Anamnesis y Motivo de Consulta */}
-            <div className="sim-doc-page">
-              <h3 className="sim-doc-page-title">B. Anamnesis y Motivo de Consulta</h3>
-              <p className="sim-sheet-card-text"><strong>Motivo:</strong> {c.presentacion_inicial}</p>
-              <p className="sim-sheet-card-text"><strong>Estado emocional:</strong> {c.estado_emocional_inicial || 'Normal'}</p>
-              {notasHistoria.length > 0 && (
-                <>
-                  <h4 className="sim-doc-sub-title">Declaraciones del Paciente</h4>
-                  <ul className="sim-sheet-notes-list">
-                    {notasHistoria.map((m, idx) => (
-                      <li key={idx} className="sim-sheet-note-item">
-                        <span className="sim-sheet-note-time">{fmtTime(m.ts)}</span>
-                        <span className="sim-sheet-note-text">"{m.text}"</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-
-            {/* C. Examen Físico */}
-            {doneExamen.length > 0 && (
-              <div className="sim-doc-page">
-                <h3 className="sim-doc-page-title">C. Examen Físico Dirigido</h3>
-                {doneExamen.map(e => (
-                  <LabResultCard key={e.clave} e={e} procesandoLabel="Explorando..." />
-                ))}
-              </div>
-            )}
-
-            {/* D. Una hoja por departamento de laboratorio solicitado */}
-            {departamentos.map(([grupo, items]) => (
-              <div className="sim-doc-page sim-doc-page-lab" key={grupo}>
-                <LabDepartmentSheet grupo={grupo} items={items} paciente={c.paciente} folio={folio} />
-              </div>
-            ))}
+            {paginas}
           </HTMLFlipBook>
         </div>
       </div>
