@@ -3587,6 +3587,8 @@
   position: fixed;
   inset: 0;
   background: rgba(10, 14, 22, 0.72);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -3642,6 +3644,24 @@
   transition: background 0.16s ease;
 }
 .sim-docs-modal-actions > button:hover { background: rgba(255, 255, 255, 0.18); }
+.sim-docs-modal-actions > button:disabled { opacity: 0.4; cursor: default; }
+.sim-docs-modal-actions > button:disabled:hover { background: rgba(255, 255, 255, 0.08); }
+
+.sim-docs-actions-sep {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 2px;
+}
+
+.sim-docs-zoom-pct {
+  width: auto !important;
+  min-width: 48px;
+  padding: 0 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font);
+}
 
 .sim-docs-close {
   width: auto !important;
@@ -3659,6 +3679,17 @@
   height: min(94vh, 1180px);
   flex: 1;
   min-height: 0;
+  overflow: auto;
+}
+
+.sim-docs-book-zoom {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  transition: transform 0.18s ease;
 }
 
 .sim-docs-flipbook {

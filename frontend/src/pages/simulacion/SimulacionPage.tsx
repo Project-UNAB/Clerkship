@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, CheckCircle, Send, ChevronRight, ChevronLeft, Info, ArrowLeft, Stethoscope,
   Loader2, AlertTriangle, TrendingUp, Award, User, Eye, ClipboardList, FileText,
-  X, FlaskConical, Sparkles, Shuffle, FolderOpen,
+  X, FlaskConical, Sparkles, Shuffle, FolderOpen, ZoomIn, ZoomOut,
 } from 'lucide-react';
 import HTMLFlipBookRaw from 'react-pageflip';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -196,6 +196,10 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
   onClose: () => void;
 }) {
   const bookRef = useRef<{ pageFlip: () => { flipNext: () => void; flipPrev: () => void } } | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const zoomIn = () => setZoom(z => Math.min(z + 0.15, 1.8));
+  const zoomOut = () => setZoom(z => Math.max(z - 0.15, 0.5));
+  const zoomReset = () => setZoom(1);
   const notasHistoria = messages.filter(m => m.role === 'patient');
   const doneExamen = Object.values(explored).filter(e => e.tipo === 'examen_fisico');
   const doneParaclinicos = Object.values(explored).filter(e => e.tipo === 'paraclinico');
@@ -312,6 +316,17 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
             <button type="button" onClick={() => bookRef.current?.pageFlip().flipNext()} title="Página siguiente">
               <ChevronRight size={16} />
             </button>
+            <span className="sim-docs-actions-sep" />
+            <button type="button" onClick={zoomOut} disabled={zoom <= 0.5} title="Alejar">
+              <ZoomOut size={16} />
+            </button>
+            <button type="button" className="sim-docs-zoom-pct" onClick={zoomReset} title="Restablecer zoom">
+              {Math.round(zoom * 100)}%
+            </button>
+            <button type="button" onClick={zoomIn} disabled={zoom >= 1.8} title="Acercar">
+              <ZoomIn size={16} />
+            </button>
+            <span className="sim-docs-actions-sep" />
             <button type="button" className="sim-docs-close" onClick={onClose} title="Cerrar (Esc)">
               <X size={15} /> <span>Cerrar</span>
             </button>
@@ -319,22 +334,24 @@ function DocumentsFlipbook({ c, explored, messages, onClose }: {
         </div>
 
         <div className="sim-docs-book-wrap">
-          <HTMLFlipBook
-            ref={bookRef}
-            width={680}
-            height={880}
-            size="stretch"
-            minWidth={550} maxWidth={850} minHeight={712} maxHeight={1100}
-            showCover
-            usePortrait={false}
-            autoSize={false}
-            drawShadow
-            maxShadowOpacity={0.35}
-            mobileScrollSupport
-            className="sim-docs-flipbook"
-          >
-            {paginas}
-          </HTMLFlipBook>
+          <div className="sim-docs-book-zoom" style={{ transform: `scale(${zoom})` }}>
+            <HTMLFlipBook
+              ref={bookRef}
+              width={680}
+              height={880}
+              size="stretch"
+              minWidth={550} maxWidth={850} minHeight={712} maxHeight={1100}
+              showCover
+              usePortrait={false}
+              autoSize={false}
+              drawShadow
+              maxShadowOpacity={0.35}
+              mobileScrollSupport
+              className="sim-docs-flipbook"
+            >
+              {paginas}
+            </HTMLFlipBook>
+          </div>
         </div>
       </div>
     </div>
