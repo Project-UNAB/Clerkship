@@ -2048,20 +2048,19 @@
 .sim-input-area {
   background: var(--surface);
   border-top: 1px solid var(--border);
-  padding: 10px clamp(24px, 4vw, 48px) 10px;
+  padding: 10px 14px 10px;
   flex-shrink: 0;
 }
 
 /* ── Contenedor general del área de escritura: las herramientas y
-   sugerencias viven AFUERA del recuadro de texto, como columnas suaves
-   a cada lado — el recuadro en sí queda minimal, solo para escribir. ── */
+   sugerencias viven AFUERA del recuadro de texto, empujadas a los
+   bordes laterales del contenedor (no apretadas junto al recuadro). ── */
 .sim-input-container {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 14px;
   width: 100%;
-  max-width: 1040px;
   margin: 0 auto;
 }
 
