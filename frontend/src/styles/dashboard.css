@@ -2355,19 +2355,17 @@
   contain: strict;
 }
 
-/* Hoja de papel real: esquinas cuadradas, blanco puro, sombra plana de hoja
-   levantada del escritorio (no un modal de app con esquinas redondeadas) */
+/* Modal base: panel liviano de app (para los accesos rapidos sueltos —
+   Anamnesis / Examen Fisico / Paraclinicos). El aspecto de "hoja de papel
+   real" queda reservado unicamente al Expediente consolidado, mas abajo. */
 .sim-ehr-modal {
   width: 740px;
   max-width: 95vw;
   max-height: 85vh;
-  background: #FFFFFF;
-  border: 1px solid #D8DBDF;
-  border-radius: 2px;
-  box-shadow:
-    0 1px 0 #FFFFFF inset,
-    0 18px 40px -12px rgba(15, 23, 42, 0.38),
-    0 3px 10px rgba(15, 23, 42, 0.14);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2385,9 +2383,17 @@
   max-height: 85vh;
 }
 
+/* Expediente consolidado: este si debe verse como una hoja clinica real */
 .sim-ehr-modal-completo {
   width: 860px;
   max-height: 90vh;
+  background: #FFFFFF;
+  border: 1px solid #D8DBDF;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 #FFFFFF inset,
+    0 18px 40px -12px rgba(15, 23, 42, 0.38),
+    0 3px 10px rgba(15, 23, 42, 0.14);
 }
 
 /* Encabezado formal del hospital / EHR — estilo formato clínico impreso (logo + título) */

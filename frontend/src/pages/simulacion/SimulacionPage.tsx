@@ -189,7 +189,10 @@ function HistoriaClinicaEHR({
                 </div>
               </div>
 
-              {/* ── Sección A: Identificación y Filiación del Paciente (siempre visible, como en un formato clínico impreso) ── */}
+              {/* ── Sección A: Identificación y Filiación del Paciente — SOLO en el Expediente
+                   consolidado (es el único "documento" completo tipo hoja clínica impresa;
+                   los módulos sueltos de Anamnesis/Examen/Paraclínicos no la repiten) ── */}
+              {activeModule === 'completo' && (
               <div className="ehr-patient-section">
                 <div className="ehr-section-kicker">A. IDENTIFICACIÓN Y FILIACIÓN DEL PACIENTE</div>
                 <div className="ehr-patient-form-grid">
@@ -246,10 +249,17 @@ function HistoriaClinicaEHR({
                   </div>
                 </div>
               </div>
+              )}
 
-              {/* Hoja del Módulo Clínico Independiente Seleccionado */}
-              <div className="ehr-section-kicker ehr-section-kicker-module">{currentMeta.title}</div>
-              <p className="ehr-module-subtitle">{currentMeta.subtitle}</p>
+              {/* Encabezado del módulo: solo para los accesos rápidos sueltos
+                  (Anamnesis/Examen/Paraclínicos) — el Expediente ya queda identificado
+                  por la Sección A y no necesita este rótulo adicional */}
+              {activeModule !== 'completo' && (
+                <>
+                  <div className="ehr-section-kicker ehr-section-kicker-module">{currentMeta.title}</div>
+                  <p className="ehr-module-subtitle">{currentMeta.subtitle}</p>
+                </>
+              )}
 
               {/* Cuerpo del Formulario Clínico Independiente */}
               <div className="ehr-form-body">
@@ -426,29 +436,14 @@ function HistoriaClinicaEHR({
                     </div>
                   )}
 
-                  {/* HOJA 4: Expediente Completo */}
+                  {/* HOJA 4: Expediente Completo — la identificación ya quedó en la Sección A
+                      de arriba, así que aquí solo van las secciones B/C/D (sin repetir datos) */}
                   {activeModule === 'completo' && (
                     <div className="sim-sheet-page-content">
                       <div className="sim-sheet-card">
                         <div className="sim-sheet-card-head">
-                          <User size={14} />
-                          <h4>1. Datos Generales del Paciente</h4>
-                        </div>
-                        <div className="sim-sheet-grid-2">
-                          <p><strong>Nombre:</strong> {c.paciente.nombre}</p>
-                          <p><strong>Edad y Sexo:</strong> {c.paciente.edad} años, {c.paciente.sexo === 'F' ? 'Femenino' : 'Masculino'}</p>
-                          <p><strong>Ocupación:</strong> {c.paciente.ocupacion || 'Docente'}</p>
-                          <p><strong>Documento:</strong> {c.paciente.documento || 'CC 105661040'}</p>
-                          <p><strong>Contacto:</strong> {c.paciente.telefono || '311 777 3967'}</p>
-                          <p><strong>Grupo y Factor:</strong> {c.paciente.tipo_sangre || 'B+'}</p>
-                          <p><strong>Peso Corporal:</strong> {c.paciente.peso_kg || 62.1} kg</p>
-                        </div>
-                      </div>
-
-                      <div className="sim-sheet-card">
-                        <div className="sim-sheet-card-head">
                           <Info size={14} />
-                          <h4>2. Anamnesis y Cuadro Actual</h4>
+                          <h4>B. Anamnesis y Motivo de Consulta</h4>
                         </div>
                         <p className="sim-sheet-card-text"><strong>Motivo:</strong> {c.presentacion_inicial}</p>
                         <p className="sim-sheet-card-text"><strong>Estado emocional:</strong> {c.estado_emocional_inicial || 'Normal'}</p>
@@ -470,7 +465,7 @@ function HistoriaClinicaEHR({
                       <div className="sim-sheet-card">
                         <div className="sim-sheet-card-head">
                           <Stethoscope size={14} />
-                          <h4>3. Resumen de Examen Físico</h4>
+                          <h4>C. Examen Físico Dirigido</h4>
                         </div>
                         {doneExamen.length === 0 ? (
                           <p className="sim-sheet-empty-sub">No se han realizado maniobras de exploración física.</p>
@@ -489,7 +484,7 @@ function HistoriaClinicaEHR({
                       <div className="sim-sheet-card">
                         <div className="sim-sheet-card-head">
                           <Award size={14} />
-                          <h4>4. Resumen de Paraclínicos</h4>
+                          <h4>D. Órdenes Paraclínicas y Laboratorio</h4>
                         </div>
                         {doneParaclinicos.length === 0 ? (
                           <p className="sim-sheet-empty-sub">No se han ordenado estudios paraclínicos.</p>
