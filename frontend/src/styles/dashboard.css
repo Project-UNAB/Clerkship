@@ -1946,9 +1946,9 @@
   background: var(--surface2);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; padding: 2px; overflow: hidden;
+  flex-shrink: 0; overflow: hidden;
 }
-.sim-agent-logo-wrap img { width: 100%; height: 100%; object-fit: contain; }
+.sim-agent-logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
 .sim-agent-name  { font-size: 0.87rem; font-weight: 700; color: var(--ink); display: block; }
 .sim-agent-online {
   display: flex; align-items: center; gap: 5px;
@@ -1979,9 +1979,9 @@
   width: 32px; height: 32px;
   border-radius: 50%;
   background: var(--surface2);
-  flex-shrink: 0; overflow: hidden; padding: 2px;
+  flex-shrink: 0; overflow: hidden;
 }
-.sim-bubble-avatar img { width: 100%; height: 100%; object-fit: contain; }
+.sim-bubble-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .sim-bubble {
   padding: 11px 15px;
   border-radius: 16px;
