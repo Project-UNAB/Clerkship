@@ -35,6 +35,15 @@ def create_app():
 
     db.init_app(app)
     jwt.init_app(app)
+
+    @jwt.token_in_blocklist_loader
+    def _sesion_invalidada(_header, payload):
+        """Un cambio/recuperación de contraseña invalida los tokens emitidos antes.
+        La marca vive en Mongo (colección user_security), sin cambiar el esquema SQL."""
+        if mongo_client is None:
+            return False
+        doc = mongo_client[Config.MONGODB_DB_NAME]["user_security"].find_one({"user_id": payload.get("sub")})
+        return bool(doc) and payload.get("iat", 0) < doc.get("sessions_valid_after", 0)
     limiter.init_app(app)
     CORS(app, origins=app.config["CORS_ORIGINS"], supports_credentials=True)
 

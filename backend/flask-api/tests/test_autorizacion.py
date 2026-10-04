@@ -90,3 +90,21 @@ def test_perfil_con_id_invalido_responde_400(app, client, perfiles):
     yo, _ = perfiles
     res = client.get("/api/usuarios/no-es-uuid", headers=_headers(app, yo))
     assert res.status_code == 400
+
+
+class _FakeMongo:
+    def __init__(self, doc):
+        self.doc = doc
+
+    def __getitem__(self, _):
+        return {"user_security": SimpleNamespace(find_one=lambda q: self.doc)}
+
+
+def test_token_anterior_a_invalidacion_responde_401(app, client, perfiles, monkeypatch):
+    import time
+    import app as app_pkg
+    yo, _ = perfiles
+    token_viejo = _headers(app, yo)
+    monkeypatch.setattr(app_pkg, "mongo_client", _FakeMongo({"sessions_valid_after": int(time.time()) + 60}))
+    res = client.get("/api/auth/me", headers=token_viejo)
+    assert res.status_code == 401

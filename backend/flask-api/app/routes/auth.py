@@ -66,6 +66,19 @@ def _generate_and_send_code(user: User):
     send_verification_email(user.email, user.first_name, code)
 
 
+def _invalidar_sesiones(user: User) -> None:
+    """Marca los tokens emitidos hasta ahora como inválidos para este usuario."""
+    import app as app_pkg
+    from app import get_mongo_db
+    if app_pkg.mongo_client is None:
+        return
+    get_mongo_db()["user_security"].update_one(
+        {"user_id": str(user.id)},
+        {"$set": {"sessions_valid_after": int(datetime.now(timezone.utc).timestamp())}},
+        upsert=True,
+    )
+
+
 def _seconds_since_last_code(user: User) -> float | None:
     if not user.verification_code_expires_at:
         return None
@@ -300,6 +313,7 @@ def change_password(validated_body: ChangePasswordRequest):
 
     user.password_hash = generate_password_hash(new_password)
     db.session.commit()
+    _invalidar_sesiones(user)
 
     return jsonify({"message": "Contraseña actualizada con éxito"}), 200
 
@@ -382,5 +396,6 @@ def reset_password(validated_body: ResetPasswordRequest):
     user.verification_code_expires_at = None
     user.verification_attempts = 0
     db.session.commit()
+    _invalidar_sesiones(user)
 
     return jsonify({"message": "Contraseña actualizada. Ya puedes iniciar sesión.", "ok": True}), 200
