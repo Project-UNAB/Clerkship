@@ -24,8 +24,7 @@ def _code_email_html(first_name: str, code: str, title: str, intro: str, footer_
 
         <tr>
           <td style="padding:36px 40px 24px;text-align:center;">
-            <img src="{_LOGO_URL}" width="96" height="118" alt="Clerkship"
-              style="display:block;margin:0 auto;border:0;" />
+            <span style="display:block;text-align:center;font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;font-weight:800;letter-spacing:0.5px;color:#0369A1;">Clerkship</span>
           </td>
         </tr>
 

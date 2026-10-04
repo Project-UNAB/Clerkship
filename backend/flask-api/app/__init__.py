@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -32,6 +34,16 @@ def create_app():
         secret = app.config.get("JWT_SECRET_KEY") or ""
         if len(secret) < 32:
             raise RuntimeError("En producción JWT_SECRET_KEY debe existir y tener al menos 32 caracteres.")
+        if not app.config.get("MAILGUN_API_KEY") or not app.config.get("MAILGUN_DOMAIN"):
+            raise RuntimeError("En producción MAILGUN_API_KEY y MAILGUN_DOMAIN son obligatorios.")
+        if not os.environ.get("CORS_ORIGINS"):
+            raise RuntimeError("En producción CORS_ORIGINS debe listar explícitamente los orígenes del frontend.")
+
+    # Detrás de un proxy (hosting), la IP real del cliente viene en X-Forwarded-For.
+    # Sin esto, el rate limiting contaría todas las peticiones como la IP del proxy.
+    if os.environ.get("TRUST_PROXY") == "1":
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     db.init_app(app)
     jwt.init_app(app)
@@ -141,13 +153,15 @@ def create_app():
     app.register_blueprint(historial_bp, url_prefix="/api/historial")
     app.register_blueprint(email_bp, url_prefix="/api/email")
     app.register_blueprint(agentes_bp, url_prefix="/api/agentes")
-    app.register_blueprint(docs_bp, url_prefix="/api")
+    if app.config["FLASK_ENV"] != "production":
+        app.register_blueprint(docs_bp, url_prefix="/api")
     # Consola de desarrollo del simulador: nunca en producción.
     if app.config["FLASK_ENV"] in ("development", "testing"):
         app.register_blueprint(simulador_bp)
 
     # Acceso directo en /docs también
-    app.add_url_rule("/docs", endpoint="root_docs", view_func=swagger_ui)
+    if app.config["FLASK_ENV"] != "production":
+        app.add_url_rule("/docs", endpoint="root_docs", view_func=swagger_ui)
 
     @app.cli.command("seed-mock")
     def run_seed_mock():
