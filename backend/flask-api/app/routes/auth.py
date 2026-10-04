@@ -54,9 +54,18 @@ def _issue_tokens(user: User):
 
 def _issue_code(user: User) -> str:
     code = f"{secrets.randbelow(1_000_000):06d}"
-    user.verification_code = code
+    user.verification_code = generate_password_hash(code)
     user.verification_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_CODE_TTL_MINUTES)
     user.verification_attempts = 0
+    db.session.commit()
+    return code
+
+
+def _issue_reset_code(user: User) -> str:
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    user.reset_code = generate_password_hash(code)
+    user.reset_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_CODE_TTL_MINUTES)
+    user.reset_attempts = 0
     db.session.commit()
     return code
 
@@ -79,10 +88,11 @@ def _invalidar_sesiones(user: User) -> None:
     )
 
 
-def _seconds_since_last_code(user: User) -> float | None:
-    if not user.verification_code_expires_at:
+def _seconds_since_last_code(user: User, expires_field: str = "verification_code_expires_at") -> float | None:
+    expires = getattr(user, expires_field)
+    if not expires:
         return None
-    expires_at = user.verification_code_expires_at.replace(tzinfo=timezone.utc)
+    expires_at = expires.replace(tzinfo=timezone.utc)
     seconds_left = (expires_at - datetime.now(timezone.utc)).total_seconds()
     return VERIFICATION_CODE_TTL_MINUTES * 60 - seconds_left
 
@@ -182,7 +192,7 @@ def verify_email(validated_body: VerifyEmailRequest):
             "status_code": 400
         }), 400
 
-    if not secrets.compare_digest(code, user.verification_code):
+    if not check_password_hash(user.verification_code, code):
         user.verification_attempts += 1
         db.session.commit()
         restantes = MAX_VERIFICATION_ATTEMPTS - user.verification_attempts
@@ -338,11 +348,11 @@ def forgot_password(validated_body: ForgotPasswordRequest):
     if user is None or not user.email_verified:
         return generic
 
-    elapsed = _seconds_since_last_code(user)
+    elapsed = _seconds_since_last_code(user, "reset_code_expires_at")
     if elapsed is not None and elapsed < RESEND_COOLDOWN_SECONDS:
         return generic
 
-    code = _issue_code(user)
+    code = _issue_reset_code(user)
     try:
         send_password_reset_email(user.email, user.first_name, code)
     except (MailNotConfiguredError, requests.RequestException):
@@ -370,10 +380,10 @@ def reset_password(validated_body: ResetPasswordRequest):
         "status_code": 400,
     }), 400
 
-    if user is None or not user.email_verified or not user.verification_code:
+    if user is None or not user.email_verified or not user.reset_code:
         return codigo_invalido
 
-    if user.verification_attempts >= MAX_VERIFICATION_ATTEMPTS:
+    if user.reset_attempts >= MAX_VERIFICATION_ATTEMPTS:
         return jsonify({
             "error": "Too Many Requests",
             "message": "Demasiados intentos. Solicita un código nuevo.",
@@ -381,20 +391,20 @@ def reset_password(validated_body: ResetPasswordRequest):
         }), 429
 
     if (
-        not user.verification_code_expires_at
-        or datetime.now(timezone.utc) > user.verification_code_expires_at.replace(tzinfo=timezone.utc)
+        not user.reset_code_expires_at
+        or datetime.now(timezone.utc) > user.reset_code_expires_at.replace(tzinfo=timezone.utc)
     ):
         return codigo_invalido
 
-    if not secrets.compare_digest(code, user.verification_code):
-        user.verification_attempts += 1
+    if not check_password_hash(user.reset_code, code):
+        user.reset_attempts += 1
         db.session.commit()
         return codigo_invalido
 
     user.password_hash = generate_password_hash(validated_body.new_password)
-    user.verification_code = None
-    user.verification_code_expires_at = None
-    user.verification_attempts = 0
+    user.reset_code = None
+    user.reset_code_expires_at = None
+    user.reset_attempts = 0
     db.session.commit()
     _invalidar_sesiones(user)
 

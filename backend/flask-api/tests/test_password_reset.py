@@ -31,6 +31,9 @@ def fake_user(monkeypatch):
         verification_code=None,
         verification_code_expires_at=None,
         verification_attempts=0,
+        reset_code=None,
+        reset_code_expires_at=None,
+        reset_attempts=0,
         role="STUDENT",
         to_dict=lambda: {"id": "u1", "email": "estudiante@unab.edu.co"},
     )
@@ -48,7 +51,7 @@ def fake_user(monkeypatch):
 
 
 def _expire_cooldown(user):
-    user.verification_code_expires_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+    user.reset_code_expires_at = datetime.now(timezone.utc) - timedelta(minutes=5)
 
 
 def test_forgot_password_responde_igual_exista_o_no(client, fake_user):
@@ -81,7 +84,7 @@ def test_reset_password_con_codigo_correcto_cambia_la_clave(client, fake_user):
     })
     assert res.status_code == 200
     assert check_password_hash(fake_user.password_hash, "NuevaClave456")
-    assert fake_user.verification_code is None
+    assert fake_user.reset_code is None
 
 
 def test_reset_password_rechaza_codigo_incorrecto_y_cuenta_intentos(client, fake_user):
@@ -93,14 +96,14 @@ def test_reset_password_rechaza_codigo_incorrecto_y_cuenta_intentos(client, fake
         "email": fake_user.email, "code": wrong, "new_password": "NuevaClave456",
     })
     assert res.status_code == 400
-    assert fake_user.verification_attempts == 1
+    assert fake_user.reset_attempts == 1
     assert check_password_hash(fake_user.password_hash, "ViejaClave123")
 
 
 def test_reset_password_bloquea_tras_demasiados_intentos(client, fake_user):
     client.post("/api/auth/forgot-password", json={"email": fake_user.email})
     _, code = fake_user.sent[0]
-    fake_user.verification_attempts = auth_routes.MAX_VERIFICATION_ATTEMPTS
+    fake_user.reset_attempts = auth_routes.MAX_VERIFICATION_ATTEMPTS
 
     res = client.post("/api/auth/reset-password", json={
         "email": fake_user.email, "code": code, "new_password": "NuevaClave456",
@@ -112,7 +115,7 @@ def test_reset_password_bloquea_tras_demasiados_intentos(client, fake_user):
 def test_reset_password_rechaza_codigo_vencido(client, fake_user):
     client.post("/api/auth/forgot-password", json={"email": fake_user.email})
     _, code = fake_user.sent[0]
-    fake_user.verification_code_expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+    fake_user.reset_code_expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
 
     res = client.post("/api/auth/reset-password", json={
         "email": fake_user.email, "code": code, "new_password": "NuevaClave456",
@@ -157,3 +160,20 @@ def test_login_reenvia_codigo_cuando_ya_paso_el_cooldown(client, fake_user, monk
     res = client.post("/api/auth/login", json={"email": fake_user.email, "password": "ViejaClave123"})
     assert res.status_code == 403
     assert len(enviados) == 1
+
+
+def test_codigo_de_recuperacion_se_guarda_hasheado(client, fake_user):
+    client.post("/api/auth/forgot-password", json={"email": fake_user.email})
+    _, code = fake_user.sent[0]
+    assert fake_user.reset_code != code
+    assert check_password_hash(fake_user.reset_code, code)
+
+
+def test_codigo_de_verificacion_se_guarda_hasheado(app, monkeypatch):
+    import app as app_pkg
+    user = SimpleNamespace(verification_code=None, verification_code_expires_at=None, verification_attempts=0)
+    monkeypatch.setattr(auth_routes.db.session, "commit", lambda: None)
+    with app.app_context():
+        code = auth_routes._issue_code(user)
+    assert user.verification_code != code
+    assert check_password_hash(user.verification_code, code)
