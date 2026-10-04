@@ -28,6 +28,11 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    if app.config["FLASK_ENV"] == "production":
+        secret = app.config.get("JWT_SECRET_KEY") or ""
+        if len(secret) < 32:
+            raise RuntimeError("En producción JWT_SECRET_KEY debe existir y tener al menos 32 caracteres.")
+
     db.init_app(app)
     jwt.init_app(app)
     limiter.init_app(app)
@@ -128,7 +133,9 @@ def create_app():
     app.register_blueprint(email_bp, url_prefix="/api/email")
     app.register_blueprint(agentes_bp, url_prefix="/api/agentes")
     app.register_blueprint(docs_bp, url_prefix="/api")
-    app.register_blueprint(simulador_bp)
+    # Consola de desarrollo del simulador: nunca en producción.
+    if app.config["FLASK_ENV"] in ("development", "testing"):
+        app.register_blueprint(simulador_bp)
 
     # Acceso directo en /docs también
     app.add_url_rule("/docs", endpoint="root_docs", view_func=swagger_ui)

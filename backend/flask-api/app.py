@@ -16,4 +16,6 @@ if __name__ == "__main__":
     # paralelo (ej. carpetas + recientes del Dashboard, o mensajes + "está
     # escribiendo" de Chats) las procesaba en fila, no en simultáneo, lo que
     # se sentía como lentitud aunque cada consulta individual fuera rápida.
-    app.run(debug=True, threaded=True, port=port)
+    # El depurador de Werkzeug permite ejecutar código: solo en desarrollo.
+    debug = os.environ.get("FLASK_ENV") == "development"
+    app.run(debug=debug, threaded=True, port=port)
