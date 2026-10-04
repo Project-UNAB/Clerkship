@@ -1155,6 +1155,146 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
         '404':
           $ref: '#/components/responses/NotFoundError'
+  /api/consultas/ficha-previa:
+    get:
+      tags:
+      - Simulación Clínica
+      summary: Ficha administrativa previa del paciente
+      description: Identidad administrativa determinista (nombre, edad, documento, etc.) generada sin llamar a ningún modelo. Se muestra mientras se genera el caso completo y se reenvía a POST /api/consultas para que sea la misma persona. Rol requerido STUDENT.
+      operationId: getFichaPrevia
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Ficha previa del paciente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nombre:
+                    type: string
+                  edad:
+                    type: integer
+                  sexo:
+                    type: string
+                    enum:
+                    - M
+                    - F
+                  documento:
+                    type: string
+                  telefono:
+                    type: string
+                  tipo_sangre:
+                    type: string
+                  peso_kg:
+                    type: number
+                  ocupacion:
+                    type: string
+                  avatar_url:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/consultas/{id}/explorar:
+    post:
+      tags:
+      - Simulación Clínica
+      summary: Realizar una maniobra de examen físico o pedir un paraclínico
+      description: Herramienta determinista (no llama al modelo). Si la maniobra requiere reacción del paciente, el cliente debe seguir con POST /api/consultas/{id}/mensajes usando mensaje_para_paciente. Rol requerido STUDENT.
+      operationId: explorarConsulta
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - tipo
+              - clave
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                  - examen_fisico
+                  - paraclinico
+                clave:
+                  type: string
+                  example: palpacion_profunda
+      responses:
+        '200':
+          description: Resultado de la exploración
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tipo:
+                    type: string
+                  clave:
+                    type: string
+                  etiqueta:
+                    type: string
+                  resultado:
+                    type: string
+                  tecnica:
+                    type: string
+                  muestra:
+                    type: string
+                    nullable: true
+                  fecha_hora_toma:
+                    type: string
+                  fecha_hora_resultado:
+                    type: string
+                  demora_segundos:
+                    type: integer
+                  requiere_reaccion_paciente:
+                    type: boolean
+                  mensaje_para_paciente:
+                    type: string
+                    nullable: true
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/historial/recomendacion:
+    get:
+      tags:
+      - Historial
+      summary: Recomendación de refuerzo según el subtema más débil
+      description: Sugiere el subtema con menor promedio (mínimo 3 casos evaluados) y la dimensión de evaluación más floja dentro de ese subtema. Rol requerido STUDENT.
+      operationId: obtenerRecomendacion
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Recomendación disponible o motivo por el que aún no lo está
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disponible:
+                    type: boolean
+                  motivo:
+                    type: string
+                    description: Solo cuando disponible es false
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
   /api/consultas/{id}/mensajes:
     post:
       tags:

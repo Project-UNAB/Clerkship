@@ -31,6 +31,8 @@ def fake_user(monkeypatch):
         verification_code=None,
         verification_code_expires_at=None,
         verification_attempts=0,
+        role="STUDENT",
+        to_dict=lambda: {"id": "u1", "email": "estudiante@unab.edu.co"},
     )
     store = {user.id: user}
     fake_model = SimpleNamespace(query=_FakeQuery(store))
@@ -131,3 +133,27 @@ def test_reset_password_valida_formato_del_codigo(client, fake_user):
         "email": fake_user.email, "code": "12ab", "new_password": "NuevaClave456",
     })
     assert res.status_code == 400
+
+
+def test_login_no_reenvia_codigo_si_aun_esta_en_cooldown(client, fake_user, monkeypatch):
+    fake_user.email_verified = False
+    fake_user.verification_code = "123456"
+    fake_user.verification_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=9, seconds=50)
+    enviados = []
+    monkeypatch.setattr(auth_routes, "send_verification_email", lambda *a: enviados.append(a))
+
+    res = client.post("/api/auth/login", json={"email": fake_user.email, "password": "ViejaClave123"})
+    assert res.status_code == 403
+    assert enviados == []
+
+
+def test_login_reenvia_codigo_cuando_ya_paso_el_cooldown(client, fake_user, monkeypatch):
+    fake_user.email_verified = False
+    fake_user.verification_code = "123456"
+    fake_user.verification_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=1)
+    enviados = []
+    monkeypatch.setattr(auth_routes, "send_verification_email", lambda *a: enviados.append(a))
+
+    res = client.post("/api/auth/login", json={"email": fake_user.email, "password": "ViejaClave123"})
+    assert res.status_code == 403
+    assert len(enviados) == 1

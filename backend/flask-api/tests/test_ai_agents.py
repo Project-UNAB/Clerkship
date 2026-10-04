@@ -330,7 +330,7 @@ def test_endpoint_agentes_validation_errors(client, auth_headers):
 
 
 # =============================================================================
-# 5. REAL LLM ADAPTERS & RESILIENCE TESTS (Gemini & OpenAI / ChatGPT)
+# 5. REAL LLM ADAPTERS & RESILIENCE TESTS (Gemini)
 # =============================================================================
 
 from unittest.mock import MagicMock
@@ -338,9 +338,6 @@ import json
 from app.services.agents.gemini_agents import (
     GeminiCaseGeneratorAgent,
     GeminiClinicalEvaluatorAgent,
-)
-from app.services.agents.openai_agents import (
-    OpenAIVirtualPatientAgent,
 )
 
 
@@ -401,47 +398,6 @@ def test_gemini_case_generator_fallback_on_exception():
     result = agent.generate_case(GenerateCaseRequest(specialty="Gastroenterología"))
     assert isinstance(result, GeneratedCaseResponse)
     assert result.case_id == "CASE-GI-001"
-
-
-def test_openai_virtual_patient_fallback_without_key():
-    """OpenAI Virtual Patient safely falls back to Mock when no API key is provided."""
-    agent = OpenAIVirtualPatientAgent(api_key="")
-    response = agent.respond_to_student(PatientChatRequest(message="¿Dónde le duele?"))
-    assert isinstance(response, PatientChatResponse)
-    assert len(response.reply) > 0
-
-
-def test_openai_virtual_patient_with_mocked_openai_client():
-    """OpenAI Virtual Patient parses chat completion output from ChatGPT."""
-    agent = OpenAIVirtualPatientAgent(api_key="fake-openai-key")
-    mock_client = MagicMock()
-    mock_choice = MagicMock()
-    mock_choice.message.content = json.dumps({
-        "reply": "Doctor, me duele intensamente en la boca del estómago y me da náuseas.",
-        "pain_scale_reported": 9,
-        "emotional_state": "angustiado",
-    })
-    mock_completion = MagicMock()
-    mock_completion.choices = [mock_choice]
-    mock_client.chat.completions.create.return_value = mock_completion
-    agent._client = mock_client
-
-    result = agent.respond_to_student(PatientChatRequest(message="¿Qué siente?"))
-    assert "boca del estómago" in result.reply
-    assert result.pain_scale_reported == 9
-    assert result.emotional_state == "angustiado"
-
-
-def test_openai_virtual_patient_fallback_on_exception():
-    """OpenAI Virtual Patient gracefully falls back to Mock on API error."""
-    agent = OpenAIVirtualPatientAgent(api_key="fake-openai-key")
-    mock_client = MagicMock()
-    mock_client.chat.completions.create.side_effect = RuntimeError("OpenAI quota exceeded")
-    agent._client = mock_client
-
-    result = agent.respond_to_student(PatientChatRequest(message="¿Tiene fiebre?"))
-    assert isinstance(result, PatientChatResponse)
-    assert len(result.reply) > 0
 
 
 def test_gemini_clinical_evaluator_fallback_without_key():

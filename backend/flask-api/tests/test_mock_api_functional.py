@@ -16,8 +16,15 @@ valid, schema-compliant responses using pre-seeded mock credentials and data:
 11. Documentación Interactiva (OpenAPI JSON, Swagger UI)
 """
 
+import os
+
 import pytest
 from app.models import Course, Article, CommunityPost, Consultation
+
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("TEST_DATABASE_URL"),
+    reason="Requiere TEST_DATABASE_URL (base de pruebas dedicada, nunca producción)",
+)
 
 
 @pytest.fixture

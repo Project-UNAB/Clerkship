@@ -12,7 +12,7 @@ from flask_jwt_extended import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app import db
+from app import db, limiter
 from app.mailer import MailNotConfiguredError, send_password_reset_email, send_verification_email
 from app.models import Student, Teacher, User
 from app.schemas import (
@@ -75,6 +75,7 @@ def _seconds_since_last_code(user: User) -> float | None:
 
 
 @auth_bp.post("/register")
+@limiter.limit("5 per hour")
 @validate_body(RegisterRequest)
 def register(validated_body: RegisterRequest):
     email = validated_body.email.strip().lower()
@@ -239,6 +240,7 @@ def guardar_avatar(validated_body: UpdateAvatarRequest):
 
 
 @auth_bp.post("/login")
+@limiter.limit("10 per minute")
 @validate_body(LoginRequest)
 def login(validated_body: LoginRequest):
     email = validated_body.email.strip().lower()
@@ -249,7 +251,9 @@ def login(validated_body: LoginRequest):
         return jsonify({"error": "Unauthorized", "message": "Credenciales inválidas", "status_code": 401}), 401
 
     if not user.email_verified:
-        _generate_and_send_code(user)
+        elapsed = _seconds_since_last_code(user)
+        if elapsed is None or elapsed >= RESEND_COOLDOWN_SECONDS:
+            _generate_and_send_code(user)
         return jsonify({
             "error": "Forbidden",
             "message": "Correo no verificado. Se ha enviado un nuevo código a tu correo.",
@@ -302,6 +306,7 @@ def change_password(validated_body: ChangePasswordRequest):
 
 
 @auth_bp.post("/forgot-password")
+@limiter.limit("5 per hour")
 @validate_body(ForgotPasswordRequest)
 def forgot_password(validated_body: ForgotPasswordRequest):
     """Envía un código de 6 dígitos para cambiar la contraseña.
@@ -338,6 +343,7 @@ def forgot_password(validated_body: ForgotPasswordRequest):
 
 
 @auth_bp.post("/reset-password")
+@limiter.limit("10 per minute")
 @validate_body(ResetPasswordRequest)
 def reset_password(validated_body: ResetPasswordRequest):
     email = validated_body.email.strip().lower()

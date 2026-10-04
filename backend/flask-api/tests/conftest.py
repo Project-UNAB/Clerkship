@@ -1,5 +1,15 @@
 import os
+
+# Los tests NUNCA usan la base de producción: DATABASE_URL y MONGODB_URI se
+# fuerzan ANTES de importar la app. Para tests de integración con datos reales
+# de prueba, define TEST_DATABASE_URL apuntando a una base de pruebas dedicada.
+os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL") or "sqlite:///:memory:"
+os.environ["MONGODB_URI"] = ""
+os.environ["FLASK_ENV"] = "testing"
 os.environ["AI_AGENT_PROVIDER"] = "mock"
+# Ningún test debe llamar a proveedores de IA reales (red lenta y gasta cuota).
+os.environ["GEMINI_API_KEY"] = ""
+os.environ["OPENROUTER_API_KEY"] = ""
 
 import pytest
 import yaml

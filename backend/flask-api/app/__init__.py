@@ -1,6 +1,8 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from pymongo import MongoClient
 from sqlalchemy import text
@@ -9,6 +11,9 @@ from app.config import Config
 
 db = SQLAlchemy()
 jwt = JWTManager()
+# Límite por IP. Storage en memoria por defecto (sirve con 1 worker); con varios
+# workers de gunicorn, pon RATELIMIT_STORAGE_URI=redis://... para compartirlo.
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
 mongo_client: MongoClient | None = None
 
 
@@ -25,6 +30,7 @@ def create_app():
 
     db.init_app(app)
     jwt.init_app(app)
+    limiter.init_app(app)
     CORS(app, origins=app.config["CORS_ORIGINS"], supports_credentials=True)
 
     if mongo_client is None and app.config["MONGODB_URI"]:
