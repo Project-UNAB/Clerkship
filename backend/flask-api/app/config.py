@@ -6,6 +6,16 @@ load_dotenv()
 
 
 class Config:
+<<<<<<< HEAD
+=======
+    # Por defecto "production": si no se define FLASK_ENV, el modo simulado de
+    # correo (que escribe códigos en los logs) queda APAGADO. Ver app/mailer.py.
+    FLASK_ENV = os.environ.get("FLASK_ENV", "production")
+
+    RATELIMIT_ENABLED = os.environ.get("FLASK_ENV") != "testing"
+    RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
+
+>>>>>>> main
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

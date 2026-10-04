@@ -2,8 +2,14 @@
 Mock implementations of ClinicAI UNAB AI Agents.
 
 These classes provide deterministic, clinically grounded responses conforming to
+<<<<<<< HEAD
 the Pydantic contracts. In the future, these can be replaced or augmented by
 `OpenAIAgentProvider` or `GeminiAgentProvider` without touching routes.
+=======
+the Pydantic contracts. Sirven de fallback automático para `GeminiCaseGeneratorAgent`
+/ `GeminiVirtualPatientAgent` / `GeminiClinicalEvaluatorAgent` (ver gemini_agents.py)
+cuando no hay GEMINI_API_KEY configurada o falla la llamada real.
+>>>>>>> main
 """
 
 from datetime import datetime, timezone

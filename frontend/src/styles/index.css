@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* ═══════════════════════════════════════════════════════════
+     PALETAS DE COLORES CLÍNICAS (REFERENCIA GUÍA OFICIAL)
+     ═══════════════════════════════════════════════════════════ */
+
+  /* 1. CLÁSICA CONFIABLE (MODO CLARO) */
+  --clasica-azul-profundo:   #0D47A1; /* Azul Profundo */
+  --clasica-azul-principal:  #1976D2; /* Azul Principal */
+  --clasica-azul-claro:      #03A9F4; /* Azul Claro */
+  --clasica-azul-muy-claro:  #E3F2FD; /* Azul Muy Claro */
+  --clasica-gris-claro:      #F1F5F9; /* Gris Claro */
+  --clasica-gris-oscuro:     #263238; /* Gris Oscuro */
+
+  /* 4. MINIMALISTA Y ELEGANTE (MODO CLARO) */
+  --minimal-azul-profundo:   #263238; /* Azul Profundo */
+  --minimal-azul-grisaceo:   #455A64; /* Azul Grisáceo */
+  --minimal-gris-azulado:    #78909C; /* Gris Azulado */
+  --minimal-gris-muy-claro:  #CFD8DC; /* Gris Muy Claro */
+  --minimal-blanco-suave:    #FAFAFA; /* Blanco Suave */
+  --minimal-gris-medio:      #BDBDBD; /* Gris Medio */
+
+  /* 5. FRESCA Y LIMPIA (MODO CLARO) */
+  --fresca-teal-oscuro:      #006064; /* Teal Oscuro */
+  --fresca-teal-principal:   #0097A7; /* Teal Principal */
+  --fresca-aqua-claro:       #4DD0E1; /* Aqua Claro */
+  --fresca-aqua-muy-claro:   #E0F7FA; /* Aqua Muy Claro */
+  --fresca-gris-muy-claro:   #F5F7FA; /* Gris Muy Claro */
+  --fresca-gris-oscuro:      #263238; /* Gris Oscuro */
+
+  /* ═══════════════════════════════════════════════════════════
+     SISTEMA COMBINADO MINIMALISTA Y PROFESIONAL (AZULES)
+     ═══════════════════════════════════════════════════════════ */
+  --bg-color: #FAFAFA;
+  --bg-alt: #F1F5F9;
+  --bg-dark: #263238;
+  --text-main: #263238;
+  --text-muted: #455A64;
+  --primary: #1976D2;
+  --primary-hover: #0D47A1;
+  --primary-light: #E3F2FD;
+  --border-color: #CFD8DC;
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-glow: 0 0 20px rgba(0, 151, 167, 0.25);
+
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  
+  --font-family: 'Outfit', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+button {
+  font-family: var(--font-family);
+  cursor: pointer;
+  border: none;
+  outline: none;
+}

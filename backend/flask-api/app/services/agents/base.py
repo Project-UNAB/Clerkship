@@ -1,9 +1,15 @@
 """
 Abstract base classes (interfaces) for ClinicAI UNAB AI Agents.
 
+<<<<<<< HEAD
 This architecture decouples route handlers and business logic from specific
 AI providers (Mock, OpenAI/ChatGPT, Google Gemini, Anthropic, etc.), enabling
 seamless transitions to paid LLM APIs when API keys are configured.
+=======
+This architecture decouples route handlers and business logic from the
+concrete provider (Mock / Google Gemini), enabling a seamless transition
+to real LLM calls once GEMINI_API_KEY is configured.
+>>>>>>> main
 """
 
 from abc import ABC, abstractmethod

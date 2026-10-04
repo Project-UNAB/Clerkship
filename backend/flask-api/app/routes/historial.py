@@ -1,4 +1,8 @@
 import uuid
+<<<<<<< HEAD
+=======
+from datetime import timezone
+>>>>>>> main
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
@@ -6,7 +10,13 @@ from sqlalchemy import func
 
 from app import db, get_mongo_db
 from app.models import AiEvaluation, Consultation, Course
+<<<<<<< HEAD
 from app.utils import get_current_user, role_required
+=======
+from app.services.simulador.adaptativo import MIN_SESIONES_PARA_PROMEDIO, promedios_por_subtema
+from app.services.simulador.scoring import ETIQUETAS
+from app.utils import get_current_user, puede_ver_consulta, role_required
+>>>>>>> main
 
 historial_bp = Blueprint("historial", __name__)
 
@@ -61,7 +71,11 @@ def obtener_retroalimentacion(consultation_id):
             "status_code": 404
         }), 404
 
+<<<<<<< HEAD
     if current_user.role == "STUDENT" and consultation.student_id != current_user.id:
+=======
+    if not puede_ver_consulta(current_user, consultation):
+>>>>>>> main
         return jsonify({
             "error": "Forbidden",
             "message": "No tienes acceso a esta consulta",
@@ -78,6 +92,7 @@ def obtener_retroalimentacion(consultation_id):
             "Se recomienda profundizar en los diagnósticos diferenciales antes de solicitar paraclínicos."
         ),
         "execution_time_seconds": 12.5,
+<<<<<<< HEAD
         "created_at": consultation.finished_at.isoformat() if consultation.finished_at else None,
     }
 
@@ -87,12 +102,34 @@ def obtener_retroalimentacion(consultation_id):
         doc = mongo_db.consultations.find_one({"consultation_id": str(consultation.id)})
         if doc and "ai_evaluation" in doc:
             eval_data["detailed_rubric"] = doc["ai_evaluation"]
+=======
+        "created_at": consultation.finished_at.replace(tzinfo=timezone.utc).isoformat() if consultation.finished_at else None,
+    }
+
+    # Intentar enriquecer con rúbrica detallada y la conversación completa,
+    # guardadas en MongoDB. La consulta ya está COMPLETED en esta ruta (es la
+    # única forma de llegar acá), así que el diagnóstico ya se reveló y no
+    # hay problema en mostrar la charla entera.
+    chat_history = []
+    try:
+        mongo_db = get_mongo_db()
+        doc = mongo_db.consultations.find_one({"consultation_id": str(consultation.id)})
+        if doc:
+            if "ai_evaluation" in doc:
+                eval_data["detailed_rubric"] = doc["ai_evaluation"]
+            chat_history = doc.get("chat_history") or []
+>>>>>>> main
     except Exception:
         pass
 
     return jsonify({
         "consultation": consultation.to_dict(),
+<<<<<<< HEAD
         "evaluation": eval_data
+=======
+        "evaluation": eval_data,
+        "chat_history": chat_history,
+>>>>>>> main
     }), 200
 
 
@@ -135,3 +172,64 @@ def obtener_estadisticas():
         "por_especialidad": {esp: count for esp, count in especialidades}
     }), 200
 
+<<<<<<< HEAD
+=======
+
+@historial_bp.route("/recomendacion", methods=["GET"])
+@role_required("STUDENT")
+def obtener_recomendacion():
+    """Sugerencia de refuerzo para el banner de Historial: el subtema más
+    débil del estudiante (misma fuente de verdad que la selección adaptativa
+    de app/services/simulador/adaptativo.py, para que nunca se contradigan) y,
+    dentro de ese subtema, la dimensión de evaluación más floja en promedio."""
+    current_user = get_current_user()
+
+    promedios = promedios_por_subtema(current_user.id)
+    candidatos = [
+        (subtema, suma / n)
+        for subtema, (suma, n) in promedios.items()
+        if n >= MIN_SESIONES_PARA_PROMEDIO
+    ]
+    if not candidatos:
+        return jsonify({
+            "disponible": False,
+            "motivo": "Completá al menos 3 casos evaluados de un mismo subtema para desbloquear recomendaciones.",
+        }), 200
+
+    subtema_debil, promedio_subtema = min(candidatos, key=lambda t: t[1])
+
+    ids = [
+        str(cid) for (cid,) in Consultation.query
+        .filter_by(student_id=current_user.id, status="COMPLETED", subtema=subtema_debil)
+        .with_entities(Consultation.id).all()
+    ]
+
+    dimension_debil = None
+    try:
+        mongo_db = get_mongo_db()
+        sumas: dict = {}
+        for doc in mongo_db.consultations.find(
+            {"consultation_id": {"$in": ids}, "ai_evaluation.desglose": {"$exists": True}},
+            {"ai_evaluation.desglose": 1},
+        ):
+            for item in (doc.get("ai_evaluation") or {}).get("desglose") or []:
+                dim = item.get("dimension")
+                puntaje = item.get("puntaje")
+                if not dim or puntaje is None:
+                    continue
+                suma, n = sumas.get(dim, (0.0, 0))
+                sumas[dim] = (suma + float(puntaje), n + 1)
+        if sumas:
+            dim, (suma, n) = min(sumas.items(), key=lambda kv: kv[1][0] / kv[1][1])
+            dimension_debil = {"dimension": dim, "etiqueta": ETIQUETAS.get(dim, dim), "promedio": round(suma / n)}
+    except Exception:  # noqa: BLE001
+        dimension_debil = None
+
+    return jsonify({
+        "disponible": True,
+        "subtema": subtema_debil,
+        "promedio": round(promedio_subtema),
+        "dimension_debil": dimension_debil,
+    }), 200
+
+>>>>>>> main

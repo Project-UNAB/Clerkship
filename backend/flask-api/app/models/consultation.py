@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+from datetime import timezone
+
+>>>>>>> main
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
@@ -13,6 +18,10 @@ class Consultation(db.Model):
     title = db.Column(db.String(255), nullable=False)
     specialty = db.Column(db.String(100), nullable=False)
     difficulty = db.Column(db.String(20), nullable=False)  # EASY, MEDIUM, HARD
+<<<<<<< HEAD
+=======
+    subtema = db.Column(db.String(150), nullable=True)  # ej. "Colelitiasis / colecistitis aguda" — ver services/simulador/adaptativo.py
+>>>>>>> main
     status = db.Column(db.String(20), nullable=False, default="IN_PROGRESS")  # IN_PROGRESS, COMPLETED, ABANDONED
     started_at = db.Column(db.DateTime, server_default=func.now())
     finished_at = db.Column(db.DateTime, nullable=True)
@@ -23,6 +32,15 @@ class Consultation(db.Model):
     course = db.relationship("Course", backref=db.backref("consultations", lazy=True))
 
     def to_dict(self):
+<<<<<<< HEAD
+=======
+        # Columnas naive pero siempre en UTC (server_default=func.now()) —
+        # sin marcar tzinfo, isoformat() no lleva "+00:00" y el navegador
+        # interpreta la hora como si ya fuera local (bug: una consulta hecha
+        # a las 9pm en Colombia aparecía como "2:00 a.m." — 5 horas de más).
+        started = self.started_at.replace(tzinfo=timezone.utc).isoformat() if self.started_at else None
+        finished = self.finished_at.replace(tzinfo=timezone.utc).isoformat() if self.finished_at else None
+>>>>>>> main
         return {
             "id": str(self.id),
             "student_id": str(self.student_id),
@@ -30,9 +48,16 @@ class Consultation(db.Model):
             "title": self.title,
             "specialty": self.specialty,
             "difficulty": self.difficulty,
+<<<<<<< HEAD
             "status": self.status,
             "started_at": self.started_at.isoformat() if self.started_at else None,
             "finished_at": self.finished_at.isoformat() if self.finished_at else None,
+=======
+            "subtema": self.subtema,
+            "status": self.status,
+            "started_at": started,
+            "finished_at": finished,
+>>>>>>> main
             "score": float(self.score) if self.score is not None else None,
         }
 

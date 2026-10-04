@@ -35,6 +35,31 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+<<<<<<< HEAD
 #Databases
 /backend/database/postgres/data/
 /backend/database/mongo/data/
+=======
+#temporal
+/docs/contexto
+
+#claude
+.claude
+
+#pruebas
+/pruebas/
+
+#Databases
+/backend/database/postgres/data/
+/backend/database/mongo/data/
+
+#Pruebas
+/archivado_buzon_chats/
+
+#Repo externo clonado (jrojas710/simulador-clinico-gastro) - trae su propio .git
+/simulador-clinico-gastro/
+# Credenciales locales (copias de .env reales) y documentos de referencia
+credenciales/
+documentos/
+credenciales.zip
+>>>>>>> main

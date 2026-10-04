@@ -7,13 +7,57 @@ from pydantic import Field
 from app.schemas.base import BaseSchema
 
 
+<<<<<<< HEAD
+=======
+class IdentidadPacienteInput(BaseSchema):
+    """Identidad administrativa pre-generada (GET /api/consultas/ficha-previa)
+    que se le pasa al Agente Generador como restricción, para que el caso
+    completo sea sobre esta persona exacta — la misma que ya vio el
+    estudiante en la pantalla de carga, no una inventada aparte."""
+
+    nombre: str
+    edad: int
+    sexo: Literal["M", "F"]
+    peso_kg: Optional[float] = None
+    documento: Optional[str] = None
+    telefono: Optional[str] = None
+    tipo_sangre: Optional[str] = None
+    ocupacion: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+
+>>>>>>> main
 class CreateConsultationRequest(BaseSchema):
     """Payload to start a simulated clinical consultation."""
 
     course_id: str = Field(..., description="ID del curso al cual pertenece la simulación")
+<<<<<<< HEAD
     title: Optional[str] = Field("Simulación de Caso Clínico", max_length=150)
     specialty: Optional[str] = Field("Medicina Interna", max_length=100)
     difficulty: Optional[Literal["EASY", "MEDIUM", "HARD"]] = "MEDIUM"
+=======
+    title: Optional[str] = Field(None, max_length=150)
+    specialty: Optional[str] = Field("Gastroenterología", max_length=100)
+    difficulty: Optional[Literal["EASY", "MEDIUM", "HARD"]] = Field(
+        None,
+        description="Si se omite, el backend ajusta la dificultad según el desempeño histórico del estudiante en el subtema elegido (selección adaptativa).",
+    )
+    condition: Optional[str] = Field(
+        None,
+        max_length=150,
+        description="Subtema clínico especifico a forzar (ej. 'Pancreatitis Aguda'). Si se omite, el Agente 1 elige uno al azar entre los subtemas de gastroenterología soportados.",
+    )
+    identidad_paciente: Optional[IdentidadPacienteInput] = Field(
+        None,
+        description="Identidad pre-generada por GET /api/consultas/ficha-previa, para que el caso se arme sobre esta misma persona.",
+    )
+
+
+class UpdateConsultationRequest(BaseSchema):
+    """Payload para renombrar una consulta propia."""
+
+    title: str = Field(..., min_length=1, max_length=150)
+>>>>>>> main
 
 
 class ConsultationResponse(BaseSchema):
@@ -52,6 +96,28 @@ class SendMessageResponse(BaseSchema):
     reply: ChatMessage
 
 
+<<<<<<< HEAD
+=======
+class ExplorarRequest(BaseSchema):
+    """Payload para realizar una maniobra de examen físico o pedir un paraclínico."""
+
+    tipo: Literal["examen_fisico", "paraclinico"]
+    clave: str = Field(..., description="Clave del catálogo cerrado (ver GET /api/consultas/catalogo)")
+
+
+class ExplorarResponse(BaseSchema):
+    """Resultado determinista de una exploración clínica (no llama al modelo)."""
+
+    tipo: str
+    clave: str
+    etiqueta: str
+    resultado: str
+    demora_segundos: int
+    requiere_reaccion_paciente: bool
+    mensaje_para_paciente: Optional[str] = None
+
+
+>>>>>>> main
 class ConsultationDetailResponse(ConsultationResponse):
     """Full consultation detail including chat transcript and clinical case metadata."""
 
@@ -60,10 +126,21 @@ class ConsultationDetailResponse(ConsultationResponse):
 
 
 class FinishConsultationRequest(BaseSchema):
+<<<<<<< HEAD
     """Optional payload to conclude a clinical consultation with diagnosis."""
 
     final_diagnosis: Optional[str] = None
     treatment_plan: Optional[str] = None
+=======
+    """Payload to conclude a clinical consultation and trigger the Agente 3 evaluator."""
+
+    final_diagnosis: Optional[str] = None
+    treatment_plan: Optional[str] = None
+    differential_diagnoses: List[str] = Field(default_factory=list, description="Diagnósticos diferenciales planteados por el estudiante")
+    requested_tests: List[str] = Field(default_factory=list, description="Paraclínicos/exámenes solicitados durante la consulta (legado, texto libre; la evaluación real usa las acciones registradas vía /explorar)")
+    notes: Optional[str] = Field(None, max_length=2000, description="Notas libres tomadas durante la consulta")
+    duration_seconds: Optional[float] = Field(None, description="Duración total de la consulta en segundos")
+>>>>>>> main
 
 
 class FinishConsultationResponse(BaseSchema):

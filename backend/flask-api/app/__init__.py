@@ -1,6 +1,16 @@
+<<<<<<< HEAD
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+=======
+import os
+
+from flask import Flask, jsonify
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+>>>>>>> main
 from flask_sqlalchemy import SQLAlchemy
 from pymongo import MongoClient
 from sqlalchemy import text
@@ -9,6 +19,12 @@ from app.config import Config
 
 db = SQLAlchemy()
 jwt = JWTManager()
+<<<<<<< HEAD
+=======
+# Límite por IP. Storage en memoria por defecto (sirve con 1 worker); con varios
+# workers de gunicorn, pon RATELIMIT_STORAGE_URI=redis://... para compartirlo.
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
+>>>>>>> main
 mongo_client: MongoClient | None = None
 
 
@@ -23,8 +39,38 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+<<<<<<< HEAD
     db.init_app(app)
     jwt.init_app(app)
+=======
+    if app.config["FLASK_ENV"] == "production":
+        secret = app.config.get("JWT_SECRET_KEY") or ""
+        if len(secret) < 32:
+            raise RuntimeError("En producción JWT_SECRET_KEY debe existir y tener al menos 32 caracteres.")
+        if not app.config.get("MAILGUN_API_KEY") or not app.config.get("MAILGUN_DOMAIN"):
+            raise RuntimeError("En producción MAILGUN_API_KEY y MAILGUN_DOMAIN son obligatorios.")
+        if not os.environ.get("CORS_ORIGINS"):
+            raise RuntimeError("En producción CORS_ORIGINS debe listar explícitamente los orígenes del frontend.")
+
+    # Detrás de un proxy (hosting), la IP real del cliente viene en X-Forwarded-For.
+    # Sin esto, el rate limiting contaría todas las peticiones como la IP del proxy.
+    if os.environ.get("TRUST_PROXY") == "1":
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+    db.init_app(app)
+    jwt.init_app(app)
+
+    @jwt.token_in_blocklist_loader
+    def _sesion_invalidada(_header, payload):
+        """Un cambio/recuperación de contraseña invalida los tokens emitidos antes.
+        La marca vive en Mongo (colección user_security), sin cambiar el esquema SQL."""
+        if mongo_client is None:
+            return False
+        doc = mongo_client[Config.MONGODB_DB_NAME]["user_security"].find_one({"user_id": payload.get("sub")})
+        return bool(doc) and payload.get("iat", 0) < doc.get("sessions_valid_after", 0)
+    limiter.init_app(app)
+>>>>>>> main
     CORS(app, origins=app.config["CORS_ORIGINS"], supports_credentials=True)
 
     if mongo_client is None and app.config["MONGODB_URI"]:
@@ -121,11 +167,23 @@ def create_app():
     app.register_blueprint(historial_bp, url_prefix="/api/historial")
     app.register_blueprint(email_bp, url_prefix="/api/email")
     app.register_blueprint(agentes_bp, url_prefix="/api/agentes")
+<<<<<<< HEAD
     app.register_blueprint(docs_bp, url_prefix="/api")
     app.register_blueprint(simulador_bp)
 
     # Acceso directo en /docs también
     app.add_url_rule("/docs", endpoint="root_docs", view_func=swagger_ui)
+=======
+    if app.config["FLASK_ENV"] != "production":
+        app.register_blueprint(docs_bp, url_prefix="/api")
+    # Consola de desarrollo del simulador: nunca en producción.
+    if app.config["FLASK_ENV"] in ("development", "testing"):
+        app.register_blueprint(simulador_bp)
+
+    # Acceso directo en /docs también
+    if app.config["FLASK_ENV"] != "production":
+        app.add_url_rule("/docs", endpoint="root_docs", view_func=swagger_ui)
+>>>>>>> main
 
     @app.cli.command("seed-mock")
     def run_seed_mock():

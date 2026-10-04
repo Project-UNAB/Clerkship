@@ -330,7 +330,11 @@ def test_endpoint_agentes_validation_errors(client, auth_headers):
 
 
 # =============================================================================
+<<<<<<< HEAD
 # 5. REAL LLM ADAPTERS & RESILIENCE TESTS (Gemini & OpenAI / ChatGPT)
+=======
+# 5. REAL LLM ADAPTERS & RESILIENCE TESTS (Gemini)
+>>>>>>> main
 # =============================================================================
 
 from unittest.mock import MagicMock
@@ -339,9 +343,12 @@ from app.services.agents.gemini_agents import (
     GeminiCaseGeneratorAgent,
     GeminiClinicalEvaluatorAgent,
 )
+<<<<<<< HEAD
 from app.services.agents.openai_agents import (
     OpenAIVirtualPatientAgent,
 )
+=======
+>>>>>>> main
 
 
 def test_gemini_case_generator_fallback_without_key():
@@ -403,6 +410,7 @@ def test_gemini_case_generator_fallback_on_exception():
     assert result.case_id == "CASE-GI-001"
 
 
+<<<<<<< HEAD
 def test_openai_virtual_patient_fallback_without_key():
     """OpenAI Virtual Patient safely falls back to Mock when no API key is provided."""
     agent = OpenAIVirtualPatientAgent(api_key="")
@@ -444,6 +452,8 @@ def test_openai_virtual_patient_fallback_on_exception():
     assert len(result.reply) > 0
 
 
+=======
+>>>>>>> main
 def test_gemini_clinical_evaluator_fallback_without_key():
     """Gemini Evaluator safely falls back to Mock when no API key is provided."""
     agent = GeminiClinicalEvaluatorAgent(api_key="")

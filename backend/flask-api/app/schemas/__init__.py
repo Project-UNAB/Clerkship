@@ -12,11 +12,19 @@ from app.schemas.base import (
 from app.schemas.auth import (
     AuthTokensResponse,
     ChangePasswordRequest,
+<<<<<<< HEAD
+=======
+    ForgotPasswordRequest,
+>>>>>>> main
     LoginRequest,
     MessageResponse,
     RegisterRequest,
     RegisterResponse,
     ResendCodeRequest,
+<<<<<<< HEAD
+=======
+    ResetPasswordRequest,
+>>>>>>> main
     UpdateAvatarRequest,
     VerifyEmailRequest,
 )
@@ -56,10 +64,19 @@ from app.schemas.consultas import (
     ConsultationDetailResponse,
     ConsultationResponse,
     CreateConsultationRequest,
+<<<<<<< HEAD
+=======
+    ExplorarRequest,
+    ExplorarResponse,
+>>>>>>> main
     FinishConsultationRequest,
     FinishConsultationResponse,
     SendMessageRequest,
     SendMessageResponse,
+<<<<<<< HEAD
+=======
+    UpdateConsultationRequest,
+>>>>>>> main
 )
 from app.schemas.historial import (
     AiEvaluationSummary,
@@ -130,10 +147,19 @@ __all__ = [
     "LikeResponse",
     # Consultas
     "CreateConsultationRequest",
+<<<<<<< HEAD
+=======
+    "UpdateConsultationRequest",
+>>>>>>> main
     "ConsultationResponse",
     "ChatMessage",
     "SendMessageRequest",
     "SendMessageResponse",
+<<<<<<< HEAD
+=======
+    "ExplorarRequest",
+    "ExplorarResponse",
+>>>>>>> main
     "ConsultationDetailResponse",
     "FinishConsultationRequest",
     "FinishConsultationResponse",

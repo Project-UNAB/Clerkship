@@ -341,6 +341,25 @@ CLINICAL_CASES_DATA: Dict[str, Dict[str, Any]] = {
 }
 
 
+<<<<<<< HEAD
+=======
+# Mismos 8 subtemas de gastroenterología del prototipo original
+# (jrojas710/simulador-clinico-gastro) que este proyecto adoptó como fuente
+# de verdad para el Agente 1 — mantiene el alcance de la plataforma acotado
+# a gastroenterología en vez de "cualquier especialidad".
+GASTRO_SUBTEMAS: List[str] = [
+    "Enfermedad por reflujo gastroesofágico (ERGE)",
+    "Gastritis y enfermedad ulcerosa péptica",
+    "Síndrome de intestino irritable (SII)",
+    "Enfermedad inflamatoria intestinal (Crohn / Colitis ulcerosa)",
+    "Pancreatitis aguda",
+    "Hepatitis / hepatopatía",
+    "Hemorragia digestiva alta o baja",
+    "Colelitiasis / colecistitis aguda",
+]
+
+
+>>>>>>> main
 def get_case_by_id(case_id: str) -> Dict[str, Any]:
     """Retrieve case data dict by ID or return default CASE-GI-001."""
     return CLINICAL_CASES_DATA.get(case_id, CLINICAL_CASES_DATA["CASE-GI-001"])

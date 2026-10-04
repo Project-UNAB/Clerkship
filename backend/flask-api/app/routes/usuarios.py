@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
+=======
+import uuid
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
+>>>>>>> main
 
 from app import db, get_mongo_db
 from app.models import User
@@ -75,14 +81,38 @@ def buscar():
 @usuarios_bp.get("/<user_id>")
 @jwt_required()
 def obtener(user_id):
+<<<<<<< HEAD
     user = User.query.get(user_id)
+=======
+    try:
+        uid = uuid.UUID(user_id)
+    except ValueError:
+        return jsonify({"error": "Bad Request", "message": "ID de usuario inválido", "status_code": 400}), 400
+
+    user = User.query.get(uid)
+>>>>>>> main
     if user is None:
         return jsonify({
             "error": "Not Found",
             "message": "Usuario no encontrado",
             "status_code": 404
         }), 404
+<<<<<<< HEAD
     return jsonify(user.to_dict()), 200
+=======
+
+    # Correo, verificación y buzón son datos privados: solo para el propio usuario.
+    if str(user.id) == get_jwt_identity():
+        return jsonify(user.to_dict()), 200
+    return jsonify({
+        "id": str(user.id),
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role": user.role,
+        "avatar_svg": user.avatar_svg,
+    }), 200
+>>>>>>> main
 
 
 @usuarios_bp.patch("/me")

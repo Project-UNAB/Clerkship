@@ -19,10 +19,22 @@ class User(db.Model):
 
     # Verificación de correo (código de 6 dígitos por Mailgun).
     email_verified = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
+<<<<<<< HEAD
     verification_code = db.Column(db.String(6))
     verification_code_expires_at = db.Column(db.DateTime)
     verification_attempts = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
 
+=======
+    verification_code = db.Column(db.String(255))  # hash del código (werkzeug)
+    verification_code_expires_at = db.Column(db.DateTime)
+    verification_attempts = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
+
+    # Recuperación de contraseña: campos propios, separados de la verificación.
+    reset_code = db.Column(db.String(255))  # hash del código (werkzeug)
+    reset_code_expires_at = db.Column(db.DateTime)
+    reset_attempts = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
+
+>>>>>>> main
     # Avatar DiceBear elegido/personalizado en el registro — se guarda el SVG
     # real (texto, unos KB) para no depender de que la API siga disponible.
     avatar_svg = db.Column(db.Text)

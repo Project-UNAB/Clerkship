@@ -1,0 +1,3857 @@
+/* ══════════════════════════════════════════════════════════════
+   ESTILOS DE DESARROLLO — Cuestionario (Estilo Netflix) & Cronograma
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Ocultar Scrollbar completamente sin romper el scroll suave ── */
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+}
+
+* {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.desarrollo-container {
+  width: 100%;
+  min-height: 100vh;
+  background: #0B0F19;
+  color: #F3F4F6;
+  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  padding-bottom: 60px;
+}
+
+/* ── Top Header & Tab Navigation Bar ──────────────────────── */
+.desarrollo-header {
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 36px 0 36px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.desarrollo-header-title-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.desarrollo-title-wrap h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.desarrollo-title-wrap p {
+  font-size: 13.5px;
+  color: #9CA3AF;
+  margin: 4px 0 0 0;
+}
+
+.desarrollo-nav-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.desarrollo-tab-btn {
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 10px 10px 0 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.desarrollo-tab-btn:hover {
+  color: #F3F4F6;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.desarrollo-tab-btn.active {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.desarrollo-tab-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3B82F6, #10B981);
+  border-radius: 3px 3px 0 0;
+}
+
+/* ── Content Body ────────────────────────────────────────── */
+.desarrollo-body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 24px;
+}
+
+/* ── Cuestionario Step Wizard Header ─────────────────────── */
+.cuestionario-wizard-wrapper {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.wizard-progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.wizard-step-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wizard-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #9CA3AF;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.wizard-step-item.active .wizard-step-circle {
+  background: #3B82F6;
+  border-color: #60A5FA;
+  color: #FFFFFF;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+}
+
+.wizard-step-item.completed .wizard-step-circle {
+  background: #10B981;
+  border-color: #34D399;
+  color: #FFFFFF;
+}
+
+.wizard-step-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #9CA3AF;
+}
+
+.wizard-step-item.active .wizard-step-label {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.wizard-step-line {
+  width: 50px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PASO 1: SELECCIÓN DE PERFIL ESTILO NETFLIX
+   ══════════════════════════════════════════════════════════════ */
+.netflix-profile-section {
+  text-align: center;
+  padding: 20px 0 40px 0;
+}
+
+.netflix-title {
+  font-size: 38px;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.netflix-subtitle {
+  font-size: 16px;
+  color: #9CA3AF;
+  margin-bottom: 48px;
+}
+
+.netflix-profiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 28px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.netflix-profile-card {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  outline: none;
+  background: rgba(17, 24, 39, 0.6);
+  border-radius: 20px;
+  padding: 24px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.netflix-profile-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.netflix-avatar-wrapper {
+  width: 140px;
+  height: 140px;
+  border-radius: 24px;
+  padding: 6px;
+  background: #111827;
+  border: 3px solid transparent;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.netflix-profile-card:hover .netflix-avatar-wrapper {
+  transform: translateY(-4px);
+}
+
+.netflix-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+.netflix-profile-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #E5E7EB;
+  margin-top: 18px;
+  text-align: center;
+  line-height: 1.3;
+  transition: color 0.2s ease;
+}
+
+.netflix-profile-card:hover .netflix-profile-name {
+  color: #FFFFFF;
+}
+
+.netflix-profile-role {
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 12px;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+/* Selected state */
+.netflix-profile-card.selected {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.netflix-profile-card.selected .netflix-avatar-wrapper {
+  transform: scale(1.05);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PASO 2+: FORMULARIO DE REGISTRO DE DATOS
+   ══════════════════════════════════════════════════════════════ */
+.form-step-container {
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 32px;
+  backdrop-filter: blur(12px);
+}
+
+.form-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+}
+
+.active-profile-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  padding: 6px 16px 6px 8px;
+}
+
+.active-profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.active-profile-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.change-profile-btn {
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-left: 8px;
+}
+
+.change-profile-btn:hover {
+  color: #60A5FA;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #D1D5DB;
+}
+
+.form-input, .form-select, .form-textarea {
+  background: rgba(11, 15, 25, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 24px;
+  margin-top: 12px;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #E5E7EB;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+  border: none;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+}
+
+/* ── Form Categories & Checkbox Grid ─────────────────────── */
+.form-category-block {
+  background: rgba(11, 15, 25, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 24px;
+}
+
+.category-header-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #F3F4F6;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px 14px;
+}
+
+.tech-placeholder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px 16px;
+}
+
+/* Reutiliza el diseño de los dropdowns del Cronograma (.crono-dd-*) para
+   que las selecciones de tecnología del Cuestionario luzcan igual y
+   respeten modo claro/oscuro sin duplicar estilos. */
+.tech-select-wrap {
+  width: 100%;
+  z-index: 1;
+}
+
+/* El dropdown abierto debe pintarse encima de las filas siguientes del grid */
+.tech-select-wrap.dd-open {
+  z-index: 600;
+}
+
+.tech-select-trigger {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.tech-select-menu {
+  width: 100%;
+  min-width: 220px;
+  max-height: 260px;
+  overflow-y: auto;
+  /* Scrollbar visible a propósito: deja claro que la lista se puede bajar,
+     sobreescribiendo el ocultamiento global de scrollbars del archivo. */
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+}
+
+.tech-select-menu::-webkit-scrollbar {
+  display: block !important;
+  width: 6px !important;
+}
+
+.tech-select-menu::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.tech-select-menu::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6) !important;
+  border-radius: 10px !important;
+}
+
+.tech-select-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.9) !important;
+}
+
+[data-theme="dark"] .tech-select-menu {
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+}
+
+[data-theme="dark"] .tech-select-menu::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45) !important;
+}
+
+[data-theme="dark"] .tech-select-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7) !important;
+}
+
+/* "Sin definir" y "Otro" — opciones fijas al final de cada lista */
+.crono-dd-item.tech-undefined-item,
+.crono-dd-item.tech-other-item {
+  border-top: 1px solid #F1F5F9;
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+.crono-dd-item.tech-undefined-item .crono-dd-item-label {
+  font-style: italic;
+  color: #94A3B8;
+}
+
+.crono-dd-item.tech-undefined-item.active .crono-dd-item-label {
+  color: #2563EB;
+}
+
+[data-theme="dark"] .crono-dd-item.tech-undefined-item,
+[data-theme="dark"] .crono-dd-item.tech-other-item {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .crono-dd-item.tech-undefined-item .crono-dd-item-label {
+  color: #94A3B8;
+}
+
+/* Estado del trigger cuando la selección está "Sin definir" */
+.tech-select-trigger.tech-select-undefined .crono-dd-text {
+  font-style: italic;
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .tech-select-trigger.tech-select-undefined .crono-dd-text {
+  color: #94A3B8 !important;
+}
+
+/* Panel de texto libre para "Otro" */
+.tech-select-custom-panel {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tech-select-custom-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #0F172A;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tech-select-custom-input:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+[data-theme="dark"] .tech-select-custom-input {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #F8FAFC !important;
+}
+
+.tech-select-custom-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tech-select-custom-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.tech-select-custom-btn.cancel {
+  background: #F1F5F9;
+  color: #475569;
+}
+
+.tech-select-custom-btn.cancel:hover {
+  background: #E2E8F0;
+}
+
+.tech-select-custom-btn.save {
+  background: #2563EB;
+  color: #FFFFFF;
+}
+
+.tech-select-custom-btn.save:hover {
+  background: #1D4ED8;
+}
+
+[data-theme="dark"] .tech-select-custom-btn.cancel {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #E2E8F0 !important;
+}
+
+[data-theme="dark"] .tech-select-custom-btn.cancel:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .tech-select-custom-btn.save {
+  background: #3B82F6 !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .tech-select-custom-btn.save:hover {
+  background: #2563EB !important;
+}
+
+.checkbox-pill-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: #D1D5DB;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.checkbox-pill-label:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #FFFFFF;
+}
+
+.checkbox-pill-label.checked {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3B82F6;
+  color: #60A5FA;
+  font-weight: 600;
+}
+
+.checkbox-custom-input {
+  width: 100%;
+  margin-top: 14px;
+  background: rgba(11, 15, 25, 0.9);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 13.5px;
+  outline: none;
+}
+
+.checkbox-custom-input:focus {
+  border-color: #60A5FA;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVIDAD Y ADAPTABILIDAD AL 100% EN /CUESTIONARIO
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .netflix-profiles-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    max-width: 640px;
+  }
+
+  .tech-placeholder-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .cuestionario-page-main {
+    padding: 24px 16px !important;
+  }
+
+  .wizard-progress-bar {
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .wizard-step-label {
+    display: none;
+  }
+
+  .wizard-step-line {
+    width: 24px;
+  }
+
+  .netflix-title {
+    font-size: 26px;
+  }
+
+  .netflix-subtitle {
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .netflix-avatar-wrapper {
+    width: 100px;
+    height: 100px;
+    border-radius: 20px;
+  }
+
+  .netflix-profile-card {
+    padding: 18px 12px;
+    border-radius: 16px;
+  }
+
+  .netflix-profile-name {
+    font-size: 14px;
+    margin-top: 12px;
+  }
+
+  .form-step-container {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+
+  .form-step-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .active-profile-pill {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .form-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .netflix-profiles-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .netflix-avatar-wrapper {
+    width: 80px;
+    height: 80px;
+  }
+
+  .netflix-profile-name {
+    font-size: 13px;
+  }
+
+  .netflix-profile-role {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .category-header-title {
+    font-size: 14px;
+  }
+
+  .crono-dd-text {
+    font-size: 12.5px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVIDAD DE PESTAÑAS (DESARROLLO, CRONOGRAMA, REPOSITORIO)
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Header Principal de Desarrollo */
+  .desarrollo-header {
+    padding: 16px 16px 0 16px;
+  }
+
+  .desarrollo-header-title-box {
+    flex-direction: column;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .desarrollo-title-wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .desarrollo-title-wrap h1 {
+    font-size: 20px;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  .desarrollo-title-wrap p {
+    font-size: 12px;
+    text-align: center !important;
+  }
+
+  /* Pestañas de Navegación con Scroll Horizontal Suave */
+  .desarrollo-nav-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    padding-bottom: 4px;
+  }
+
+  .desarrollo-tab-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .desarrollo-body {
+    padding: 20px 12px;
+  }
+
+  /* Toolbar de Cronograma */
+  .crono-top-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .crono-dd-wrap {
+    width: 100%;
+  }
+
+  .crono-dd-trigger {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .crono-dd-menu {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+
+  /* Repositorio Tab */
+  .repo-header-actions {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .repo-commit-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .repo-commit-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Gantt Table Overflow */
+  .crono-table-overflow {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TAB DE CRONOGRAMA (PLACEHOLDER DE CRONOGRAMA)
+   ══════════════════════════════════════════════════════════════ */
+.cronograma-tab-container {
+  background: rgba(17, 24, 39, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 36px;
+  text-align: center;
+}
+
+.cronograma-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.cronograma-icon-glow {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #60A5FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CRONOGRAMA GANTT INTERACTIVO (Gantt Chart Layout)
+   ══════════════════════════════════════════════════════════════ */
+.crono-wrapper {
+  width: 100%;
+  max-width: 1840px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Toolbar Superior (Filtros Izquierda & Derecha) */
+.crono-top-toolbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 100;
+}
+
+/* ── Badge Central de Responsables del Módulo (Centrado Exacto Literal) ── */
+.crono-responsible-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+@media (max-width: 900px) {
+  .crono-responsible-badge {
+    position: static;
+    transform: none;
+    order: 3;
+    width: 100%;
+    margin-top: 10px;
+  }
+}
+
+.crono-responsible-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #FFFFFF;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid #E2E8F0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.crono-avatar-item-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crono-avatar-expanded-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  padding-left: 2px;
+  padding-right: 6px;
+  display: inline-block;
+}
+
+@media (max-width: 768px) {
+  .crono-responsible-group.has-active .crono-avatar-item-wrap:not(.is-active) {
+    display: none !important;
+  }
+}
+
+[data-theme="dark"] .crono-responsible-group {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+
+.crono-responsible-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+[data-theme="dark"] .crono-responsible-label {
+  color: #94A3B8;
+}
+
+.crono-responsible-avatars {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crono-avatar-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid;
+  overflow: hidden;
+  background: #0F172A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.crono-avatar-circle:hover {
+  transform: scale(1.18);
+}
+
+.crono-avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crono-responsible-single {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1.5px solid;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease;
+}
+
+.crono-responsible-single:hover {
+  transform: translateY(-1px);
+}
+
+.crono-responsible-tag {
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.crono-responsible-name {
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.crono-dd-wrap {
+  position: relative;
+  z-index: 101;
+}
+
+/* Cuando varios crono-dd-wrap quedan apilados verticalmente (modales,
+   grids de selects o toolbar móvil), el que está abierto se pinta por
+   encima de todos los demás elementos. */
+.crono-dd-wrap.dd-open {
+  z-index: 99999 !important;
+}
+
+@media (max-width: 768px) {
+  .crono-top-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .crono-dd-wrap {
+    width: 100%;
+  }
+
+  .crono-dd-trigger {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .crono-dd-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 80%;
+  }
+}
+
+.crono-dd-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #0F172A;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.crono-dd-trigger:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  transform: translateY(-1px);
+}
+
+.crono-dd-chevron {
+  color: #64748B;
+  transition: transform 0.2s ease;
+}
+
+.crono-dd-chevron.open {
+  transform: rotate(180deg);
+}
+
+.crono-dd-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  max-height: 280px;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  padding: 6px;
+  z-index: 9999;
+}
+
+.crono-commit-msg-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+
+.crono-dd-menu.left {
+  left: 0;
+}
+
+.crono-dd-menu.right {
+  right: 0;
+}
+
+.crono-dd-header {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #94A3B8;
+  padding: 8px 12px 6px;
+  text-transform: uppercase;
+}
+
+.crono-dd-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.crono-dd-item:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+.crono-dd-item.active {
+  background: #F8FAFC;
+  color: #0F172A;
+  font-weight: 700;
+}
+
+.crono-dd-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.crono-dd-check {
+  margin-left: auto;
+  color: #2563EB;
+}
+
+.crono-dd-item-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.crono-dd-item-sub {
+  font-size: 0.72rem;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+/* Gantt Card */
+.crono-gantt-card {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.crono-table-overflow {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.crono-table {
+  min-width: 980px;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.crono-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+}
+
+/* Table Rows */
+.crono-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.crono-col-id {
+  width: 48px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #94A3B8;
+  padding: 10px 4px;
+}
+
+.crono-col-date {
+  width: 120px;
+  flex-shrink: 0;
+  padding: 10px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-right: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crono-date-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #F1F5F9;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.crono-date-badge.badge-ulibro {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+.crono-date-badge.badge-avance {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.crono-date-badge.badge-integrado {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.crono-date-badge.badge-candidata,
+.crono-date-badge.badge-final {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.crono-col-title {
+  width: 380px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0F172A;
+  border-right: 1px solid #F1F5F9;
+}
+
+.crono-row-ulibro {
+  background: rgba(254, 243, 199, 0.25);
+}
+
+.crono-row-avance {
+  background: rgba(254, 226, 226, 0.25);
+}
+
+.crono-row-integrado {
+  background: rgba(219, 234, 254, 0.25);
+}
+
+.crono-act-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #F8FAFC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.crono-act-text {
+  line-height: 1.35;
+}
+
+/* Matrix Header Rows */
+.crono-header-row-top {
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.crono-header-row-top .crono-col-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #64748B;
+  border-right: 1px solid #E2E8F0;
+}
+
+.crono-months-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  text-align: center;
+  padding-right: 20px;
+}
+
+.crono-month-cell {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #0F172A;
+  padding: 12px 4px;
+  border-right: 1px solid #E2E8F0;
+  text-transform: uppercase;
+}
+
+.crono-header-row-bottom {
+  background: #FFFFFF;
+  border-bottom: 2px solid #E2E8F0;
+}
+
+.crono-header-row-bottom .crono-col-title {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #94A3B8;
+  border-right: 1px solid #E2E8F0;
+}
+
+.crono-weeks-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  text-align: center;
+  position: relative;
+  padding-right: 20px;
+}
+
+.crono-week-cell {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748B;
+  padding: 8px 2px;
+  border-right: 1px solid #F1F5F9;
+}
+
+/* Activity Row & Grid Lines */
+.crono-activity-row {
+  min-height: 60px;
+  transition: background 0.2s;
+}
+
+.crono-activity-row:hover {
+  background: #F8FAFC;
+}
+
+.crono-grid-bg {
+  min-height: 60px;
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  align-items: center;
+  padding: 0 20px 0 4px;
+}
+
+.crono-grid-line-cell {
+  height: 100%;
+  border-right: 1px solid #F1F5F9;
+}
+
+/* Pill Bar */
+.crono-pill-bar {
+  height: 28px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  z-index: 2;
+  transform-origin: left center;
+}
+
+.crono-pill-text {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  white-space: nowrap;
+}
+
+/* Summary Footer Bar */
+.crono-summary-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  background: #F8FAFC;
+  border-top: 1px solid #E2E8F0;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.crono-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.crono-summary-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  color: #1976D2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.crono-summary-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.crono-summary-val {
+  display: block;
+  font-size: 0.88rem;
+  color: #0F172A;
+  font-weight: 800;
+}
+
+.crono-summary-divider {
+  width: 1px;
+  height: 30px;
+  background: #E2E8F0;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CRONOGRAMA GANTT — MODO OSCURO ([data-theme="dark"])
+   ══════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .crono-dd-trigger {
+  background: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #E2E8F0 !important;
+}
+
+[data-theme="dark"] .crono-dd-trigger {
+  background: #1E293B !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .crono-dd-trigger:hover {
+  background: #334155 !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+[data-theme="dark"] .crono-dd-menu {
+  background: #1E293B !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7) !important;
+}
+
+[data-theme="dark"] .crono-dd-header {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .crono-dd-item {
+  color: #E2E8F0 !important;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .crono-dd-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .crono-dd-item.active {
+  background: rgba(37, 99, 235, 0.25) !important;
+  border: 1px solid rgba(59, 130, 246, 0.45) !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .crono-dd-item-label {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .crono-dd-item-title {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .crono-dd-item.active .crono-dd-item-title {
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .crono-dd-item-sub {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .crono-dd-item.active .crono-dd-item-sub {
+  color: #93C5FD !important;
+}
+
+[data-theme="dark"] .crono-dd-check {
+  color: #60A5FA !important;
+}
+
+[data-theme="dark"] .crono-gantt-card {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .crono-row {
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .crono-header-row-top {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .crono-month-cell {
+  color: #E2E8F0 !important;
+  border-right-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .crono-header-row-bottom {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .crono-col-title {
+  color: #E2E8F0 !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .crono-act-icon-box {
+  background: rgba(30, 41, 59, 0.8) !important;
+}
+
+[data-theme="dark"] .crono-week-cell {
+  color: #94A3B8 !important;
+  border-right-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .crono-grid-line-cell {
+  border-right-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+[data-theme="dark"] .crono-activity-row:hover {
+  background: rgba(30, 41, 59, 0.4) !important;
+}
+
+[data-theme="dark"] .crono-summary-bar {
+  background: #0F172A !important;
+  border-top-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .crono-summary-icon {
+  background: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #60A5FA !important;
+}
+
+[data-theme="dark"] .crono-summary-label {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .crono-summary-val {
+  color: #E2E8F0 !important;
+}
+
+[data-theme="dark"] .crono-summary-divider {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .crono-col-date {
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .crono-date-badge {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] .crono-date-badge.badge-ulibro {
+  background: rgba(180, 83, 9, 0.35) !important;
+  color: #FBBF24 !important;
+}
+
+[data-theme="dark"] .crono-date-badge.badge-avance {
+  background: rgba(185, 28, 28, 0.35) !important;
+  color: #FCA5A5 !important;
+}
+
+[data-theme="dark"] .crono-date-badge.badge-integrado {
+  background: rgba(30, 64, 175, 0.35) !important;
+  color: #93C5FD !important;
+}
+
+[data-theme="dark"] .crono-date-badge.badge-candidata,
+[data-theme="dark"] .crono-date-badge.badge-final {
+  background: rgba(6, 95, 70, 0.35) !important;
+  color: #6EE7B7 !important;
+}
+
+[data-theme="dark"] .crono-row-ulibro {
+  background: rgba(180, 83, 9, 0.15) !important;
+}
+
+[data-theme="dark"] .crono-row-avance {
+  background: rgba(185, 28, 28, 0.15) !important;
+}
+
+[data-theme="dark"] .crono-row-integrado {
+  background: rgba(30, 64, 175, 0.15) !important;
+}
+
+[data-theme="dark"] .crono-summary-divider {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Interactive Status Button & Delivery Completion Styling */
+.crono-status-locked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.12);
+  color: #D97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  margin-left: auto;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+[data-theme="dark"] .crono-status-locked-badge {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #FBBF24 !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+.crono-ulibro-popover-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #D97706;
+  line-height: 1.35;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .crono-ulibro-popover-msg {
+  background: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #FBBF24 !important;
+}
+
+.crono-status-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  margin-left: auto;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.crono-status-btn.completed {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.crono-status-btn.completed:hover {
+  background: rgba(16, 185, 129, 0.22);
+  transform: translateY(-1px);
+}
+
+.crono-status-btn.pending {
+  background: rgba(100, 116, 139, 0.08);
+  color: #64748B;
+  border-color: rgba(100, 116, 139, 0.18);
+}
+
+.crono-status-btn.pending:hover {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563EB;
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.crono-date-badge.badge-completed {
+  background: #D1FAE5 !important;
+  color: #065F46 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.crono-row.is-completed {
+  background: rgba(240, 253, 244, 0.35);
+}
+
+/* Dark Mode for Completion Elements */
+[data-theme="dark"] .crono-status-btn.completed {
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #34D399 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+[data-theme="dark"] .crono-status-btn.pending {
+  background: rgba(148, 163, 184, 0.12) !important;
+  color: #94A3B8 !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+[data-theme="dark"] .crono-date-badge.badge-completed {
+  background: rgba(6, 95, 70, 0.4) !important;
+  color: #6EE7B7 !important;
+}
+
+[data-theme="dark"] .crono-row.is-completed {
+  background: rgba(6, 95, 70, 0.1) !important;
+}
+
+/* Progress Track in Summary Footer */
+.crono-progress-track {
+  width: 130px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+[data-theme="dark"] .crono-progress-track {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.crono-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+  border-radius: 10px;
+  transition: width 0.4s ease;
+}
+
+/* 4 Columns Layout (Por Mes View) */
+.grid-4-cols {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+
+/* Detailed Headers for Semana and Mes Views */
+.crono-week-cell-detailed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px !important;
+  line-height: 1.2;
+}
+
+.crono-week-num {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.crono-week-range {
+  font-size: 0.63rem;
+  font-weight: 600;
+  color: #64748B;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .crono-week-num {
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .crono-week-range {
+  color: #94A3B8;
+}
+
+.crono-month-cell-detailed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px !important;
+  line-height: 1.25;
+}
+
+.crono-month-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: 0.06em;
+}
+
+.crono-month-range {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+[data-theme="dark"] .crono-month-name {
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .crono-month-range {
+  color: #94A3B8;
+}
+
+/* ══════════════════════════════════════════════════════
+   WEEKLY & MONTHLY CALENDAR VIEWS (POR SEMANA Y POR MES)
+══════════════════════════════════════════════════════ */
+.crono-month-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+[data-theme="dark"] .crono-month-sticky-header {
+  background: #0F172A !important;
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.crono-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+[data-theme="dark"] .crono-cal-nav {
+  background: rgba(15, 23, 42, 0.6);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.crono-cal-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crono-cal-nav-btn:hover:not(:disabled) {
+  border-color: #3B82F6;
+  color: #2563EB;
+  background: #EFF6FF;
+}
+
+.crono-cal-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .crono-cal-nav-btn {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #E2E8F0;
+}
+
+[data-theme="dark"] .crono-cal-nav-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60A5FA;
+}
+
+.crono-cal-title-wrap {
+  text-align: center;
+}
+
+.crono-cal-main-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+}
+
+.crono-cal-sub-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+[data-theme="dark"] .crono-cal-main-title { color: #F8FAFC; }
+[data-theme="dark"] .crono-cal-sub-title { color: #94A3B8; }
+
+.crono-week-pills-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 10px 24px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+[data-theme="dark"] .crono-week-pills-row {
+  background: #0F172A;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.crono-week-pill-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: #F1F5F9;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.crono-week-pill-btn.active {
+  background: #2563EB;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+[data-theme="dark"] .crono-week-pill-btn {
+  background: rgba(30, 41, 59, 0.8);
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .crono-week-pill-btn.active {
+  background: #3B82F6;
+  color: #FFFFFF;
+}
+
+.crono-week-view-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+}
+
+/* 7 Columns Grid in Weekly View */
+.crono-week-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  flex: 1;
+  min-height: 480px;
+  background: #FFFFFF;
+}
+
+[data-theme="dark"] .crono-week-days-grid {
+  background: #0F172A;
+}
+
+.crono-week-day-col {
+  border-right: 1px solid #F1F5F9;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme="dark"] .crono-week-day-col {
+  border-right-color: rgba(255, 255, 255, 0.06);
+}
+
+.crono-week-day-header {
+  padding: 12px 8px;
+  text-align: center;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+[data-theme="dark"] .crono-week-day-header {
+  background: rgba(30, 41, 59, 0.5);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.crono-week-day-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.crono-week-day-number {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin-top: 2px;
+}
+
+[data-theme="dark"] .crono-week-day-number {
+  color: #F8FAFC;
+}
+
+.crono-week-day-body {
+  padding: 10px 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.crono-empty-day-slot {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94A3B8;
+  text-align: center;
+  padding: 24px 4px;
+  font-style: italic;
+}
+
+/* Event Card in Weekly Day Column */
+.crono-week-event-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crono-week-event-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.09);
+}
+
+.crono-week-event-card.is-completed {
+  background: rgba(240, 253, 244, 0.7);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"] .crono-week-event-card {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .crono-week-event-card.is-completed {
+  background: rgba(6, 95, 70, 0.25);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.crono-week-event-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.crono-week-event-tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.crono-completed-chip {
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.crono-week-event-title-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.crono-week-event-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .crono-week-event-title {
+  color: #F8FAFC;
+}
+
+/* ══════════════════════════════════════════════════════
+   MONTHLY GOOGLE CALENDAR VIEW (POR MES)
+══════════════════════════════════════════════════════ */
+.crono-gcal-header-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .crono-gcal-header-row {
+  background: rgba(30, 41, 59, 0.6);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.crono-gcal-header-cell {
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #64748B;
+  letter-spacing: 0.05em;
+  min-width: 0;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .crono-gcal-header-cell {
+  color: #94A3B8;
+}
+
+.crono-gcal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  background: #E2E8F0;
+  gap: 1px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .crono-gcal-grid {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.crono-gcal-day-cell {
+  background: #FFFFFF;
+  min-height: 120px;
+  height: 120px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: background 0.18s ease;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.crono-gcal-day-cell.empty-cell {
+  background: #F8FAFC;
+}
+
+[data-theme="dark"] .crono-gcal-day-cell {
+  background: #0F172A;
+}
+
+[data-theme="dark"] .crono-gcal-day-cell.empty-cell {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.crono-gcal-day-num {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.crono-gcal-day-cell.has-events .crono-gcal-day-num {
+  color: #2563EB;
+}
+
+[data-theme="dark"] .crono-gcal-day-num { color: #94A3B8; }
+[data-theme="dark"] .crono-gcal-day-cell.has-events .crono-gcal-day-num { color: #60A5FA; }
+
+.crono-month-view-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.crono-month-view-wrapper::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.crono-gcal-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.crono-gcal-day-events::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Event Chip (Google Calendar Style) */
+.crono-gcal-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.crono-gcal-chip-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.crono-gcal-chip:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
+/* ══════════════════════════════════════════════════════
+   GOOGLE CALENDAR STYLE FLOATING POPOVER
+══════════════════════════════════════════════════════ */
+.crono-popover-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.crono-gcal-popover {
+  position: fixed;
+  z-index: 99999;
+  width: 320px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+[data-theme="dark"] .crono-gcal-popover {
+  background: #1E293B;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.crono-gcal-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.crono-gcal-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.crono-gcal-close {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.crono-gcal-close:hover {
+  color: #0F172A;
+  background: #F1F5F9;
+}
+
+[data-theme="dark"] .crono-gcal-close:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.crono-gcal-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crono-gcal-popover-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .crono-gcal-popover-title {
+  color: #F8FAFC;
+}
+
+.crono-gcal-popover-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #3B82F6;
+}
+
+[data-theme="dark"] .crono-gcal-popover-date {
+  color: #60A5FA;
+}
+
+.crono-gcal-popover-meta {
+  font-size: 0.74rem;
+  color: #64748B;
+}
+
+[data-theme="dark"] .crono-gcal-popover-meta {
+  color: #94A3B8;
+}
+
+.crono-gcal-popover-footer {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid #F1F5F9;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+[data-theme="dark"] .crono-gcal-popover-footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Badge de evidencia de commit (vinculado desde la pestaña Repositorio) */
+.crono-evidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  background: rgba(139, 92, 246, 0.12);
+  color: #7C3AED;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.crono-evidence-badge:hover {
+  background: rgba(139, 92, 246, 0.22);
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .crono-evidence-badge {
+  background: rgba(139, 92, 246, 0.22) !important;
+  color: #C4B5FD !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+}
+
+.crono-evidence-badge-popover {
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 0.72rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TAB DE REPOSITORIO — Árbol de commits (GitHub API)
+   ══════════════════════════════════════════════════════════════ */
+.repo-wrapper {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.repo-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 50;
+}
+
+.repo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #E5E7EB;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 9px 16px;
+  transition: all 0.2s ease;
+}
+
+.repo-link:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #FFFFFF;
+}
+
+.repo-branch-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.repo-branch-wrap.dd-open {
+  z-index: 600;
+}
+
+.repo-error-box, .repo-loading-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.repo-error-box {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #FCA5A5;
+}
+
+.repo-loading-box {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #93C5FD;
+}
+
+.repo-spin {
+  animation: repo-spin-anim 0.9s linear infinite;
+}
+
+@keyframes repo-spin-anim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.repo-empty-msg {
+  text-align: center;
+  color: #9CA3AF;
+  font-size: 13.5px;
+  padding: 32px 0;
+}
+
+/* ── Línea de tiempo de commits ──────────────────────────────── */
+.repo-timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.repo-commit-row {
+  display: flex;
+  gap: 16px;
+}
+
+.repo-commit-line-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.repo-commit-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.15);
+  border: 2px solid #3B82F6;
+  color: #60A5FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.repo-commit-dot.merge {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: #8B5CF6;
+  color: #C4B5FD;
+}
+
+.repo-commit-line {
+  flex: 1;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  min-height: 12px;
+}
+
+.repo-commit-row:last-child .repo-commit-line {
+  display: none;
+}
+
+.repo-commit-card {
+  flex: 1;
+  min-width: 0;
+  background: rgba(17, 24, 39, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.repo-commit-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.repo-commit-sha {
+  font-family: 'Courier New', monospace;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #60A5FA;
+  text-decoration: none;
+  background: rgba(59, 130, 246, 0.12);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.repo-commit-sha:hover {
+  background: rgba(59, 130, 246, 0.22);
+}
+
+.repo-merge-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #C4B5FD;
+  background: rgba(139, 92, 246, 0.18);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.repo-commit-date {
+  font-size: 12px;
+  color: #9CA3AF;
+  margin-left: auto;
+}
+
+.repo-commit-message {
+  font-size: 14px;
+  font-weight: 600;
+  color: #F3F4F6;
+  margin: 0 0 6px 0;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.repo-parents {
+  font-size: 11.5px;
+  color: #9CA3AF;
+  font-family: 'Courier New', monospace;
+  margin: 0 0 10px 0;
+}
+
+.repo-commit-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.repo-commit-author {
+  font-size: 12px;
+  color: #D1D5DB;
+  font-weight: 500;
+}
+
+.repo-tag-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.repo-tag-wrap.dd-open {
+  z-index: 600;
+}
+
+.repo-tag-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #D1D5DB;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.repo-tag-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+}
+
+.repo-milestone-menu {
+  right: 0;
+  left: auto;
+  width: 340px;
+}
+
+.repo-evidence-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 10px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #6EE7B7;
+}
+
+.repo-evidence-tag span {
+  flex: 1;
+}
+
+.repo-untag-btn {
+  background: transparent;
+  border: none;
+  color: #6EE7B7;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  opacity: 0.75;
+}
+
+.repo-untag-btn:hover {
+  opacity: 1;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODAL DE VERIFICACIÓN DE ENTREGA (Cronograma → marcar entregado)
+   ══════════════════════════════════════════════════════════════ */
+.crono-verify-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+}
+
+.crono-verify-modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  padding: 24px;
+  box-sizing: border-box;
+  overflow: visible !important;
+  margin: auto;
+}
+
+[data-theme="dark"] .crono-verify-modal {
+  background: #1E293B !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+}
+
+.crono-verify-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.crono-verify-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+[data-theme="dark"] .crono-verify-header-title {
+  color: #F8FAFC;
+}
+
+.crono-verify-subtitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748B;
+  margin: 0 0 20px 0;
+  line-height: 1.4;
+}
+
+[data-theme="dark"] .crono-verify-subtitle {
+  color: #94A3B8;
+}
+
+.crono-verify-field {
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.crono-verify-field:has(.dd-open) {
+  z-index: 900 !important;
+}
+
+.crono-verify-label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+[data-theme="dark"] .crono-verify-label {
+  color: #CBD5E1;
+}
+
+.crono-verify-commit-sha {
+  font-family: 'Courier New', monospace;
+  font-weight: 800;
+  margin-right: 8px;
+}
+
+.crono-verify-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #0F172A;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.crono-verify-textarea:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="dark"] .crono-verify-textarea {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #F8FAFC !important;
+}
+
+.crono-verify-error-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #DC2626;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+[data-theme="dark"] .crono-verify-error-box {
+  color: #FCA5A5 !important;
+}
+
+.crono-verify-form-error {
+  color: #DC2626;
+  font-size: 0.76rem;
+  font-weight: 700;
+  margin: -8px 0 14px 0;
+}
+
+[data-theme="dark"] .crono-verify-form-error {
+  color: #FCA5A5;
+}
+
+.crono-verify-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.crono-verify-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  border: none;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.crono-verify-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.45);
+}
+
+.crono-verify-confirm-btn:disabled,
+.crono-cal-nav-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DevAuthFields — "¿Quién registra esto?" + contraseña
+   (Cuestionario, Cronograma, Repositorio)
+   ══════════════════════════════════════════════════════════════ */
+.dev-auth-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.dev-auth-field {
+  margin-bottom: 0 !important;
+}
+
+.dev-auth-select,
+.dev-auth-input,
+.crono-verify-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dev-auth-select:focus,
+.dev-auth-input:focus,
+.crono-verify-input:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="dark"] .dev-auth-select,
+[data-theme="dark"] .dev-auth-input,
+[data-theme="dark"] .crono-verify-input {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #F8FAFC !important;
+}
+
+/* Ver/ocultar contraseña */
+.password-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrap .dev-auth-input {
+  padding-right: 38px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.password-toggle-btn:hover {
+  color: #475569;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .password-toggle-btn {
+  color: #64748B;
+}
+
+[data-theme="dark"] .password-toggle-btn:hover {
+  color: #CBD5E1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CRONOGRAMA PAGE — LAYOUT MÓVIL 100% (ESTILO GOOGLE CALENDAR)
+   ══════════════════════════════════════════════════════════════ */
+.crono-page-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.crono-page-main {
+  flex: 1;
+  padding-top: 80px;
+  padding-bottom: 24px;
+  padding-left: 16px;
+  padding-right: 16px;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.crono-page-container {
+  width: 100%;
+  max-width: 1840px;
+  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.crono-desktop-only {
+  display: block;
+}
+
+.crono-mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .crono-page-main {
+    padding-top: 68px !important;
+    padding-bottom: 16px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .crono-gantt-card {
+    border-radius: 16px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .crono-desktop-only {
+    display: none !important;
+  }
+
+  .crono-mobile-only {
+    display: flex !important;
+  }
+
+  .crono-mobile-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 6px;
+    width: 100%;
+  }
+
+  .crono-mobile-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  [data-theme="dark"] .crono-mobile-card {
+    background: rgba(30, 41, 59, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .crono-mobile-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .crono-mobile-card-num {
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: #94A3B8;
+  }
+
+  .crono-mobile-card-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #0F172A;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  [data-theme="dark"] .crono-mobile-card-title {
+    color: #F8FAFC !important;
+  }
+
+  /* Ajuste de Barra de Resumen en Móvil (Cero Flotado ni Superposición) */
+  .crono-summary-bar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 16px !important;
+    margin-top: 12px !important;
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    border-top: 1px solid #E2E8F0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  [data-theme="dark"] .crono-summary-bar {
+    border-top-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .crono-summary-divider {
+    display: none !important;
+  }
+
+  .crono-summary-item {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .crono-summary-val {
+    text-align: left !important;
+  }
+
+  /* Vista por Semana y Mes Móvil (Google Calendar Style con Título Centrado e Íconos Sin Texto) */
+  .crono-cal-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    padding: 12px 10px !important;
+    width: 100% !important;
+  }
+
+  .crono-cal-title-wrap {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .crono-cal-main-title {
+    font-size: 0.98rem !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  .crono-cal-sub-title {
+    font-size: 0.72rem !important;
+    text-align: center !important;
+  }
+
+  .crono-icon-only-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .crono-cal-sub-title {
+    font-size: 0.72rem !important;
+  }
+
+  .crono-week-pills-row {
+    padding: 8px 10px !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .crono-week-pill-btn {
+    padding: 6px 12px !important;
+    font-size: 0.75rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .crono-mobile-week-agenda {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 12px 6px;
+    width: 100%;
+  }
+
+  .crono-mobile-day-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .crono-mobile-day-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .crono-mobile-day-name {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #2563EB;
+  }
+
+  [data-theme="dark"] .crono-mobile-day-name {
+    color: #60A5FA !important;
+  }
+
+  .crono-mobile-day-date {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #64748B;
+  }
+
+  .crono-mobile-empty-day {
+    font-size: 0.76rem;
+    font-style: italic;
+    color: #94A3B8;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   VERIFICACIÓN EN 2 PASOS — TARJETAS DE PERFIL Y AUTENTICACIÓN
+══════════════════════════════════════════════════════ */
+.crono-verify-step1 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.crono-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .crono-profile-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.crono-profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 10px;
+  background: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  outline: none;
+}
+
+[data-theme="dark"] .crono-profile-card {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+.crono-profile-card:hover {
+  transform: translateY(-2px);
+}
+
+.crono-profile-card.selected {
+  background: #FFFFFF !important;
+}
+
+[data-theme="dark"] .crono-profile-card.selected {
+  background: #1E293B !important;
+}
+
+.crono-profile-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.crono-profile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crono-profile-name {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #1E293B;
+  text-align: center;
+  line-height: 1.1;
+}
+
+[data-theme="dark"] .crono-profile-name {
+  color: #F8FAFC;
+}
+
+.crono-profile-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: #E2E8F0;
+  color: #64748B;
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .crono-profile-badge {
+  background: #334155;
+  color: #94A3B8;
+}
+
+.crono-verify-password-box {
+  background: rgba(59, 130, 246, 0.04);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+[data-theme="dark"] .crono-verify-password-box {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Badge de usuario verificado en Paso 2 */
+.crono-verified-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+
+.crono-verified-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.crono-verified-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crono-verified-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+[data-theme="dark"] .crono-verified-label {
+  color: #94A3B8;
+}
+
+.crono-verified-name {
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+/* ══════════════════════════════════════════════════════
+   TOOLTIP SIGUIENDO AL CURSOR PARA ENTREGAS CONFIRMADAS
+══════════════════════════════════════════════════════ */
+.crono-cursor-tooltip {
+  position: fixed;
+  padding: 6px 12px;
+  background: #0F172A;
+  color: #F8FAFC;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 999999;
+  transition: opacity 0.15s ease;
+}
+
+[data-theme="light"] .crono-cursor-tooltip {
+  background: #1E293B;
+  color: #FFFFFF;
+}
+
+/* Modal de Detalles de Entrega Confirmada */
+.crono-details-modal {
+  max-width: 500px !important;
+}
+
+.crono-details-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.crono-details-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 16px 0;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .crono-details-title {
+  color: #F8FAFC;
+}
+
+.crono-details-section {
+  margin-bottom: 16px;
+}
+
+.crono-details-label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #64748B;
+  margin-bottom: 6px;
+}
+
+[data-theme="dark"] .crono-details-label {
+  color: #94A3B8;
+}
+
+.crono-details-time {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+[data-theme="dark"] .crono-details-time {
+  color: #94A3B8;
+}
+
+.crono-details-commit-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+[data-theme="dark"] .crono-details-commit-box {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+.crono-details-commit-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+[data-theme="dark"] .crono-details-commit-row {
+  color: #CBD5E1;
+}
+
+.crono-details-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crono-details-commit-msg {
+  font-size: 0.8rem;
+  color: #0F172A;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 8px 10px;
+  border-left: 3px solid #3B82F6;
+}
+
+[data-theme="dark"] .crono-details-commit-msg {
+  color: #F8FAFC;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.crono-details-commit-msg p {
+  margin: 4px 0 0 0;
+  font-family: monospace;
+  font-size: 0.78rem;
+}
+
+.crono-details-commit-author {
+  font-size: 0.74rem;
+  color: #64748B;
+}
+
+[data-theme="dark"] .crono-details-commit-author {
+  color: #94A3B8;
+}
+
+.crono-details-desc-box {
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #0F172A;
+}
+
+[data-theme="dark"] .crono-details-desc-box {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #F8FAFC;
+}
+
+.crono-details-desc-box p {
+  margin: 0;
+}
+
+.crono-details-no-desc {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: #94A3B8;
+  margin: 0;
+}
+
+.crono-details-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.crono-details-gh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #24292F;
+  color: #FFFFFF !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.crono-details-gh-btn:hover {
+  background: #000000;
+  transform: translateY(-1px);
+}
+
+/* Botón de Editar Entrega (Lápiz) */
+.crono-pencil-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.crono-pencil-btn:hover {
+  background: #10B981;
+  color: #FFFFFF;
+  transform: scale(1.08);
+}
+
+.crono-details-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #3B82F6;
+  color: #FFFFFF !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.crono-details-edit-btn:hover {
+  background: #2563EB;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.crono-edit-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444 !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crono-edit-delete-btn:hover {
+  background: #EF4444;
+  color: #FFFFFF !important;
+  border-color: #EF4444;
+}
+
+.crono-delete-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #EF4444 !important;
+  color: #FFFFFF !important;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+  transition: all 0.2s ease;
+}
+
+.crono-delete-confirm-btn:hover:not(:disabled) {
+  background: #DC2626 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.45);
+}
+
+.crono-delete-confirm-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.crono-delete-confirm-box {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.crono-delete-confirm-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #DC2626;
+  margin-bottom: 6px;
+}
+
+[data-theme="dark"] .crono-delete-confirm-title {
+  color: #FCA5A5;
+}
+
+.crono-delete-confirm-text {
+  font-size: 0.78rem;
+  color: #475569;
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+
+[data-theme="dark"] .crono-delete-confirm-text {
+  color: #CBD5E1;
+}
+
+.crono-delete-date-target {
+  display: inline-block;
+  font-family: monospace;
+  font-weight: 800;
+  background: #EF4444;
+  color: #FFFFFF;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  margin: 0 4px;
+}

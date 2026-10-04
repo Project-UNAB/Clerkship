@@ -40,6 +40,23 @@ class ResendCodeRequest(BaseSchema):
     email: EmailStr
 
 
+<<<<<<< HEAD
+=======
+class ForgotPasswordRequest(BaseSchema):
+    """Payload to start a password reset (sends a 6-digit code by email)."""
+
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseSchema):
+    """Payload to set a new password using the code received by email."""
+
+    email: EmailStr
+    code: str = Field(..., min_length=6, max_length=6, pattern=r"^\d{6}$", description="Código numérico de 6 dígitos")
+    new_password: str = Field(..., min_length=8, description="Nueva contraseña de al menos 8 caracteres")
+
+
+>>>>>>> main
 class LoginRequest(BaseSchema):
     """Payload for user authentication."""
 

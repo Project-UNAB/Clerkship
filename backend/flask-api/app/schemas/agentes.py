@@ -76,8 +76,22 @@ class PatientChatRequest(BaseSchema):
     """Payload to interrogate the simulated patient during anamnesis."""
 
     consultation_id: Optional[str] = Field(None, description="ID de la consulta en curso")
+<<<<<<< HEAD
     case_id: Optional[str] = Field(None, description="ID del caso clínico asignado")
     message: str = Field(..., min_length=1, description="Pregunta del estudiante médico")
+=======
+    case_id: Optional[str] = Field(None, description="ID del caso clínico asignado (dataset estático de fallback)")
+    case_context: Optional[Dict[str, Any]] = Field(
+        None,
+        description=(
+            "Caso clínico completo (dict de GeneratedCaseResponse, incluye ground_truth) generado "
+            "dinámicamente por el Agente 1 para ESTA consulta puntual. Cuando viene presente, tiene "
+            "prioridad sobre el dataset estático de `case_id` — así el paciente virtual y el guardrail "
+            "de fuga de diagnóstico responden sobre el caso real de la sesión, no uno genérico."
+        ),
+    )
+    message: str = Field(..., min_length=1, max_length=1500, description="Pregunta del estudiante médico")
+>>>>>>> main
     chat_history: Optional[List[Dict[str, str]]] = Field(default_factory=list, description="Historial previo de mensajes")
 
 
@@ -87,8 +101,18 @@ class PatientChatResponse(BaseSchema):
     reply: str
     emotional_state: str = Field("ansioso", description="Estado emocional del paciente virtual")
     pain_scale_reported: Optional[int] = Field(None, description="Intensidad de dolor percibida en escala 1-10")
+<<<<<<< HEAD
     timestamp: str
     provider_used: Optional[str] = Field(default="OpenAI ChatGPT", description="Proveedor de IA utilizado o Mock")
+=======
+    consultation_id: Optional[str] = None
+    timestamp: str
+    guardrail_activado: bool = Field(
+        default=False,
+        description="true si el modelo intento revelar el diagnostico real y el guardrail determinista lo interceptó.",
+    )
+    provider_used: Optional[str] = Field(default="Google Gemini", description="Proveedor de IA utilizado o Mock")
+>>>>>>> main
     model_used: Optional[str] = Field(default=None, description="Modelo de lenguaje utilizado")
     is_mock: bool = Field(default=False, description="Indica si la respuesta fue provista por el fallback Mock")
     error_details: Optional[str] = Field(default=None, description="Detalle del error técnico si se activó fallback")
@@ -120,7 +144,15 @@ class EvaluateSessionRequest(BaseSchema):
     """Payload to trigger the post-simulation evaluation by Agent 3."""
 
     consultation_id: Optional[str] = Field(None, description="ID de la consulta")
+<<<<<<< HEAD
     case_id: Optional[str] = Field(None, description="ID del caso clínico evaluado")
+=======
+    case_id: Optional[str] = Field(None, description="ID del caso clínico evaluado (dataset estático de fallback)")
+    case_context: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Caso clínico completo (incluye ground_truth) generado para ESTA consulta — tiene prioridad sobre case_id.",
+    )
+>>>>>>> main
     chat_history: List[Dict[str, str]] = Field(default_factory=list, description="Transcripción completa del diálogo")
     requested_tests: List[str] = Field(default_factory=list, description="Lista de exámenes de laboratorio o imágenes solicitados")
     differential_diagnoses: List[str] = Field(default_factory=list, description="Diagnósticos diferenciales planteados")
