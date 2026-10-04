@@ -1,7 +1,8 @@
 """
-Plantilla HTML del correo de verificación, centrada, con el logo real de
-Clerkship (hosteado como PNG, ver _LOGO_URL; el base64 inline de un SVG no
-se renderizaba bien en Gmail, quedaba como ícono roto), colores de marca (el
+Plantillas HTML de los correos con código de 6 dígitos (verificación de cuenta
+y recuperación de contraseña), centradas, con el logo real de Clerkship
+(hosteado como PNG, ver _LOGO_URL; el base64 inline de un SVG no se
+renderizaba bien en Gmail, quedaba como ícono roto), colores de marca (el
 mismo azul del resto de la plataforma) y layout con tablas (no flexbox/grid),
 que es lo único que Outlook renderiza bien de forma consistente en correos
 HTML.
@@ -10,7 +11,7 @@ HTML.
 _LOGO_URL = "https://i.ibb.co/4RM6DyJj/Clerkship.png"
 
 
-def verification_email_html(first_name: str, code: str) -> str:
+def _code_email_html(first_name: str, code: str, title: str, intro: str, footer_note: str) -> str:
     return f"""\
 <!DOCTYPE html>
 <html lang="es">
@@ -35,9 +36,9 @@ def verification_email_html(first_name: str, code: str) -> str:
         <tr>
           <td style="padding:32px 40px 4px;text-align:center;">
             <p style="margin:0 0 6px;color:#64748B;font-size:13.5px;">Hola {first_name},</p>
-            <h1 style="margin:0 0 14px;color:#0F172A;font-size:21px;font-weight:800;">Confirmá tu correo</h1>
+            <h1 style="margin:0 0 14px;color:#0F172A;font-size:21px;font-weight:800;">{title}</h1>
             <p style="margin:0 0 26px;color:#475569;font-size:14px;line-height:1.65;">
-              Usá este código para terminar de crear tu cuenta en Clerkship. Vence en <strong>10 minutos</strong>.
+              {intro}
             </p>
           </td>
         </tr>
@@ -58,8 +59,7 @@ def verification_email_html(first_name: str, code: str) -> str:
         <tr>
           <td style="padding:0 40px 34px;text-align:center;">
             <p style="margin:0;color:#94A3B8;font-size:12px;line-height:1.6;">
-              Si no creaste una cuenta en Clerkship, podés ignorar este correo con tranquilidad.
-              Nadie más puede usar tu dirección sin este código.
+              {footer_note}
             </p>
           </td>
         </tr>
@@ -77,3 +77,24 @@ def verification_email_html(first_name: str, code: str) -> str:
 </body>
 </html>
 """
+
+
+def verification_email_html(first_name: str, code: str) -> str:
+    return _code_email_html(
+        first_name, code,
+        title="Confirmá tu correo",
+        intro="Usá este código para terminar de crear tu cuenta en Clerkship. Vence en <strong>10 minutos</strong>.",
+        footer_note="Si no creaste una cuenta en Clerkship, podés ignorar este correo con tranquilidad. "
+                    "Nadie más puede usar tu dirección sin este código.",
+    )
+
+
+def password_reset_email_html(first_name: str, code: str) -> str:
+    return _code_email_html(
+        first_name, code,
+        title="Recuperá tu contraseña",
+        intro="Recibimos una solicitud para cambiar la contraseña de tu cuenta de Clerkship. "
+              "Usá este código para continuar. Vence en <strong>10 minutos</strong>.",
+        footer_note="Si no pediste cambiar tu contraseña, ignorá este correo: tu cuenta sigue igual de segura. "
+                    "Nunca te pediremos este código por teléfono ni por otro medio.",
+    )

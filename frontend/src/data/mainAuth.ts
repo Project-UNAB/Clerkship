@@ -201,6 +201,30 @@ export async function verifyEmailCode(code: string): Promise<MainUser> {
   return data.user as MainUser;
 }
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message || 'No se pudo enviar el código. Intenta de nuevo.');
+  }
+}
+
+export async function resetPassword(email: string, code: string, newPassword: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code, new_password: newPassword }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message || 'No se pudo cambiar la contraseña.');
+  }
+}
+
 export async function resendVerificationCode(): Promise<void> {
   const res = await fetch(`${API_BASE_URL}/api/auth/resend-code`, {
     method: 'POST',

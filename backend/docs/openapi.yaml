@@ -161,6 +161,96 @@ paths:
                     example: Código de verificación reenviado
         '400':
           $ref: '#/components/responses/BadRequestError'
+  /api/auth/forgot-password:
+    post:
+      tags:
+      - Autenticación
+      summary: Solicitar código para recuperar la contraseña
+      description: Envía un código de 6 dígitos al correo si la cuenta existe y está verificada. La respuesta es siempre la misma (no revela si el correo tiene cuenta).
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: estudiante@unab.edu.co
+      responses:
+        '200':
+          description: Respuesta genérica (siempre igual)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  ok:
+                    type: boolean
+        '503':
+          description: El servicio de correo no está disponible en este momento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/reset-password:
+    post:
+      tags:
+      - Autenticación
+      summary: Cambiar la contraseña con el código recibido por correo
+      description: Valida el código de 6 dígitos (vence en 10 minutos, máximo 5 intentos) y guarda la nueva contraseña.
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              - code
+              - new_password
+              properties:
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                  pattern: '^\d{6}$'
+                  example: '123456'
+                new_password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Contraseña actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  ok:
+                    type: boolean
+        '400':
+          description: Código inválido o vencido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Demasiados intentos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/auth/login:
     post:
       tags:

@@ -12,11 +12,13 @@ from app.schemas.base import (
 from app.schemas.auth import (
     AuthTokensResponse,
     ChangePasswordRequest,
+    ForgotPasswordRequest,
     LoginRequest,
     MessageResponse,
     RegisterRequest,
     RegisterResponse,
     ResendCodeRequest,
+    ResetPasswordRequest,
     UpdateAvatarRequest,
     VerifyEmailRequest,
 )

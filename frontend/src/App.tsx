@@ -8,6 +8,7 @@ import './styles/theme.css';
 import LandingPage from './pages/landing/LandingPage';
 import ProyectoPage from './pages/landing/ProyectoPage';
 import LoginPage from './pages/auth/LoginPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ConsentPage from './pages/auth/ConsentPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -112,6 +113,7 @@ export default function App() {
         {/* Auth (Protegidas contra re-login si ya inició sesión) */}
         <Route path="/login"                  element={<PublicAuthRoute><LoginPage /></PublicAuthRoute>} />
         <Route path="/register"               element={<PublicAuthRoute><RegisterPage /></PublicAuthRoute>} />
+        <Route path="/recuperar-contrasena"   element={<PublicAuthRoute><ForgotPasswordPage /></PublicAuthRoute>} />
 
         {/* Consentimiento Informado (Sólo usuarios logueados sin consentimiento) */}
         <Route path="/consent"                element={<ConsentRoute><ConsentPage /></ConsentRoute>} />

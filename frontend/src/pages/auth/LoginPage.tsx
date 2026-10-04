@@ -234,7 +234,7 @@ export default function LoginPage() {
                     />
                     Recordarme
                   </label>
-                  <a href="#" className="auth-forgot">¿Olvidaste tu contraseña?</a>
+                  <Link to="/recuperar-contrasena" className="auth-forgot">¿Olvidaste tu contraseña?</Link>
                 </div>
 
                 {/* Error general */}
