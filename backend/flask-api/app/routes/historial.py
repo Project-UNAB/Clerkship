@@ -9,7 +9,7 @@ from app import db, get_mongo_db
 from app.models import AiEvaluation, Consultation, Course
 from app.services.simulador.adaptativo import MIN_SESIONES_PARA_PROMEDIO, promedios_por_subtema
 from app.services.simulador.scoring import ETIQUETAS
-from app.utils import get_current_user, role_required
+from app.utils import get_current_user, puede_ver_consulta, role_required
 
 historial_bp = Blueprint("historial", __name__)
 
@@ -64,7 +64,7 @@ def obtener_retroalimentacion(consultation_id):
             "status_code": 404
         }), 404
 
-    if current_user.role == "STUDENT" and consultation.student_id != current_user.id:
+    if not puede_ver_consulta(current_user, consultation):
         return jsonify({
             "error": "Forbidden",
             "message": "No tienes acceso a esta consulta",

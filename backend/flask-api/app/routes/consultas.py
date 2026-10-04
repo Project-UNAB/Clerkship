@@ -42,7 +42,7 @@ from app.services.simulador.catalogo import PERFILES_DIFICULTAD
 from app.services.simulador.identidad import generar_identidad
 from app.services.simulador.rag import obtener_referencias
 from app.services.simulador import supabase_externo
-from app.utils import get_current_user, role_required
+from app.utils import get_current_user, puede_ver_consulta, role_required
 
 consultas_bp = Blueprint("consultas", __name__)
 
@@ -280,7 +280,7 @@ def obtener_consulta(consultation_id):
     if error:
         return error
 
-    if current_user.role == "STUDENT" and consultation.student_id != current_user.id:
+    if not puede_ver_consulta(current_user, consultation):
         return jsonify({"error": "Forbidden", "message": "No tienes acceso a esta consulta", "status_code": 403}), 403
 
     res_data = _consultation_dict(consultation)
