@@ -1529,7 +1529,8 @@ img { display: block; }
 
 .lp-equipo-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  justify-content: center;
   gap: 20px;
 }
 
@@ -3085,7 +3086,6 @@ img { display: block; }
 
   /* Equipo */
   .lp-equipo-section { padding: 60px 28px 80px; }
-  .lp-equipo-cards { grid-template-columns: repeat(2, 1fr); }
 
   /* Footer */
   .lp-footer { padding: 20px 28px; }
