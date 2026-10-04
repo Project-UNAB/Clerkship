@@ -59,12 +59,11 @@ Ruta: `frontend/src/pages/desarrollo/DesarrolloPage.tsx` — pestañas: **Cuesti
 ```ts
 REPOS = [
   { id: 'clerkship',     owner: 'Steven08Ar',   name: 'Clerkship' },      // Backend / Frontend
-  { id: 'agentgrimoire', owner: 'zquintero246', name: 'AgentGrimoire' },  // IA (Modelos / Agentes)
 ]
 ```
 
 - `getReposForCategory(catId)` sugiere el repo por defecto según la categoría (IA→AgentGrimoire, Backend/Frontend→Clerkship, General→ambos), pero **el selector siempre deja cambiarlo manualmente** — no queda bloqueado.
-- Se evaluó agregar `zquintero246/proyecto-grado` pero es **privado**: exponer un repo privado desde el navegador (sin backend) implicaría filtrar un token de GitHub a cualquier visitante. Se decidió **ignorarlo por ahora**. Opciones futuras si se retoma: hacerlo público, o montar un proxy serverless (Vercel function) que guarde el token de forma segura.
+- Se evaluó agregar un repo privado de IA pero es **privado**: exponer un repo privado desde el navegador (sin backend) implicaría filtrar un token de GitHub a cualquier visitante. Se decidió **ignorarlo por ahora**. Opciones futuras si se retoma: hacerlo público, o montar un proxy serverless (Vercel function) que guarde el token de forma segura.
 
 ---
 
@@ -91,7 +90,6 @@ Mapeo fijo memberId → correo de Firebase Auth (cuentas creadas manualmente en 
 
 ```ts
 MEMBER_EMAILS = {
-  'zabdiel':      'zquintero@clerkship.dev',
   'juan-camilo':  'jrojas@clerkship.dev',
   'camilo-bueno': 'cbueno@clerkship.dev',
   'santiago':     'sarias@clerkship.dev',

@@ -14,15 +14,6 @@ import {
 ══════════════════════════════════════════════════════ */
 
 const DEVS = [
-  { initials: 'ZQ', name: 'Zabdiel Julian Quintero Monroy', seed: 'Felix', color: '#3B82F6',
-    focus: 'Agentes de IA · Motor LLM · Prompts CoT · RAG',
-    desc: 'Líder en arquitectura de IA. Diseña y optimiza los modelos de lenguaje, el motor RAG y el razonamiento Chain-of-Thought para la generación de casos clínicos.',
-    skills: [
-      { label: 'Agentes IA', icon: BrainCircuit },
-      { label: 'LLM & RAG', icon: Database },
-      { label: 'Prompts CoT', icon: FileText },
-    ]
-  },
   { initials: 'JR', name: 'Juan Camilo Rojas', seed: 'Leo', color: '#EC4899',
     focus: 'Agentes de IA · Multi-Agente · CoT · Arquitectura IA',
     desc: 'Especialista en agentes inteligentes. Orquesta el flujo multi-agente, la simulación del paciente virtual y el análisis automatizado de sesgos cognitivos.',

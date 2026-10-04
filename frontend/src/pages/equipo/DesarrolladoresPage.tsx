@@ -4,13 +4,6 @@ import InnerLayout from '../../components/shared/InnerLayout';
 
 const devs = [
   {
-    initials: 'ZQ',
-    name: 'Zabdiel Julian Quintero Monroy',
-    role: 'Desarrollador',
-    program: 'Ingeniería de Sistemas',
-    focus: 'Agentes de IA · Motor LLM · Prompts CoT · RAG',
-  },
-  {
     initials: 'JR',
     name: 'Juan Camilo Rojas',
     role: 'Desarrollador',

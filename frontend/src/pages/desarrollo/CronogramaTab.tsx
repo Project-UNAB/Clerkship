@@ -937,7 +937,6 @@ export default function CronogramaTab() {
           ) : (
             (() => {
               const respMember =
-                selectedCat === 'modelos' ? TEAM_MEMBERS.find(m => m.id === 'zabdiel') :
                 selectedCat === 'agentes' ? TEAM_MEMBERS.find(m => m.id === 'juan-camilo') :
                 selectedCat === 'backend' ? TEAM_MEMBERS.find(m => m.id === 'camilo-bueno') :
                 selectedCat === 'frontend' ? TEAM_MEMBERS.find(m => m.id === 'santiago') : null;

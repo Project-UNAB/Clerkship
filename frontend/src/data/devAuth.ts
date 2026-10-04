@@ -8,7 +8,6 @@ import { auth } from './firebase';
  * cuentas fijas mapeadas 1 a 1 con `TEAM_MEMBERS` (ver data/teamData.ts).
  */
 const MEMBER_EMAILS: Record<string, string> = {
-  'zabdiel': 'zquintero@clerkship.dev',
   'juan-camilo': 'jrojas@clerkship.dev',
   'camilo-bueno': 'cbueno@clerkship.dev',
   'santiago': 'sarias@clerkship.dev',

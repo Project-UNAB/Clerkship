@@ -79,7 +79,7 @@ const FRONTEND_PLACEHOLDERS: PlaceholderCategory = {
 };
 
 export function getPlaceholderCategoriesForMember(memberId: string): PlaceholderCategory[] {
-  if (memberId === 'zabdiel' || memberId === 'juan-camilo') {
+  if (memberId === 'juan-camilo') {
     return [MODELOS_PLACEHOLDERS, AGENTES_PLACEHOLDERS];
   }
   if (memberId === 'santiago' || memberId === 'camilo-bueno') {

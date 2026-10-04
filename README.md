@@ -232,7 +232,6 @@ Este proyecto cumple con:
 
 | Nombre | Rol |
 |---|---|
-| **Zabdiel Julian Quintero Monroy** | Agentes de IA & Modelos de Lenguaje |
 | **Juan Camilo Rojas** | Agentes de IA & Arquitectura de IA |
 | **Santiago Steven Arias Estupiñan** | Desarrollador Frontend & Conexión de Sistemas |
 | **Camilo Andres Bueno Rey** | Desarrollador Backend & Conexión de Sistemas |

@@ -9,7 +9,6 @@ export interface RepoConfig {
 
 export const REPOS: RepoConfig[] = [
   { id: 'clerkship', owner: 'Steven08Ar', name: 'Clerkship', label: 'Clerkship — Backend / Frontend' },
-  { id: 'agentgrimoire', owner: 'zquintero246', name: 'AgentGrimoire', label: 'AgentGrimoire — IA (Modelos / Agentes)' },
 ];
 
 export function getRepoById(id: string): RepoConfig | undefined {

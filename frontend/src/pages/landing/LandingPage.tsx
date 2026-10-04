@@ -18,15 +18,6 @@ const STATS = [
 ];
 
 const DEVS = [
-  { initials: 'ZQ', name: 'Zabdiel Julian Quintero Monroy', seed: 'Felix', color: '#3B82F6',
-    focus: 'Agentes de IA · Motor LLM · Prompts CoT · RAG',
-    desc: 'Líder en arquitectura de IA. Diseña y optimiza los modelos de lenguaje, el motor RAG y el razonamiento Chain-of-Thought para la generación de casos clínicos.',
-    skills: [
-      { label: 'Agentes IA', icon: <BrainCircuit size={13} /> },
-      { label: 'LLM & RAG', icon: <Database size={13} /> },
-      { label: 'Prompts CoT', icon: <FileText size={13} /> },
-    ]
-  },
   { initials: 'JR', name: 'Juan Camilo Rojas', seed: 'Leo', color: '#EC4899',
     focus: 'Agentes de IA · Multi-Agente · CoT · Arquitectura IA',
     desc: 'Especialista en agentes inteligentes. Orquesta el flujo multi-agente, la simulación del paciente virtual y el análisis automatizado de sesgos cognitivos.',
@@ -507,7 +498,7 @@ export default function LandingPage() {
              <h2 className="lp-equipo-title">Las mentes detrás<br/>de Clerkship</h2>
              <p className="lp-equipo-subtitle">
                Ingenieros de sistemas construyendo el futuro de la educación médica:
-               Zabdiel y Juan Camilo en los Agentes de IA, y Santiago y Camilo en Frontend, Backend y Conexión.
+               Juan Camilo en los Agentes de IA, y Santiago y Camilo en Frontend, Backend y Conexión.
              </p>
            </div>
         </div>

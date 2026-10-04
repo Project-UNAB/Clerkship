@@ -10,15 +10,6 @@ export interface TeamMember {
 
 export const TEAM_MEMBERS: TeamMember[] = [
   {
-    id: 'zabdiel',
-    initials: 'ZQ',
-    name: 'Zabdiel Julian Quintero Monroy',
-    seed: 'Felix',
-    color: '#3B82F6',
-    role: 'Agentes de IA · Motor LLM · Prompts CoT · RAG',
-    avatarUrl: 'https://api.dicebear.com/7.x/notionists/svg?seed=Felix&backgroundColor=3B82F6',
-  },
-  {
     id: 'juan-camilo',
     initials: 'JR',
     name: 'Juan Camilo Rojas',
