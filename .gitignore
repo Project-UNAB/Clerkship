@@ -53,3 +53,7 @@ next-env.d.ts
 
 #Repo externo clonado (jrojas710/simulador-clinico-gastro) - trae su propio .git
 /simulador-clinico-gastro/
+# Credenciales locales (copias de .env reales) y documentos de referencia
+credenciales/
+documentos/
+credenciales.zip
