@@ -6,7 +6,7 @@ import pytest
 from flask_jwt_extended import create_access_token
 
 def _completo(claves):
-    return {clave: 4 for clave in claves}
+    return {"id_usuario": "U00123456", **{clave: 4 for clave in claves}}
 
 
 PESTANAS = {
@@ -74,6 +74,19 @@ def test_feedback_rechaza_campo_faltante(client, headers, pestana):
     body = dict(PESTANAS[pestana])
     body.pop(next(iter(body)))
     res = client.post(f"/api/feedback/{pestana}", json=body, headers=headers)
+    assert res.status_code == 400
+
+
+def test_feedback_rechaza_sin_id_de_usuario(client, headers):
+    body = dict(PESTANAS["inicio"])
+    body.pop("id_usuario")
+    res = client.post("/api/feedback/inicio", json=body, headers=headers)
+    assert res.status_code == 400
+
+
+def test_feedback_rechaza_id_demasiado_corto(client, headers):
+    body = dict(PESTANAS["inicio"], id_usuario="A")
+    res = client.post("/api/feedback/inicio", json=body, headers=headers)
     assert res.status_code == 400
 
 

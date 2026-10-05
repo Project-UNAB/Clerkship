@@ -9,9 +9,11 @@ from app.schemas.base import BaseSchema
 
 Calificacion = Annotated[int, Field(ge=1, le=5, description="De 1 (muy mala) a 5 (muy buena)")]
 Comentario = Annotated[Optional[str], Field(None, max_length=1000)]
+IdUsuario = Annotated[str, Field(min_length=2, max_length=60, description="ID escrito por quien responde")]
 
 
 class FeedbackInicioRequest(BaseSchema):
+    id_usuario: IdUsuario
     claridad_navegacion: Calificacion
     informacion_util: Calificacion
     accesos_rapidos: Calificacion
@@ -28,6 +30,7 @@ class FeedbackInicioRequest(BaseSchema):
 
 
 class FeedbackCasosRequest(BaseSchema):
+    id_usuario: IdUsuario
     realismo_caso: Calificacion
     calidad_paciente_virtual: Calificacion
     claridad_instrucciones: Calificacion
@@ -44,6 +47,7 @@ class FeedbackCasosRequest(BaseSchema):
 
 
 class FeedbackHistorialRequest(BaseSchema):
+    id_usuario: IdUsuario
     claridad_puntajes: Calificacion
     utilidad_recomendacion: Calificacion
     facilidad_revision: Calificacion
@@ -58,6 +62,7 @@ class FeedbackHistorialRequest(BaseSchema):
 
 
 class FeedbackBibliotecaRequest(BaseSchema):
+    id_usuario: IdUsuario
     calidad_contenido: Calificacion
     facilidad_busqueda: Calificacion
     utilidad_recursos: Calificacion

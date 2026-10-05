@@ -15,7 +15,8 @@ class FeedbackInicio(db.Model):
     __tablename__ = "feedback_inicio"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = db.Column(UUID(as_uuid=True), nullable=True)
+    id_usuario = db.Column(db.String(60), nullable=False)
     claridad_navegacion = _calificacion()
     informacion_util = _calificacion()
     accesos_rapidos = _calificacion()
@@ -36,7 +37,8 @@ class FeedbackCasos(db.Model):
     __tablename__ = "feedback_casos"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = db.Column(UUID(as_uuid=True), nullable=True)
+    id_usuario = db.Column(db.String(60), nullable=False)
     realismo_caso = _calificacion()
     calidad_paciente_virtual = _calificacion()
     claridad_instrucciones = _calificacion()
@@ -57,7 +59,8 @@ class FeedbackHistorial(db.Model):
     __tablename__ = "feedback_historial"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = db.Column(UUID(as_uuid=True), nullable=True)
+    id_usuario = db.Column(db.String(60), nullable=False)
     claridad_puntajes = _calificacion()
     utilidad_recomendacion = _calificacion()
     facilidad_revision = _calificacion()
@@ -76,7 +79,8 @@ class FeedbackBiblioteca(db.Model):
     __tablename__ = "feedback_biblioteca"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = db.Column(UUID(as_uuid=True), nullable=True)
+    id_usuario = db.Column(db.String(60), nullable=False)
     calidad_contenido = _calificacion()
     facilidad_busqueda = _calificacion()
     utilidad_recursos = _calificacion()
