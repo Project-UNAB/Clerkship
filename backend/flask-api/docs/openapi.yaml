@@ -1742,12 +1742,12 @@ components:
     VerifyEmailRequest:
       type: object
       required:
-      - email
       - code
       properties:
         email:
           type: string
           format: email
+          description: Opcional. El usuario sale del JWT.
           example: sarias202@unab.edu.co
         code:
           type: string

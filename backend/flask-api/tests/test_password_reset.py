@@ -19,6 +19,9 @@ class _FakeQuery:
     def first(self):
         return self._match[0] if self._match else None
 
+    def get(self, user_id):
+        return self._store.get(user_id)
+
 
 @pytest.fixture
 def fake_user(monkeypatch):
@@ -167,6 +170,37 @@ def test_codigo_de_recuperacion_se_guarda_hasheado(client, fake_user):
     _, code = fake_user.sent[0]
     assert fake_user.reset_code != code
     assert check_password_hash(fake_user.reset_code, code)
+
+
+def _bearer(app, user_id):
+    from flask_jwt_extended import create_access_token
+    with app.app_context():
+        return {"Authorization": f"Bearer {create_access_token(identity=user_id, additional_claims={'role': 'STUDENT'})}"}
+
+
+def test_verify_email_acepta_solo_el_codigo_con_jwt(app, client, fake_user):
+    from werkzeug.security import generate_password_hash as hash_
+    fake_user.email_verified = False
+    fake_user.verification_code = hash_("123456")
+    fake_user.verification_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+
+    res = client.post("/api/auth/verify-email", json={"code": "123456"}, headers=_bearer(app, "u1"))
+    assert res.status_code == 200
+    assert fake_user.email_verified is True
+
+
+def test_resend_code_con_jwt_no_exige_correo(app, client, fake_user, monkeypatch):
+    fake_user.email_verified = False
+    enviados = []
+    monkeypatch.setattr(auth_routes, "send_verification_email", lambda *a: enviados.append(a))
+    res = client.post("/api/auth/resend-code", headers=_bearer(app, "u1"))
+    assert res.status_code == 200
+    assert len(enviados) == 1
+
+
+def test_resend_code_sin_jwt_ni_correo_responde_400(client, fake_user):
+    res = client.post("/api/auth/resend-code", json={})
+    assert res.status_code == 400
 
 
 def test_codigo_de_verificacion_se_guarda_hasheado(app, monkeypatch):

@@ -222,8 +222,10 @@ def resend_code(validated_body: ResendCodeRequest):
     identity = get_jwt_identity()
     if identity:
         user = User.query.get(identity)
-    else:
+    elif validated_body.email:
         user = User.query.filter_by(email=validated_body.email.strip().lower()).first()
+    else:
+        return jsonify({"error": "Bad Request", "message": "Falta el correo", "status_code": 400}), 400
 
     if user is None:
         return jsonify({"error": "Not Found", "message": "Usuario no encontrado", "status_code": 404}), 404

@@ -30,14 +30,17 @@ class RegisterResponse(BaseSchema):
 class VerifyEmailRequest(BaseSchema):
     """Payload to verify email address using 6-digit OTP code."""
 
-    email: EmailStr
+    email: Optional[EmailStr] = Field(None, description="Opcional: el usuario sale del JWT")
     code: str = Field(..., min_length=6, max_length=6, pattern=r"^\d{6}$", description="Código numérico de 6 dígitos")
 
 
 class ResendCodeRequest(BaseSchema):
-    """Payload to request resending the verification code."""
+    """Payload to request resending the verification code.
 
-    email: EmailStr
+    Con JWT el usuario sale del token; sin JWT el correo es obligatorio.
+    """
+
+    email: Optional[EmailStr] = Field(None, description="Obligatorio solo si no hay JWT")
 
 
 class ForgotPasswordRequest(BaseSchema):
