@@ -15,12 +15,14 @@ from app.models.document_folder import DocumentFolder
 from app.models.consultation import Consultation
 from app.models.ai_evaluation import AiEvaluation
 from app.models.feedback import FeedbackInicio, FeedbackCasos, FeedbackHistorial, FeedbackBiblioteca
+from app.models.user_file import UserFile
 
 __all__ = [
     "FeedbackInicio",
     "FeedbackCasos",
     "FeedbackHistorial",
     "FeedbackBiblioteca",
+    "UserFile",
     "User",
     "Student",
     "Teacher",

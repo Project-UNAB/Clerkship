@@ -1269,6 +1269,176 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+  /api/almacenamiento/uso:
+    get:
+      tags:
+      - Almacenamiento
+      summary: Espacio usado y límite (5 GB) del usuario
+      operationId: uso
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/almacenamiento/archivos:
+    get:
+      tags:
+      - Almacenamiento
+      summary: Archivos del usuario ya confirmados
+      operationId: listarArchivos
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/almacenamiento/subidas:
+    post:
+      tags:
+      - Almacenamiento
+      summary: Pide una URL firmada para subir un PDF a R2. Valida tipo, tamaño (máx. 100 MB) y cuota (5 GB).
+      operationId: iniciarSubida
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, mime_type, size_bytes]
+              properties:
+                nombre: {type: string, maxLength: 255}
+                mime_type: {type: string, example: application/pdf}
+                size_bytes: {type: integer, minimum: 1}
+      responses:
+        '201':
+          description: Creado
+        '400':
+          description: Datos inválidos
+        '413':
+          description: Archivo o cuota excedidos
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/almacenamiento/subidas/{file_id}/confirmar:
+    post:
+      tags:
+      - Almacenamiento
+      summary: Confirma que el archivo llegó a R2 con el tamaño declarado
+      operationId: confirmarSubida
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: file_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '400':
+          description: Datos inválidos
+        '404':
+          description: No encontrado
+        '409':
+          description: El archivo aún no está en el almacenamiento
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/almacenamiento/archivos/{file_id}:
+    delete:
+      tags:
+      - Almacenamiento
+      summary: Borra un archivo propio de R2 y de la base
+      operationId: borrarArchivo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: file_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/almacenamiento/archivos/{file_id}/descarga:
+    get:
+      tags:
+      - Almacenamiento
+      summary: URL firmada (15 min) para descargar un archivo propio
+      operationId: descargarArchivo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: file_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/almacenamiento/archivos/{file_id}/publicar:
+    post:
+      tags:
+      - Almacenamiento
+      summary: Copia el PDF a la biblioteca y crea el recurso
+      operationId: publicarEnBiblioteca
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: file_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titulo: {type: string, maxLength: 255}
+                descripcion: {type: string, maxLength: 2000}
+                specialty: {type: string, maxLength: 100}
+      responses:
+        '201':
+          description: Creado
+        '400':
+          description: Datos inválidos
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/almacenamiento/biblioteca/{article_id}/descarga:
+    get:
+      tags:
+      - Almacenamiento
+      summary: URL firmada (15 min) para descargar el PDF de un recurso de la biblioteca
+      operationId: descargarDeBiblioteca
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: article_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/feedback/inicio:
     post:
       tags:

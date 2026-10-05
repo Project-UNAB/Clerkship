@@ -21,6 +21,9 @@ class Article(db.Model):
     description = db.Column(db.Text)
     url = db.Column(db.Text, nullable=False)
     created_by = db.Column(UUID(as_uuid=True), db.ForeignKey("teachers.user_id", ondelete="SET NULL"))
+    # PDF publicado desde el almacenamiento del usuario (clave en R2) y quién lo publicó.
+    archivo_key = db.Column(db.Text)
+    publicado_por = db.Column(UUID(as_uuid=True))
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now())
 
