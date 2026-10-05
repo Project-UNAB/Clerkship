@@ -14,8 +14,13 @@ from app.models.community_like import CommunityLike
 from app.models.document_folder import DocumentFolder
 from app.models.consultation import Consultation
 from app.models.ai_evaluation import AiEvaluation
+from app.models.feedback import FeedbackInicio, FeedbackCasos, FeedbackHistorial, FeedbackBiblioteca
 
 __all__ = [
+    "FeedbackInicio",
+    "FeedbackCasos",
+    "FeedbackHistorial",
+    "FeedbackBiblioteca",
     "User",
     "Student",
     "Teacher",

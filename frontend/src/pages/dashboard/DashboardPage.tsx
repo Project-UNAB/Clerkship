@@ -7,6 +7,7 @@ import {
   LayoutGrid, List, Search, X, Folder, HardDrive, Check,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
+import FeedbackFab from '../../components/shared/FeedbackFab';
 import WelcomeOverlay from '../../components/shared/WelcomeOverlay';
 import FolderModal from '../../components/dashboard/FolderModal';
 import UploadDocumentModal from '../../components/dashboard/UploadDocumentModal';
@@ -892,6 +893,7 @@ export default function DashboardPage() {
     >
       {showWelcome && <WelcomeOverlay onComplete={handleWelcomeComplete} />}
       <Sidebar />
+      <FeedbackFab pestana="inicio" />
 
       {/* ── Drag & Drop Cloud Overlay ── */}
       <AnimatePresence>

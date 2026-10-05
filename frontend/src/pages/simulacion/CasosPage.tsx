@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, CheckCircle, Loader2, Stethoscope, Clock, MoreVertical, Pencil, Trash2, Square, CheckSquare, X } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
+import FeedbackFab from '../../components/shared/FeedbackFab';
 import {
   listConsultations, renameConsultation, deleteConsultation, GASTRO_SUBTEMAS,
   type Consultation, type Difficulty,
@@ -175,6 +176,7 @@ export default function CasosPage() {
   return (
     <div className="dash-root">
       <Sidebar />
+      <FeedbackFab pestana="casos" />
       <div className="casos-page-wrapper">
         <div className="casos-pg-header">
           <div className="casos-pg-title-box">

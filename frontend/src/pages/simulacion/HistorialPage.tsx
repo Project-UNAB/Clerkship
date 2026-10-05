@@ -7,6 +7,7 @@ import {
   Check, AlertCircle, Target, Star, ClipboardCheck, Loader2, X, TrendingUp, Award, Eye,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
+import FeedbackFab from '../../components/shared/FeedbackFab';
 import {
   listHistorial, getEstadisticas, getRetroalimentacion, getRecomendacion,
   type Consultation, type Estadisticas, type EvaluationResult, type RetroalimentacionResponse, type Recomendacion,
@@ -470,6 +471,7 @@ export default function HistorialPage() {
   return (
     <div className="dash-root">
       <Sidebar />
+      <FeedbackFab pestana="historial" />
 
       <div className="hist-page-wrapper">
         

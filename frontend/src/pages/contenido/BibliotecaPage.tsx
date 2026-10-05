@@ -6,6 +6,7 @@ import {
   BookMarked, X, Calendar, ChevronDown,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
+import FeedbackFab from '../../components/shared/FeedbackFab';
 
 /* ── Resource types ──────────────────────────────────────── */
 const TYPES = [
@@ -125,6 +126,7 @@ export default function BibliotecaPage() {
   return (
     <div className="dash-root">
       <Sidebar />
+      <FeedbackFab pestana="biblioteca" />
 
       <div className="bib-body">
 
