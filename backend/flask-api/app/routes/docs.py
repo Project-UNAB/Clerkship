@@ -4,16 +4,27 @@ import yaml
 
 docs_bp = Blueprint("docs", __name__)
 
-# Rutas posibles hacia openapi.yaml
-_YAML_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "docs", "openapi.yaml"))
+# Rutas posibles hacia openapi.yaml (busca dentro de flask-api en Docker o subiendo 3 niveles en local)
+_CANDIDATE_PATHS = [
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "docs", "openapi.yaml")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "docs", "openapi.yaml")),
+]
 _CACHED_SPEC = None
+
+
+def _get_yaml_path():
+    for path in _CANDIDATE_PATHS:
+        if os.path.exists(path):
+            return path
+    return None
 
 
 def _get_spec():
     global _CACHED_SPEC
     if _CACHED_SPEC is None:
-        if os.path.exists(_YAML_PATH):
-            with open(_YAML_PATH, "r", encoding="utf-8") as f:
+        yaml_path = _get_yaml_path()
+        if yaml_path:
+            with open(yaml_path, "r", encoding="utf-8") as f:
                 _CACHED_SPEC = yaml.safe_load(f)
         else:
             _CACHED_SPEC = {"error": "Archivo openapi.yaml no encontrado"}

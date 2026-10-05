@@ -1,0 +1,2869 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Clerkship API - ClinicAI UNAB",
+    "description": "**API REST de la plataforma clínica Clerkship / ClinicAI UNAB** para el entrenamiento y evaluación\ndel proceso de razonamiento diagnóstico en estudiantes de medicina y ciencias de la salud.\n\nEl backend combina:\n* **PostgreSQL** para la persistencia relacional transaccional (usuarios, cursos, artículos, carpetas y evaluaciones).\n* **MongoDB** para almacenamiento documental semiestructurado (transcripción de chats clínicos, notas de voz y documentos en base64).\n* **JWT (JSON Web Tokens)** con control de acceso basado en roles (`STUDENT`, `TEACHER`, `ADMIN`).\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Equipo de Desarrollo Clerkship",
+      "url": "https://github.com/Steven08Ar/Clerkship"
+    },
+    "license": {
+      "name": "GNU General Public License v3.0",
+      "url": "https://www.gnu.org/licenses/gpl-3.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Servidor local de desarrollo Flask"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Sistema / Salud",
+      "description": "Endpoints de diagnóstico y comprobación de salud del backend"
+    },
+    {
+      "name": "Autenticación",
+      "description": "Registro, verificación de correo, inicio de sesión, renovación de tokens y gestión de credenciales"
+    },
+    {
+      "name": "Usuarios",
+      "description": "Búsqueda, perfiles públicos y actualización de datos personales"
+    },
+    {
+      "name": "Cursos",
+      "description": "Gestión académica de asignaturas, matrícula de estudiantes y listado de cursos dictados"
+    },
+    {
+      "name": "Biblioteca Médica",
+      "description": "Repositorio de literatura científica, categorización por especialidad y estante de lectura personal"
+    },
+    {
+      "name": "Documentos y Carpetas",
+      "description": "Gestión de carpetas personalizadas y almacenamiento seguro de archivos clínicos"
+    },
+    {
+      "name": "Comunidad",
+      "description": "Espacio académico de discusión estudiantil, publicaciones, comentarios y valoraciones"
+    },
+    {
+      "name": "Simulación Clínica",
+      "description": "Ciclo de vida de consultas médicas simuladas, interacción con paciente virtual y cierre de casos"
+    },
+    {
+      "name": "Historial y Evaluación",
+      "description": "Trazabilidad del razonamiento clínico, retroalimentación formativa generada por IA y métricas"
+    },
+    {
+      "name": "Correo y Notificaciones",
+      "description": "Servicios de notificación y comprobación del proveedor de mensajería (Mailgun)"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Sistema / Salud"
+        ],
+        "summary": "Comprobación de salud del sistema",
+        "description": "Retorna el estado del servicio Flask y la conectividad en vivo con PostgreSQL y MongoDB.",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Estado del servicio evaluado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Registro de nuevo usuario",
+        "description": "Registra un usuario (STUDENT o TEACHER), envía código de verificación de 6 dígitos por correo.",
+        "operationId": "registerUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario registrado exitosamente. Requiere verificación de correo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "409": {
+            "description": "El correo electrónico ya se encuentra registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/verify-email": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Verificar correo con código de 6 dígitos",
+        "description": "Valida el código de un solo uso para activar la cuenta del usuario.",
+        "operationId": "verifyEmail",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Correo verificado exitosamente. Emite tokens de sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokensResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          }
+        }
+      }
+    },
+    "/api/auth/resend-code": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Reenviar código de verificación",
+        "description": "Genera y reenvía un nuevo código de 6 dígitos con periodo de enfriamiento.",
+        "operationId": "resendCode",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "estudiante@unab.edu.co"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Código reenviado con éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Código de verificación reenviado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Iniciar sesión",
+        "description": "Autentica al usuario mediante email y contraseña, retornando access y refresh tokens JWT.",
+        "operationId": "loginUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inicio de sesión exitoso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokensResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Renovar access token",
+        "description": "Emite un nuevo token de acceso a partir de un refresh token JWT válido.",
+        "operationId": "refreshToken",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token renovado con éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Obtener usuario autenticado",
+        "description": "Retorna el perfil y los datos del usuario correspondiente al token JWT provisto.",
+        "operationId": "getCurrentUser",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil del usuario obtenido con éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/auth/change-password": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Cambiar contraseña",
+        "description": "Actualiza la contraseña del usuario verificando la contraseña actual.",
+        "operationId": "changePassword",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Contraseña cambiada correctamente"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/auth/avatar": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Actualizar avatar generado",
+        "description": "Guarda la configuración del avatar SVG de DiceBear para el usuario.",
+        "operationId": "updateAvatar",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "avatar_svg"
+                ],
+                "properties": {
+                  "avatar_svg": {
+                    "type": "string",
+                    "description": "Contenido SVG o URL de DiceBear"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar actualizado"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/usuarios/buscar": {
+      "get": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Búsqueda de usuarios",
+        "description": "Busca usuarios por prefijo de username (@usuario) o nombre completo.",
+        "operationId": "searchUsers",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Término de búsqueda"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de usuarios coincidentes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios/{id}": {
+      "get": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Perfil público de un usuario",
+        "description": "Retorna la información pública de un usuario por su UUID.",
+        "operationId": "getUserById",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Información pública del usuario obtenida con éxito"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/api/usuarios/me": {
+      "patch": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Actualizar perfil propio",
+        "description": "Modifica nombre, apellido o datos del perfil del usuario autenticado.",
+        "operationId": "updateMyProfile",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string",
+                    "example": "Camilo"
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "example": "Vega"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Perfil actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/usuarios/uso-almacenamiento": {
+      "get": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Consultar métricas de almacenamiento de usuario",
+        "description": "Retorna el uso de almacenamiento en bytes para documentos y límites establecidos.",
+        "operationId": "getStorageUsage",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estadísticas de almacenamiento obtenidas con éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "used_bytes": {
+                      "type": "integer",
+                      "example": 1048576
+                    },
+                    "limit_bytes": {
+                      "type": "integer",
+                      "example": 5368709120
+                    },
+                    "breakdown": {
+                      "type": "object",
+                      "properties": {
+                        "documentos": {
+                          "type": "integer",
+                          "example": 1048576
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/cursos": {
+      "get": {
+        "tags": [
+          "Cursos"
+        ],
+        "summary": "Listar todos los cursos",
+        "description": "Catálogo general de asignaturas y rotaciones médicas.",
+        "operationId": "listCourses",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CourseResponse"
+                  }
+                }
+              }
+            },
+            "description": "Lista de cursos obtenida con éxito"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Cursos"
+        ],
+        "summary": "Crear un nuevo curso",
+        "description": "Rol requerido TEACHER. Crea una nueva asignatura en el sistema.",
+        "operationId": "createCourse",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCourseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Curso creado con éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/api/cursos/mios": {
+      "get": {
+        "tags": [
+          "Cursos"
+        ],
+        "summary": "Cursos del usuario autenticado",
+        "description": "Si el rol es STUDENT retorna los matriculados; si es TEACHER retorna los dictados.",
+        "operationId": "getMyCourses",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CourseResponse"
+                  }
+                }
+              }
+            },
+            "description": "Cursos del usuario obtenidos con éxito"
+          }
+        }
+      }
+    },
+    "/api/cursos/{id}": {
+      "get": {
+        "tags": [
+          "Cursos"
+        ],
+        "summary": "Detalle de un curso",
+        "operationId": "getCourseById",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseResponse"
+                }
+              }
+            },
+            "description": "Detalle del curso obtenido con éxito"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/api/cursos/{id}/matricular": {
+      "post": {
+        "tags": [
+          "Cursos"
+        ],
+        "summary": "Matricular estudiante en curso",
+        "description": "Rol requerido STUDENT. Inscribe al estudiante en la asignatura.",
+        "operationId": "enrollCourse",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matrícula exitosa"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cursos"
+        ],
+        "summary": "Cancelar matrícula de curso",
+        "description": "Rol requerido STUDENT. Retira al estudiante del curso.",
+        "operationId": "unenrollCourse",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Desmatriculación exitosa"
+          }
+        }
+      }
+    },
+    "/api/articulos": {
+      "get": {
+        "tags": [
+          "Biblioteca Médica"
+        ],
+        "summary": "Buscar y listar artículos médicos",
+        "description": "Permite filtrar por especialidad, etiqueta (tag) o texto de búsqueda.",
+        "operationId": "listArticles",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "specialty",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Gastroenterología"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "GUÍA"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Texto en título o contenido"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArticleResponse"
+                  }
+                }
+              }
+            },
+            "description": "Artículos médicos encontrados con éxito"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Biblioteca Médica"
+        ],
+        "summary": "Publicar artículo médico",
+        "description": "Rol requerido TEACHER. Sube un nuevo artículo a la biblioteca.",
+        "operationId": "createArticle",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateArticleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleResponse"
+                }
+              }
+            },
+            "description": "Artículo publicado con éxito"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/api/articulos/{id}": {
+      "get": {
+        "tags": [
+          "Biblioteca Médica"
+        ],
+        "summary": "Detalle de un artículo médico",
+        "operationId": "getArticleById",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleResponse"
+                }
+              }
+            },
+            "description": "Detalle del artículo médico obtenido con éxito"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/api/articulos/estante": {
+      "get": {
+        "tags": [
+          "Biblioteca Médica"
+        ],
+        "summary": "Estante de lectura personal",
+        "description": "Rol requerido STUDENT. Artículos guardados por el estudiante con estado (NEXT, FINISHED).",
+        "operationId": "getStudentShelf",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudentShelfItem"
+                  }
+                }
+              }
+            },
+            "description": "Estante de lectura personal obtenido con éxito"
+          }
+        }
+      }
+    },
+    "/api/articulos/{id}/estante": {
+      "post": {
+        "tags": [
+          "Biblioteca Médica"
+        ],
+        "summary": "Guardar artículo en el estante",
+        "description": "Rol requerido STUDENT. Guarda o actualiza el estado de lectura (NEXT o FINISHED).",
+        "operationId": "saveToShelf",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "NEXT",
+                      "FINISHED"
+                    ],
+                    "example": "NEXT"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Artículo guardado en el estante"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Biblioteca Médica"
+        ],
+        "summary": "Quitar artículo del estante",
+        "description": "Rol requerido STUDENT.",
+        "operationId": "removeFromShelf",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artículo removido del estante"
+          }
+        }
+      }
+    },
+    "/api/documentos/carpetas": {
+      "get": {
+        "tags": [
+          "Documentos y Carpetas"
+        ],
+        "summary": "Listar carpetas de documentos",
+        "description": "Retorna las carpetas creadas por el usuario con conteo de archivos.",
+        "operationId": "listFolders",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentFolderResponse"
+                  }
+                }
+              }
+            },
+            "description": "Carpetas del usuario obtenidas con éxito"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Documentos y Carpetas"
+        ],
+        "summary": "Crear carpeta",
+        "operationId": "createFolder",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFolderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFolderResponse"
+                }
+              }
+            },
+            "description": "Carpeta creada exitosamente"
+          }
+        }
+      }
+    },
+    "/api/documentos/carpetas/{id}": {
+      "patch": {
+        "tags": [
+          "Documentos y Carpetas"
+        ],
+        "summary": "Editar carpeta (nombre o color)",
+        "operationId": "updateFolder",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Casos Rotación 2026"
+                  },
+                  "color": {
+                    "type": "string",
+                    "example": "#3B82F6"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFolderResponse"
+                }
+              }
+            },
+            "description": "Carpeta actualizada exitosamente"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Documentos y Carpetas"
+        ],
+        "summary": "Eliminar carpeta",
+        "operationId": "deleteFolder",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Carpeta eliminada"
+          }
+        }
+      }
+    },
+    "/api/documentos/archivos": {
+      "get": {
+        "tags": [
+          "Documentos y Carpetas"
+        ],
+        "summary": "Listar archivos",
+        "description": "Filtra por folder_id o muestra los documentos recientes del usuario.",
+        "operationId": "listDocuments",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "folder_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentFileResponse"
+                  }
+                }
+              }
+            },
+            "description": "Documentos obtenidos con éxito"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Documentos y Carpetas"
+        ],
+        "summary": "Subir documento",
+        "description": "Almacena metadatos en PostgreSQL y contenido base64 en MongoDB.",
+        "operationId": "uploadDocument",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFileResponse"
+                }
+              }
+            },
+            "description": "Documento subido y procesado exitosamente"
+          }
+        }
+      }
+    },
+    "/api/documentos/archivos/{id}": {
+      "get": {
+        "tags": [
+          "Documentos y Carpetas"
+        ],
+        "summary": "Descargar o ver archivo",
+        "operationId": "getDocumentById",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFileResponse"
+                }
+              }
+            },
+            "description": "Contenido y metadatos del documento obtenidos con éxito"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Documentos y Carpetas"
+        ],
+        "summary": "Eliminar archivo",
+        "operationId": "deleteDocument",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archivo eliminado"
+          }
+        }
+      }
+    },
+    "/api/comunidad/posts": {
+      "get": {
+        "tags": [
+          "Comunidad"
+        ],
+        "summary": "Listar publicaciones de la comunidad",
+        "operationId": "listCommunityPosts",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CommunityPostResponse"
+                  }
+                }
+              }
+            },
+            "description": "Publicaciones de la comunidad obtenidas con éxito"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Comunidad"
+        ],
+        "summary": "Crear nueva publicación",
+        "operationId": "createCommunityPost",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityPostResponse"
+                }
+              }
+            },
+            "description": "Publicación creada exitosamente"
+          }
+        }
+      }
+    },
+    "/api/comunidad/posts/{id}": {
+      "delete": {
+        "tags": [
+          "Comunidad"
+        ],
+        "summary": "Eliminar publicación propia",
+        "operationId": "deleteCommunityPost",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Publicación eliminada"
+          }
+        }
+      }
+    },
+    "/api/comunidad/posts/{id}/comentarios": {
+      "get": {
+        "tags": [
+          "Comunidad"
+        ],
+        "summary": "Listar comentarios de un post",
+        "operationId": "getPostComments",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CommunityCommentResponse"
+                  }
+                }
+              }
+            },
+            "description": "Comentarios de la publicación obtenidos con éxito"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Comunidad"
+        ],
+        "summary": "Comentar en un post",
+        "operationId": "addPostComment",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "example": "Excelente análisis del caso de hemorragia de vías digestivas altas."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityCommentResponse"
+                }
+              }
+            },
+            "description": "Comentario agregado exitosamente"
+          }
+        }
+      }
+    },
+    "/api/comunidad/posts/{id}/like": {
+      "post": {
+        "tags": [
+          "Comunidad"
+        ],
+        "summary": "Dar o quitar like a un post (Toggle)",
+        "operationId": "togglePostLike",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "liked": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "likes_count": {
+                      "type": "integer",
+                      "example": 12
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Estado de reacción actualizado exitosamente"
+          }
+        }
+      }
+    },
+    "/api/consultas": {
+      "get": {
+        "tags": [
+          "Simulación Clínica"
+        ],
+        "summary": "Listar consultas clínicas",
+        "description": "Filtra por estado (IN_PROGRESS, COMPLETED), curso o especialidad. Estudiantes ven las suyas; docentes ven las de sus cursos.",
+        "operationId": "listConsultations",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IN_PROGRESS",
+                "COMPLETED",
+                "ABANDONED"
+              ]
+            }
+          },
+          {
+            "name": "course_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "specialty",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsultationResponse"
+                  }
+                }
+              }
+            },
+            "description": "Lista de consultas clínicas obtenida con éxito"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Simulación Clínica"
+        ],
+        "summary": "Iniciar una nueva consulta médica simulada",
+        "description": "Rol requerido STUDENT. Registra la consulta en Postgres e inicializa la sesión en MongoDB con el saludo del paciente virtual.",
+        "operationId": "startConsultation",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConsultationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Consulta iniciada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/api/consultas/{id}": {
+      "get": {
+        "tags": [
+          "Simulación Clínica"
+        ],
+        "summary": "Detalle de una consulta y transcripción de chat",
+        "description": "Combina datos de PostgreSQL con el historial acumulado en MongoDB.",
+        "operationId": "getConsultationById",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultationDetailResponse"
+                }
+              }
+            },
+            "description": "Detalle y transcripción de la consulta clínica obtenidos con éxito"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/api/consultas/{id}/mensajes": {
+      "post": {
+        "tags": [
+          "Simulación Clínica"
+        ],
+        "summary": "Enviar mensaje al paciente virtual",
+        "description": "Rol requerido STUDENT. Anexa el mensaje del estudiante y devuelve la respuesta simulada del paciente.",
+        "operationId": "sendConsultationMessage",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "example": "¿Hace cuántos días comenzó el dolor en la boca del estómago?"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mensaje procesado y respuesta generada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sent": {
+                      "$ref": "#/components/schemas/ChatMessage"
+                    },
+                    "reply": {
+                      "$ref": "#/components/schemas/ChatMessage"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          }
+        }
+      }
+    },
+    "/api/consultas/{id}/finalizar": {
+      "patch": {
+        "tags": [
+          "Simulación Clínica"
+        ],
+        "summary": "Finalizar sesión de consulta clínica",
+        "description": "Rol requerido STUDENT. Cambia el estado a COMPLETED y registra la fecha de finalización.",
+        "operationId": "finishConsultation",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consulta finalizada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Consulta finalizada con éxito"
+                    },
+                    "consultation": {
+                      "$ref": "#/components/schemas/ConsultationResponse"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/historial": {
+      "get": {
+        "tags": [
+          "Historial y Evaluación"
+        ],
+        "summary": "Historial de consultas completadas",
+        "description": "Retorna los casos clínicos finalizados con puntaje y orden cronológico.",
+        "operationId": "getCompletedHistory",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsultationResponse"
+                  }
+                }
+              }
+            },
+            "description": "Historial de consultas finalizadas obtenido con éxito"
+          }
+        }
+      }
+    },
+    "/api/historial/{id}/retroalimentacion": {
+      "get": {
+        "tags": [
+          "Historial y Evaluación"
+        ],
+        "summary": "Retroalimentación formativa de la IA",
+        "description": "Evaluación diagnóstica, desglose de puntaje y rúbrica formativa del caso clínico.",
+        "operationId": "getEvaluationFeedback",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackResponse"
+                }
+              }
+            },
+            "description": "Evaluación y retroalimentación formativa de la consulta"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/api/historial/estadisticas": {
+      "get": {
+        "tags": [
+          "Historial y Evaluación"
+        ],
+        "summary": "Métricas y estadísticas de desempeño",
+        "description": "Rol requerido STUDENT. Promedios de puntuación, casos resueltos y desglose por especialidad.",
+        "operationId": "getStudentStatistics",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentStatisticsResponse"
+                }
+              }
+            },
+            "description": "Estadísticas de rendimiento del estudiante obtenidas con éxito"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/api/email/status": {
+      "get": {
+        "tags": [
+          "Correo y Notificaciones"
+        ],
+        "summary": "Estado del servicio de mensajería",
+        "description": "Diagnóstico de conectividad y modo operativo (live vs simulated) de Mailgun.",
+        "operationId": "getEmailStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "service": {
+                      "type": "string",
+                      "example": "Mailgun"
+                    },
+                    "configured": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "live",
+                        "simulated"
+                      ],
+                      "example": "live"
+                    },
+                    "domain": {
+                      "type": "string",
+                      "example": "clerk-ship.online"
+                    },
+                    "from_address": {
+                      "type": "string",
+                      "example": "Clerkship <verificacion@clerk-ship.online>"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Estado de configuración del servicio de correo"
+          }
+        }
+      }
+    },
+    "/api/email/notificar": {
+      "post": {
+        "tags": [
+          "Correo y Notificaciones"
+        ],
+        "summary": "Despacho de notificación asistida por correo",
+        "operationId": "sendEmailNotification",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "to",
+                  "subject",
+                  "text"
+                ],
+                "properties": {
+                  "to": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "docente@unab.edu.co"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "example": "Actualización de caso clínico"
+                  },
+                  "text": {
+                    "type": "string",
+                    "example": "Se ha finalizado la simulación del módulo de gastroenterología."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Correo despachado correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "recipient": {
+                      "type": "string",
+                      "example": "docente@unab.edu.co"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Correo enviado con éxito"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token de acceso JWT obtenido al iniciar sesión (`/api/auth/login`) o registrarse.\nDebe enviarse en la cabecera: `Authorization: Bearer <token>`.\n"
+      }
+    },
+    "responses": {
+      "BadRequestError": {
+        "description": "Solicitud inválida o datos faltantes",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Bad Request",
+              "message": "Parámetros obligatorios faltantes",
+              "status_code": 400
+            }
+          }
+        }
+      },
+      "UnauthorizedError": {
+        "description": "Token de autenticación ausente o inválido",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Unauthorized",
+              "message": "Token ausente o expirado",
+              "status_code": 401
+            }
+          }
+        }
+      },
+      "ForbiddenError": {
+        "description": "El usuario no posee los permisos o rol requerido para esta acción",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Forbidden",
+              "message": "No tienes permisos para esta acción",
+              "status_code": 403
+            }
+          }
+        }
+      },
+      "NotFoundError": {
+        "description": "El recurso solicitado no existe",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Not Found",
+              "message": "El recurso solicitado no fue encontrado.",
+              "status_code": 404
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error",
+          "message",
+          "status_code"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Not Found"
+          },
+          "message": {
+            "type": "string",
+            "example": "El recurso solicitado no fue encontrado."
+          },
+          "status_code": {
+            "type": "integer",
+            "example": 404
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "degraded"
+            ],
+            "example": "healthy"
+          },
+          "service": {
+            "type": "string",
+            "example": "Clerkship Backend API"
+          },
+          "framework": {
+            "type": "string",
+            "example": "Flask"
+          },
+          "version": {
+            "type": "string",
+            "example": "1.0.0"
+          },
+          "databases": {
+            "type": "object",
+            "properties": {
+              "postgresql": {
+                "type": "string",
+                "example": "connected"
+              },
+              "mongodb": {
+                "type": "string",
+                "example": "connected"
+              }
+            }
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "role",
+          "first_name",
+          "last_name",
+          "email",
+          "password"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "STUDENT",
+              "TEACHER"
+            ],
+            "example": "STUDENT"
+          },
+          "first_name": {
+            "type": "string",
+            "example": "Santiago"
+          },
+          "last_name": {
+            "type": "string",
+            "example": "Arias"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "sarias202@unab.edu.co"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "ContrasenaSegura2026*"
+          },
+          "student_code": {
+            "type": "string",
+            "example": "U00123456"
+          }
+        }
+      },
+      "RegisterResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Usuario creado. Se envió un código de verificación al correo."
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "username": {
+            "type": "string",
+            "example": "sarias202"
+          }
+        }
+      },
+      "VerifyEmailRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "code"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "sarias202@unab.edu.co"
+          },
+          "code": {
+            "type": "string",
+            "example": "492815"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "sarias202@unab.edu.co"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "ContrasenaSegura2026*"
+          }
+        }
+      },
+      "AuthTokensResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+          },
+          "refresh_token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "format": "password"
+          },
+          "new_password": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string",
+            "example": "sarias202"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "first_name": {
+            "type": "string",
+            "example": "Santiago"
+          },
+          "last_name": {
+            "type": "string",
+            "example": "Arias"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STUDENT",
+              "TEACHER",
+              "ADMIN"
+            ],
+            "example": "STUDENT"
+          },
+          "email_verified": {
+            "type": "boolean",
+            "example": true
+          },
+          "avatar_svg": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "UserSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string",
+            "example": "sarias202"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateCourseRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Gastroenterología y Razonamiento Clínico"
+          },
+          "description": {
+            "type": "string",
+            "example": "Módulo práctico para diagnóstico de patologías digestivas agudas"
+          },
+          "academic_period": {
+            "type": "string",
+            "example": "2026-1"
+          }
+        }
+      },
+      "CourseResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "teacher_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Gastroenterología y Razonamiento Clínico"
+          },
+          "description": {
+            "type": "string"
+          },
+          "academic_period": {
+            "type": "string",
+            "example": "2026-1"
+          }
+        }
+      },
+      "CreateArticleRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "content",
+          "specialty"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Guía de Abordaje del Dolor Abdominal Agudo"
+          },
+          "content": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string",
+            "example": "Gastroenterología"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "GUÍA",
+              "ABDOMEN",
+              "DIAGNÓSTICO"
+            ]
+          }
+        }
+      },
+      "ArticleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "teacher_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "StudentShelfItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "article_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEXT",
+              "FINISHED"
+            ]
+          },
+          "article": {
+            "$ref": "#/components/schemas/ArticleResponse"
+          }
+        }
+      },
+      "CreateFolderRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Rotación Hospitalaria"
+          },
+          "color": {
+            "type": "string",
+            "example": "#10B981"
+          }
+        }
+      },
+      "DocumentFolderResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Rotación Hospitalaria"
+          },
+          "color": {
+            "type": "string",
+            "example": "#10B981"
+          },
+          "files_count": {
+            "type": "integer",
+            "example": 5
+          }
+        }
+      },
+      "UploadDocumentRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "file_base64"
+        ],
+        "properties": {
+          "folder_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "example": "Caso_01_Pancreatitis.pdf"
+          },
+          "mime_type": {
+            "type": "string",
+            "example": "application/pdf"
+          },
+          "file_base64": {
+            "type": "string",
+            "description": "Contenido codificado en Base64"
+          }
+        }
+      },
+      "DocumentFileResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "folder_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "size_bytes": {
+            "type": "integer"
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreatePostRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "content"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Discusión: Marcadores tempranos en Pancreatitis Aguda"
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      },
+      "CommunityPostResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "likes_count": {
+            "type": "integer",
+            "example": 7
+          },
+          "comments_count": {
+            "type": "integer",
+            "example": 3
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CommunityCommentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "post_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_name": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateConsultationRequest": {
+        "type": "object",
+        "required": [
+          "course_id"
+        ],
+        "properties": {
+          "course_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "title": {
+            "type": "string",
+            "example": "Paciente masculino de 45 años con dolor epigástrico"
+          },
+          "specialty": {
+            "type": "string",
+            "example": "Gastroenterología"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "EASY",
+              "MEDIUM",
+              "HARD"
+            ],
+            "example": "MEDIUM"
+          }
+        }
+      },
+      "ConsultationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "student_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "course_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "example": "Paciente masculino de 45 años con dolor epigástrico"
+          },
+          "specialty": {
+            "type": "string",
+            "example": "Gastroenterología"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "EASY",
+              "MEDIUM",
+              "HARD"
+            ],
+            "example": "MEDIUM"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "COMPLETED",
+              "ABANDONED"
+            ],
+            "example": "IN_PROGRESS"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "score": {
+            "type": "number",
+            "format": "float",
+            "nullable": true,
+            "example": 85.0
+          }
+        }
+      },
+      "ChatMessage": {
+        "type": "object",
+        "properties": {
+          "sender": {
+            "type": "string",
+            "enum": [
+              "STUDENT",
+              "PATIENT",
+              "SYSTEM"
+            ],
+            "example": "PATIENT"
+          },
+          "content": {
+            "type": "string",
+            "example": "Siento un ardor intenso en el estómago que se pasa a la espalda."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ConsultationDetailResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ConsultationResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "chat_history": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChatMessage"
+                }
+              },
+              "case_details": {
+                "type": "object"
+              }
+            }
+          }
+        ]
+      },
+      "FeedbackResponse": {
+        "type": "object",
+        "properties": {
+          "consultation": {
+            "$ref": "#/components/schemas/ConsultationResponse"
+          },
+          "evaluation": {
+            "type": "object",
+            "properties": {
+              "final_score": {
+                "type": "number",
+                "format": "float",
+                "example": 88.5
+              },
+              "feedback_summary": {
+                "type": "string",
+                "example": "Adecuada formulación de hipótesis diagnósticas y pertinencia de paraclínicos solicitados."
+              },
+              "execution_time_seconds": {
+                "type": "number",
+                "format": "float",
+                "example": 14.2
+              },
+              "detailed_rubric": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "StudentStatisticsResponse": {
+        "type": "object",
+        "properties": {
+          "total_simulaciones": {
+            "type": "integer",
+            "example": 12
+          },
+          "completadas": {
+            "type": "integer",
+            "example": 10
+          },
+          "en_progreso": {
+            "type": "integer",
+            "example": 2
+          },
+          "promedio_score": {
+            "type": "number",
+            "format": "float",
+            "example": 84.75
+          },
+          "puntaje_maximo": {
+            "type": "number",
+            "format": "float",
+            "example": 96.0
+          },
+          "puntaje_minimo": {
+            "type": "number",
+            "format": "float",
+            "example": 72.0
+          },
+          "por_especialidad": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "example": {
+              "Gastroenterología": 8,
+              "Medicina Interna": 4
+            }
+          }
+        }
+      }
+    }
+  }
+}
