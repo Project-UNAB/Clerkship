@@ -5,7 +5,7 @@ import {
   Stethoscope, Activity, Microscope,
   ShieldCheck, Database, BrainCircuit,
   Users, CheckCircle2, FlaskConical,
-  Code, Layout, Cloud, Cpu, Sparkles, FileText,
+  Code, Layout, Cloud, Cpu, Sparkles,
   Network, ChevronRight, BookOpen, FileSpreadsheet
 } from 'lucide-react';
 

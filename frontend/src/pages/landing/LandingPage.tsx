@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ClipboardList, PenTool, Code, CheckCircle, Settings,
-  BrainCircuit, Database, FileText, Network, Sparkles, Layout, Cloud,
+  BrainCircuit, Database, Network, Sparkles, Layout, Cloud,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import InteractiveBackgroundCanvas from '../../components/shared/InteractiveBackgroundCanvas';
