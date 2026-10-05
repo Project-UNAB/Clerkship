@@ -1,12 +1,42 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { memo, useCallback, useEffect, useState, type FormEvent } from 'react';
 import { MessageSquarePlus, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { enviarFeedback, type PestanaFeedback } from '../../data/feedbackApi';
-import { FORMULARIOS_FEEDBACK } from '../../data/feedbackForms';
+import { FORMULARIOS_FEEDBACK, type PreguntaFeedback } from '../../data/feedbackForms';
 import '../../styles/feedback.css';
 
 interface Props {
   pestana: PestanaFeedback;
 }
+
+interface PreguntaProps {
+  numero: number;
+  pregunta: PreguntaFeedback;
+  valor: number | undefined;
+  onElegir: (key: string, valor: number) => void;
+}
+
+/** Una pregunta. Está memoizada: al tocar una calificación solo se vuelve a
+ *  pintar esa pregunta, no las demás del formulario. */
+const Pregunta = memo(function Pregunta({ numero, pregunta, valor, onElegir }: PreguntaProps) {
+  return (
+    <fieldset className="fb-question">
+      <legend><span className="fb-num">{numero}</span>{pregunta.label}</legend>
+      <div className="fb-scale">
+        {[1, 2, 3, 4, 5].map(n => (
+          <button
+            key={n}
+            type="button"
+            className={`fb-score ${valor === n ? 'is-selected' : ''}`}
+            aria-pressed={valor === n}
+            onClick={() => onElegir(pregunta.key, n)}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+});
 
 /** Botón flotante en la esquina inferior derecha de cada pestaña. Abre el
  *  formulario de esa pestaña, que guarda en su propia tabla. */
@@ -26,23 +56,27 @@ export default function FeedbackFab({ pestana }: Props) {
   const completo = idValido && respondidas === total;
   const porcentaje = Math.round((respondidas / total) * 100);
 
-  useEffect(() => {
-    if (!abierto) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cerrar(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [abierto]);
+  const onElegir = useCallback((key: string, valor: number) => {
+    setRespuestas(prev => ({ ...prev, [key]: valor }));
+  }, []);
 
-  function cerrar() {
+  const cerrar = useCallback(() => {
     setAbierto(false);
+    setError(null);
     if (enviado) {
       setEnviado(false);
       setRespuestas({});
       setComentario('');
       setIdUsuario('');
     }
-    setError(null);
-  }
+  }, [enviado]);
+
+  useEffect(() => {
+    if (!abierto) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cerrar(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [abierto, cerrar]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -110,29 +144,20 @@ export default function FeedbackFab({ pestana }: Props) {
                   )}
                 </div>
 
-                <div className="fb-progress" aria-label={`${respondidas} de ${total} preguntas respondidas`}>
+                <div className="fb-progress">
                   <div className="fb-progress-bar" style={{ width: `${porcentaje}%` }} />
                   <span>{respondidas} de {total}</span>
                 </div>
 
                 <div className="fb-grid">
                   {formulario.preguntas.map((p, i) => (
-                    <fieldset key={p.key} className="fb-question">
-                      <legend><span className="fb-num">{i + 1}</span>{p.label}</legend>
-                      <div className="fb-scale">
-                        {[1, 2, 3, 4, 5].map(n => (
-                          <button
-                            key={n}
-                            type="button"
-                            className={`fb-score ${respuestas[p.key] === n ? 'is-selected' : ''}`}
-                            aria-pressed={respuestas[p.key] === n}
-                            onClick={() => setRespuestas(prev => ({ ...prev, [p.key]: n }))}
-                          >
-                            {n}
-                          </button>
-                        ))}
-                      </div>
-                    </fieldset>
+                    <Pregunta
+                      key={p.key}
+                      numero={i + 1}
+                      pregunta={p}
+                      valor={respuestas[p.key]}
+                      onElegir={onElegir}
+                    />
                   ))}
                 </div>
 
@@ -140,11 +165,13 @@ export default function FeedbackFab({ pestana }: Props) {
                 <textarea
                   id="fb-comentario"
                   className="fb-textarea"
-                  rows={3}
+                  rows={6}
                   maxLength={1000}
+                  placeholder="Cuéntanos con detalle qué te gustó, qué no y qué cambiarías."
                   value={comentario}
                   onChange={e => setComentario(e.target.value)}
                 />
+                <span className="fb-counter">{comentario.length} / 1000</span>
 
                 {error && <div className="fb-error"><AlertCircle size={16} />{error}</div>}
 
