@@ -1439,6 +1439,150 @@ paths:
           description: No encontrado
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/validacion/inicio:
+    post:
+      tags:
+      - Validación por expertos
+      summary: Envío de la validación por expertos de la pestaña inicio
+      description: Ruta pública (los expertos no tienen cuenta). Escala 1 (no pertinente / no claro) a 4 (totalmente). Límite de 20 envíos por hora por IP.
+      operationId: validarInicio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre_experto, id_experto, profesion, anos_experiencia, claridad_informacion, pertinencia_informacion, organizacion_visual, jerarquia_navegacion, accesibilidad, coherencia_terminologia, suficiencia_accesos, utilidad_general]
+              properties:
+                nombre_experto: {type: string, minLength: 2, maxLength: 120}
+                id_experto: {type: string, minLength: 2, maxLength: 60}
+                profesion: {type: string, minLength: 2, maxLength: 120}
+                anos_experiencia: {type: integer, minimum: 0, maximum: 80}
+                especialidad: {type: string, maxLength: 120, nullable: true}
+                claridad_informacion: {type: integer, minimum: 1, maximum: 4}
+                pertinencia_informacion: {type: integer, minimum: 1, maximum: 4}
+                organizacion_visual: {type: integer, minimum: 1, maximum: 4}
+                jerarquia_navegacion: {type: integer, minimum: 1, maximum: 4}
+                accesibilidad: {type: integer, minimum: 1, maximum: 4}
+                coherencia_terminologia: {type: integer, minimum: 1, maximum: 4}
+                suficiencia_accesos: {type: integer, minimum: 1, maximum: 4}
+                utilidad_general: {type: integer, minimum: 1, maximum: 4}
+                comentario: {type: string, maxLength: 2000, nullable: true}
+      responses:
+        '201':
+          description: Validación registrada
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '429':
+          description: Demasiados envíos desde esta IP
+  /api/validacion/casos:
+    post:
+      tags:
+      - Validación por expertos
+      summary: Envío de la validación por expertos de la pestaña casos
+      description: Ruta pública (los expertos no tienen cuenta). Escala 1 (no pertinente / no claro) a 4 (totalmente). Límite de 20 envíos por hora por IP.
+      operationId: validarCasos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre_experto, id_experto, profesion, anos_experiencia, pertinencia_clinica, redaccion_clara, coherencia_diagnostica, coherencia_examenes, realismo_paciente, dificultad_adecuada, utilidad_formativa, suficiencia_contenido]
+              properties:
+                nombre_experto: {type: string, minLength: 2, maxLength: 120}
+                id_experto: {type: string, minLength: 2, maxLength: 60}
+                profesion: {type: string, minLength: 2, maxLength: 120}
+                anos_experiencia: {type: integer, minimum: 0, maximum: 80}
+                especialidad: {type: string, maxLength: 120, nullable: true}
+                pertinencia_clinica: {type: integer, minimum: 1, maximum: 4}
+                redaccion_clara: {type: integer, minimum: 1, maximum: 4}
+                coherencia_diagnostica: {type: integer, minimum: 1, maximum: 4}
+                coherencia_examenes: {type: integer, minimum: 1, maximum: 4}
+                realismo_paciente: {type: integer, minimum: 1, maximum: 4}
+                dificultad_adecuada: {type: integer, minimum: 1, maximum: 4}
+                utilidad_formativa: {type: integer, minimum: 1, maximum: 4}
+                suficiencia_contenido: {type: integer, minimum: 1, maximum: 4}
+                comentario: {type: string, maxLength: 2000, nullable: true}
+      responses:
+        '201':
+          description: Validación registrada
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '429':
+          description: Demasiados envíos desde esta IP
+  /api/validacion/historial:
+    post:
+      tags:
+      - Validación por expertos
+      summary: Envío de la validación por expertos de la pestaña historial
+      description: Ruta pública (los expertos no tienen cuenta). Escala 1 (no pertinente / no claro) a 4 (totalmente). Límite de 20 envíos por hora por IP.
+      operationId: validarHistorial
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre_experto, id_experto, profesion, anos_experiencia, claridad_puntajes, pertinencia_evaluacion, retroalimentacion_util, coherencia_dimensiones, suficiencia_informacion, utilidad_formativa, comprension_estudiante, presentacion]
+              properties:
+                nombre_experto: {type: string, minLength: 2, maxLength: 120}
+                id_experto: {type: string, minLength: 2, maxLength: 60}
+                profesion: {type: string, minLength: 2, maxLength: 120}
+                anos_experiencia: {type: integer, minimum: 0, maximum: 80}
+                especialidad: {type: string, maxLength: 120, nullable: true}
+                claridad_puntajes: {type: integer, minimum: 1, maximum: 4}
+                pertinencia_evaluacion: {type: integer, minimum: 1, maximum: 4}
+                retroalimentacion_util: {type: integer, minimum: 1, maximum: 4}
+                coherencia_dimensiones: {type: integer, minimum: 1, maximum: 4}
+                suficiencia_informacion: {type: integer, minimum: 1, maximum: 4}
+                utilidad_formativa: {type: integer, minimum: 1, maximum: 4}
+                comprension_estudiante: {type: integer, minimum: 1, maximum: 4}
+                presentacion: {type: integer, minimum: 1, maximum: 4}
+                comentario: {type: string, maxLength: 2000, nullable: true}
+      responses:
+        '201':
+          description: Validación registrada
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '429':
+          description: Demasiados envíos desde esta IP
+  /api/validacion/biblioteca:
+    post:
+      tags:
+      - Validación por expertos
+      summary: Envío de la validación por expertos de la pestaña biblioteca
+      description: Ruta pública (los expertos no tienen cuenta). Escala 1 (no pertinente / no claro) a 4 (totalmente). Límite de 20 envíos por hora por IP.
+      operationId: validarBiblioteca
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre_experto, id_experto, profesion, anos_experiencia, pertinencia_recursos, actualidad_fuentes, calidad_fuentes, claridad_descripcion, organizacion_contenido, suficiencia_recursos, utilidad_formativa, accesibilidad_archivos]
+              properties:
+                nombre_experto: {type: string, minLength: 2, maxLength: 120}
+                id_experto: {type: string, minLength: 2, maxLength: 60}
+                profesion: {type: string, minLength: 2, maxLength: 120}
+                anos_experiencia: {type: integer, minimum: 0, maximum: 80}
+                especialidad: {type: string, maxLength: 120, nullable: true}
+                pertinencia_recursos: {type: integer, minimum: 1, maximum: 4}
+                actualidad_fuentes: {type: integer, minimum: 1, maximum: 4}
+                calidad_fuentes: {type: integer, minimum: 1, maximum: 4}
+                claridad_descripcion: {type: integer, minimum: 1, maximum: 4}
+                organizacion_contenido: {type: integer, minimum: 1, maximum: 4}
+                suficiencia_recursos: {type: integer, minimum: 1, maximum: 4}
+                utilidad_formativa: {type: integer, minimum: 1, maximum: 4}
+                accesibilidad_archivos: {type: integer, minimum: 1, maximum: 4}
+                comentario: {type: string, maxLength: 2000, nullable: true}
+      responses:
+        '201':
+          description: Validación registrada
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '429':
+          description: Demasiados envíos desde esta IP
   /api/feedback/inicio:
     post:
       tags:

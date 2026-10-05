@@ -16,6 +16,7 @@ from app.models.consultation import Consultation
 from app.models.ai_evaluation import AiEvaluation
 from app.models.feedback import FeedbackInicio, FeedbackCasos, FeedbackHistorial, FeedbackBiblioteca
 from app.models.user_file import UserFile
+from app.models.validacion import ValidacionInicio, ValidacionCasos, ValidacionHistorial, ValidacionBiblioteca
 
 __all__ = [
     "FeedbackInicio",
@@ -23,6 +24,10 @@ __all__ = [
     "FeedbackHistorial",
     "FeedbackBiblioteca",
     "UserFile",
+    "ValidacionInicio",
+    "ValidacionCasos",
+    "ValidacionHistorial",
+    "ValidacionBiblioteca",
     "User",
     "Student",
     "Teacher",

@@ -9,6 +9,7 @@ import LandingPage from './pages/landing/LandingPage';
 import ProyectoPage from './pages/landing/ProyectoPage';
 import LoginPage from './pages/auth/LoginPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ValidacionExpertoPage from './pages/validacion/ValidacionExpertoPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ConsentPage from './pages/auth/ConsentPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -132,6 +133,7 @@ export default function App() {
         <Route path="/equipo/desarrolladores" element={<DesarrolladoresPage />} />
         <Route path="/equipo/direccion"       element={<DireccionPage />} />
         <Route path="/equipo/institucion"     element={<InstitucionPage />} />
+        <Route path="/validacion/:pestana"    element={<ValidacionExpertoPage />} />
         <Route path="/legal/terminos"         element={<TerminosPage />} />
         <Route path="/legal/privacidad"       element={<PrivacidadPage />} />
         <Route path="/legal/licencia"         element={<LicenciaPage />} />

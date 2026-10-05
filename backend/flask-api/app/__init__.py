@@ -142,6 +142,7 @@ def create_app():
     from app.routes.agentes import agentes_bp
     from app.routes.feedback import feedback_bp
     from app.routes.almacenamiento import almacenamiento_bp
+    from app.routes.validacion import validacion_bp
     from app.routes.docs import docs_bp, swagger_ui
     from app.routes.simulador import simulador_bp
 
@@ -157,6 +158,7 @@ def create_app():
     app.register_blueprint(agentes_bp, url_prefix="/api/agentes")
     app.register_blueprint(feedback_bp, url_prefix="/api/feedback")
     app.register_blueprint(almacenamiento_bp, url_prefix="/api/almacenamiento")
+    app.register_blueprint(validacion_bp, url_prefix="/api/validacion")
     if app.config["FLASK_ENV"] != "production":
         app.register_blueprint(docs_bp, url_prefix="/api")
     # Consola de desarrollo del simulador: nunca en producción.
