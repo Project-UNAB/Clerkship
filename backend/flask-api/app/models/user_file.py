@@ -18,11 +18,13 @@ class UserFile(db.Model):
     mime_type = db.Column(db.String(100), nullable=False)
     size_bytes = db.Column(db.BigInteger, nullable=False)
     estado = db.Column(db.String(12), nullable=False, default="PENDIENTE")
+    carpeta_id = db.Column(UUID(as_uuid=True), db.ForeignKey("document_folders.id", ondelete="SET NULL"))
     created_at = db.Column(db.DateTime, server_default=func.now())
 
     def to_dict(self):
         return {
             "id": str(self.id),
+            "carpeta_id": str(self.carpeta_id) if self.carpeta_id else None,
             "nombre": self.nombre,
             "mime_type": self.mime_type,
             "size_bytes": self.size_bytes,

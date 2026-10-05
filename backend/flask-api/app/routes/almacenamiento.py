@@ -7,13 +7,13 @@ Flujo de subida:
 """
 import uuid
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from pydantic import Field
 from sqlalchemy import func
 
 from app import db
-from app.models import Article, UserFile
+from app.models import Article, DocumentFolder, UserFile
 from app.schemas import BaseSchema, validate_body
 from app import storage
 
@@ -24,6 +24,7 @@ class SubidaRequest(BaseSchema):
     nombre: str = Field(..., min_length=1, max_length=255)
     mime_type: str = Field(..., max_length=100)
     size_bytes: int = Field(..., gt=0)
+    carpeta_id: str | None = None
 
 
 class PublicarRequest(BaseSchema):
@@ -85,6 +86,16 @@ def iniciar_subida(validated_body: SubidaRequest):
     if _espacio_usado(owner_id) + validated_body.size_bytes > storage.QUOTA_BYTES_PER_USER:
         return _error(413, "No tienes espacio suficiente. Tu límite es de 5 GB.")
 
+    carpeta_id = None
+    if validated_body.carpeta_id:
+        try:
+            carpeta = DocumentFolder.query.filter_by(id=uuid.UUID(validated_body.carpeta_id), owner_user_id=owner_id).first()
+        except ValueError:
+            carpeta = None
+        if carpeta is None:
+            return _error(404, "Carpeta no encontrada.")
+        carpeta_id = carpeta.id
+
     clave = storage.nueva_clave(str(owner_id), validated_body.nombre)
     archivo = UserFile(
         owner_id=owner_id,
@@ -93,6 +104,7 @@ def iniciar_subida(validated_body: SubidaRequest):
         mime_type=validated_body.mime_type,
         size_bytes=validated_body.size_bytes,
         estado="PENDIENTE",
+        carpeta_id=carpeta_id,
     )
     db.session.add(archivo)
     db.session.commit()
