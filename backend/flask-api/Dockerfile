@@ -20,4 +20,4 @@ ENV PORT=8080
 # - Bind a 0.0.0.0 y al puerto dinámico $PORT
 # - Timeout de 120s para permitir que los modelos de Gemini completen sus respuestas
 # - 2 workers y 4 threads por worker
-CMD exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 120 app:app
+CMD exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 120 "app:create_app()"
