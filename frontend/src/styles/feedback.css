@@ -107,6 +107,13 @@
   box-sizing: border-box;
 }
 
+.fb-progreso {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink3, #64748b);
+  text-align: right;
+}
+
 .fb-error {
   display: flex;
   align-items: center;

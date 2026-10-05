@@ -19,7 +19,8 @@ export default function FeedbackFab({ pestana }: Props) {
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const completo = formulario.preguntas.every(p => respuestas[p.key] !== undefined);
+  const respondidas = formulario.preguntas.filter(p => respuestas[p.key] !== undefined).length;
+  const completo = respondidas === formulario.preguntas.length;
 
   useEffect(() => {
     if (!abierto) return;
@@ -117,6 +118,9 @@ export default function FeedbackFab({ pestana }: Props) {
 
                 {error && <div className="fb-error"><AlertCircle size={16} />{error}</div>}
 
+                <p className="fb-progreso">
+                  {respondidas} de {formulario.preguntas.length} preguntas respondidas
+                </p>
                 <button type="submit" className="fb-submit" disabled={!completo || enviando}>
                   {enviando ? 'Enviando…' : 'Enviar'}
                 </button>

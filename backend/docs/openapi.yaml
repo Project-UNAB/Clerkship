@@ -1274,7 +1274,7 @@ paths:
       tags:
       - Retroalimentación
       summary: Formulario de retroalimentación de la pestaña Inicio
-      description: Guarda las calificaciones (1 a 5) del formulario de Inicio en la tabla feedback_inicio. Rol requerido cualquier usuario autenticado.
+      description: Guarda las calificaciones (1 a 5) en la tabla feedback_inicio. El usuario sale del JWT. Rol requerido cualquier usuario autenticado.
       operationId: feedbackInicio
       security:
       - BearerAuth: []
@@ -1284,11 +1284,20 @@ paths:
           application/json:
             schema:
               type: object
-              required: [claridad_navegacion, informacion_util, accesos_rapidos]
+              required: [claridad_navegacion, informacion_util, accesos_rapidos, velocidad_carga, diseno_visual, legibilidad_textos, orden_menus, facilidad_uso_movil, confianza_plataforma, claridad_mensajes, utilidad_avisos, recomendaria_plataforma]
               properties:
                 claridad_navegacion: {type: integer, minimum: 1, maximum: 5}
                 informacion_util: {type: integer, minimum: 1, maximum: 5}
                 accesos_rapidos: {type: integer, minimum: 1, maximum: 5}
+                velocidad_carga: {type: integer, minimum: 1, maximum: 5}
+                diseno_visual: {type: integer, minimum: 1, maximum: 5}
+                legibilidad_textos: {type: integer, minimum: 1, maximum: 5}
+                orden_menus: {type: integer, minimum: 1, maximum: 5}
+                facilidad_uso_movil: {type: integer, minimum: 1, maximum: 5}
+                confianza_plataforma: {type: integer, minimum: 1, maximum: 5}
+                claridad_mensajes: {type: integer, minimum: 1, maximum: 5}
+                utilidad_avisos: {type: integer, minimum: 1, maximum: 5}
+                recomendaria_plataforma: {type: integer, minimum: 1, maximum: 5}
                 comentario: {type: string, maxLength: 1000, nullable: true}
       responses:
         '201':
@@ -1302,7 +1311,7 @@ paths:
       tags:
       - Retroalimentación
       summary: Formulario de retroalimentación de la pestaña Casos clínicos
-      description: Guarda las calificaciones (1 a 5) del formulario de Casos en la tabla feedback_casos. Rol requerido cualquier usuario autenticado.
+      description: Guarda las calificaciones (1 a 5) en la tabla feedback_casos. El usuario sale del JWT. Rol requerido cualquier usuario autenticado.
       operationId: feedbackCasos
       security:
       - BearerAuth: []
@@ -1312,12 +1321,20 @@ paths:
           application/json:
             schema:
               type: object
-              required: [realismo_caso, calidad_paciente_virtual, claridad_instrucciones, dificultad_percibida]
+              required: [realismo_caso, calidad_paciente_virtual, claridad_instrucciones, dificultad_percibida, coherencia_sintomas, coherencia_examenes, utilidad_educativa, retroalimentacion_clara, tiempo_adecuado, variedad_casos, realismo_examenes, satisfaccion_general]
               properties:
                 realismo_caso: {type: integer, minimum: 1, maximum: 5}
                 calidad_paciente_virtual: {type: integer, minimum: 1, maximum: 5}
                 claridad_instrucciones: {type: integer, minimum: 1, maximum: 5}
                 dificultad_percibida: {type: integer, minimum: 1, maximum: 5}
+                coherencia_sintomas: {type: integer, minimum: 1, maximum: 5}
+                coherencia_examenes: {type: integer, minimum: 1, maximum: 5}
+                utilidad_educativa: {type: integer, minimum: 1, maximum: 5}
+                retroalimentacion_clara: {type: integer, minimum: 1, maximum: 5}
+                tiempo_adecuado: {type: integer, minimum: 1, maximum: 5}
+                variedad_casos: {type: integer, minimum: 1, maximum: 5}
+                realismo_examenes: {type: integer, minimum: 1, maximum: 5}
+                satisfaccion_general: {type: integer, minimum: 1, maximum: 5}
                 comentario: {type: string, maxLength: 1000, nullable: true}
       responses:
         '201':
@@ -1331,7 +1348,7 @@ paths:
       tags:
       - Retroalimentación
       summary: Formulario de retroalimentación de la pestaña Historial
-      description: Guarda las calificaciones (1 a 5) del formulario de Historial en la tabla feedback_historial. Rol requerido cualquier usuario autenticado.
+      description: Guarda las calificaciones (1 a 5) en la tabla feedback_historial. El usuario sale del JWT. Rol requerido cualquier usuario autenticado.
       operationId: feedbackHistorial
       security:
       - BearerAuth: []
@@ -1341,11 +1358,18 @@ paths:
           application/json:
             schema:
               type: object
-              required: [claridad_puntajes, utilidad_recomendacion, facilidad_revision]
+              required: [claridad_puntajes, utilidad_recomendacion, facilidad_revision, detalle_evaluacion, comprension_dimensiones, progreso_visible, utilidad_para_estudiar, filtros_utiles, exportacion_util, satisfaccion_general]
               properties:
                 claridad_puntajes: {type: integer, minimum: 1, maximum: 5}
                 utilidad_recomendacion: {type: integer, minimum: 1, maximum: 5}
                 facilidad_revision: {type: integer, minimum: 1, maximum: 5}
+                detalle_evaluacion: {type: integer, minimum: 1, maximum: 5}
+                comprension_dimensiones: {type: integer, minimum: 1, maximum: 5}
+                progreso_visible: {type: integer, minimum: 1, maximum: 5}
+                utilidad_para_estudiar: {type: integer, minimum: 1, maximum: 5}
+                filtros_utiles: {type: integer, minimum: 1, maximum: 5}
+                exportacion_util: {type: integer, minimum: 1, maximum: 5}
+                satisfaccion_general: {type: integer, minimum: 1, maximum: 5}
                 comentario: {type: string, maxLength: 1000, nullable: true}
       responses:
         '201':
@@ -1359,7 +1383,7 @@ paths:
       tags:
       - Retroalimentación
       summary: Formulario de retroalimentación de la pestaña Biblioteca
-      description: Guarda las calificaciones (1 a 5) del formulario de Biblioteca en la tabla feedback_biblioteca. Rol requerido cualquier usuario autenticado.
+      description: Guarda las calificaciones (1 a 5) en la tabla feedback_biblioteca. El usuario sale del JWT. Rol requerido cualquier usuario autenticado.
       operationId: feedbackBiblioteca
       security:
       - BearerAuth: []
@@ -1369,11 +1393,19 @@ paths:
           application/json:
             schema:
               type: object
-              required: [calidad_contenido, facilidad_busqueda, utilidad_recursos]
+              required: [calidad_contenido, facilidad_busqueda, utilidad_recursos, actualidad_contenido, claridad_descripciones, variedad_recursos, facilidad_descarga, organizacion_por_temas, calidad_lectura, utilidad_para_estudio, satisfaccion_general]
               properties:
                 calidad_contenido: {type: integer, minimum: 1, maximum: 5}
                 facilidad_busqueda: {type: integer, minimum: 1, maximum: 5}
                 utilidad_recursos: {type: integer, minimum: 1, maximum: 5}
+                actualidad_contenido: {type: integer, minimum: 1, maximum: 5}
+                claridad_descripciones: {type: integer, minimum: 1, maximum: 5}
+                variedad_recursos: {type: integer, minimum: 1, maximum: 5}
+                facilidad_descarga: {type: integer, minimum: 1, maximum: 5}
+                organizacion_por_temas: {type: integer, minimum: 1, maximum: 5}
+                calidad_lectura: {type: integer, minimum: 1, maximum: 5}
+                utilidad_para_estudio: {type: integer, minimum: 1, maximum: 5}
+                satisfaccion_general: {type: integer, minimum: 1, maximum: 5}
                 comentario: {type: string, maxLength: 1000, nullable: true}
       responses:
         '201':

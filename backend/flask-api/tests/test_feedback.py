@@ -5,12 +5,43 @@ No escriben en la base: las respuestas inválidas se rechazan antes de guardar.
 import pytest
 from flask_jwt_extended import create_access_token
 
+def _completo(claves):
+    return {clave: 4 for clave in claves}
+
+
 PESTANAS = {
-    "inicio": {"claridad_navegacion": 4, "informacion_util": 5, "accesos_rapidos": 3},
-    "casos": {"realismo_caso": 4, "calidad_paciente_virtual": 5, "claridad_instrucciones": 4, "dificultad_percibida": 3},
-    "historial": {"claridad_puntajes": 4, "utilidad_recomendacion": 5, "facilidad_revision": 4},
-    "biblioteca": {"calidad_contenido": 4, "facilidad_busqueda": 3, "utilidad_recursos": 5},
+    "inicio": _completo([
+        "claridad_navegacion", "informacion_util", "accesos_rapidos", "velocidad_carga",
+        "diseno_visual", "legibilidad_textos", "orden_menus", "facilidad_uso_movil",
+        "confianza_plataforma", "claridad_mensajes", "utilidad_avisos", "recomendaria_plataforma",
+    ]),
+    "casos": _completo([
+        "realismo_caso", "calidad_paciente_virtual", "claridad_instrucciones", "dificultad_percibida",
+        "coherencia_sintomas", "coherencia_examenes", "utilidad_educativa", "retroalimentacion_clara",
+        "tiempo_adecuado", "variedad_casos", "realismo_examenes", "satisfaccion_general",
+    ]),
+    "historial": _completo([
+        "claridad_puntajes", "utilidad_recomendacion", "facilidad_revision", "detalle_evaluacion",
+        "comprension_dimensiones", "progreso_visible", "utilidad_para_estudiar", "filtros_utiles",
+        "exportacion_util", "satisfaccion_general",
+    ]),
+    "biblioteca": _completo([
+        "calidad_contenido", "facilidad_busqueda", "utilidad_recursos", "actualidad_contenido",
+        "claridad_descripciones", "variedad_recursos", "facilidad_descarga", "organizacion_por_temas",
+        "calidad_lectura", "utilidad_para_estudio", "satisfaccion_general",
+    ]),
 }
+
+
+def test_feedback_acepta_formulario_completo(client, headers, monkeypatch):
+    """Con el payload completo la validación pasa; se simula la escritura para no tocar la base."""
+    from app.routes import feedback as feedback_routes
+    guardados = []
+    monkeypatch.setattr(feedback_routes, "_guardar", lambda modelo, body: guardados.append(body) or ({"ok": True}, 201))
+    for pestana, body in PESTANAS.items():
+        res = client.post(f"/api/feedback/{pestana}", json=body, headers=headers)
+        assert res.status_code == 201
+    assert len(guardados) == 4
 
 
 @pytest.fixture

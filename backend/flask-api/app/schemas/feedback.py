@@ -1,4 +1,5 @@
-"""Payloads de los formularios de retroalimentación, uno por pestaña."""
+"""Payloads de los formularios de retroalimentación, uno por pestaña.
+El usuario no va en el body: se toma del JWT."""
 
 from typing import Annotated, Optional
 
@@ -14,6 +15,15 @@ class FeedbackInicioRequest(BaseSchema):
     claridad_navegacion: Calificacion
     informacion_util: Calificacion
     accesos_rapidos: Calificacion
+    velocidad_carga: Calificacion
+    diseno_visual: Calificacion
+    legibilidad_textos: Calificacion
+    orden_menus: Calificacion
+    facilidad_uso_movil: Calificacion
+    confianza_plataforma: Calificacion
+    claridad_mensajes: Calificacion
+    utilidad_avisos: Calificacion
+    recomendaria_plataforma: Calificacion
     comentario: Comentario = None
 
 
@@ -22,6 +32,14 @@ class FeedbackCasosRequest(BaseSchema):
     calidad_paciente_virtual: Calificacion
     claridad_instrucciones: Calificacion
     dificultad_percibida: Calificacion
+    coherencia_sintomas: Calificacion
+    coherencia_examenes: Calificacion
+    utilidad_educativa: Calificacion
+    retroalimentacion_clara: Calificacion
+    tiempo_adecuado: Calificacion
+    variedad_casos: Calificacion
+    realismo_examenes: Calificacion
+    satisfaccion_general: Calificacion
     comentario: Comentario = None
 
 
@@ -29,6 +47,13 @@ class FeedbackHistorialRequest(BaseSchema):
     claridad_puntajes: Calificacion
     utilidad_recomendacion: Calificacion
     facilidad_revision: Calificacion
+    detalle_evaluacion: Calificacion
+    comprension_dimensiones: Calificacion
+    progreso_visible: Calificacion
+    utilidad_para_estudiar: Calificacion
+    filtros_utiles: Calificacion
+    exportacion_util: Calificacion
+    satisfaccion_general: Calificacion
     comentario: Comentario = None
 
 
@@ -36,4 +61,12 @@ class FeedbackBibliotecaRequest(BaseSchema):
     calidad_contenido: Calificacion
     facilidad_busqueda: Calificacion
     utilidad_recursos: Calificacion
+    actualidad_contenido: Calificacion
+    claridad_descripciones: Calificacion
+    variedad_recursos: Calificacion
+    facilidad_descarga: Calificacion
+    organizacion_por_temas: Calificacion
+    calidad_lectura: Calificacion
+    utilidad_para_estudio: Calificacion
+    satisfaccion_general: Calificacion
     comentario: Comentario = None
