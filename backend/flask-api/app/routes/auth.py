@@ -128,6 +128,13 @@ def register(validated_body: RegisterRequest):
             "status_code": 409
         }), 409
 
+    if role == "STUDENT" and Student.query.filter_by(student_code=student_code).first() is not None:
+        return jsonify({
+            "error": "Conflict",
+            "message": "Ya existe una cuenta con ese código de estudiante",
+            "status_code": 409
+        }), 409
+
     user = User(
         username=_build_username(email),
         first_name=validated_body.first_name.strip(),
