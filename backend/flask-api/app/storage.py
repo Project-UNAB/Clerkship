@@ -114,6 +114,16 @@ def tamano_real(clave: str) -> int | None:
         return None
 
 
+def subir_bytes(clave: str, contenido: bytes, mime_type: str) -> None:
+    """Sube bytes directo desde el backend (sin URL firmada). Lo usa la Carpeta
+    de Documentos, que recibe el archivo como base64 en el cuerpo del pedido."""
+    _client().put_object(Bucket=_bucket(), Key=clave, Body=contenido, ContentType=mime_type or "application/octet-stream")
+
+
+def descargar_bytes(clave: str) -> bytes:
+    return _client().get_object(Bucket=_bucket(), Key=clave)["Body"].read()
+
+
 def copiar(origen: str, destino: str) -> None:
     _client().copy_object(
         Bucket=_bucket(),

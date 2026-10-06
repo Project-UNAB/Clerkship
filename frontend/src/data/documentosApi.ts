@@ -1,8 +1,9 @@
 /**
  * Cliente del backend real para Carpetas y Documentos del Dashboard
- * (/api/documentos). La carpeta (nombre, color) vive en Postgres; el
- * archivo real (bytes + metadata) vive en Mongo, como base64 — no hay
- * bucket de almacenamiento conectado todavía.
+ * (/api/documentos). La carpeta (nombre, color) vive en Postgres; el archivo
+ * en sí vive en Cloudflare R2 (el backend recibe el base64 de acá mismo y lo
+ * sube a R2, para no tener que cambiar este cliente). Los documentos de
+ * antes de este cambio siguen en Mongo y aparecen mezclados (ver `origen`).
  */
 import { apiFetch } from './apiClient';
 
@@ -24,6 +25,8 @@ export interface DocumentSummary {
   mime_type: string;
   size_bytes: number;
   created_at: string | null;
+  /** "r2" = Cloudflare (actual) · "mongo" = documento viejo, antes de este cambio. */
+  origen?: 'r2' | 'mongo';
 }
 
 export interface DocumentDetail extends DocumentSummary {

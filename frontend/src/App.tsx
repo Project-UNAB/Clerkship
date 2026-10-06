@@ -10,7 +10,6 @@ import ProyectoPage from './pages/landing/ProyectoPage';
 import LoginPage from './pages/auth/LoginPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ValidacionExpertoPage from './pages/validacion/ValidacionExpertoPage';
-import AlmacenamientoPage from './pages/almacenamiento/AlmacenamientoPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ConsentPage from './pages/auth/ConsentPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -125,7 +124,6 @@ export default function App() {
         <Route path="/explorar"               element={<ProtectedRoute><ExplorarPage /></ProtectedRoute>} />
         <Route path="/documentacion"          element={<ProtectedRoute><DocumentacionPage /></ProtectedRoute>} />
         <Route path="/biblioteca"             element={<ProtectedRoute><BibliotecaPage /></ProtectedRoute>} />
-        <Route path="/almacenamiento"         element={<ProtectedRoute><AlmacenamientoPage /></ProtectedRoute>} />
         <Route path="/simulacion"             element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
         <Route path="/simulacion/:id"         element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
         <Route path="/casos"                  element={<ProtectedRoute><CasosPage /></ProtectedRoute>} />

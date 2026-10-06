@@ -2,8 +2,10 @@ import uuid
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
+from sqlalchemy import func as sa_func
+
 from app import db, get_mongo_db
-from app.models import User
+from app.models import User, UserFile
 from app.schemas import StorageUsageResponse, UpdateUserRequest, UserResponse, UserSummary, validate_body
 from app.utils import get_current_user
 
@@ -23,21 +25,31 @@ def uso_almacenamiento():
             "status_code": 404,
         }), 404
 
-    used_bytes = 0
+    # Lo que ya se subió a Cloudflare R2 (la Carpeta de Documentos usa R2
+    # para todo lo nuevo, ver app/routes/documentos.py).
+    r2_bytes = int(
+        db.session.query(sa_func.coalesce(sa_func.sum(UserFile.size_bytes), 0))
+        .filter(UserFile.owner_id == user.id, UserFile.estado == "LISTO")
+        .scalar() or 0
+    )
+
+    # Lo que todavía quede de antes en Mongo (documentos sin migrar).
+    mongo_bytes = 0
     try:
         mongo = get_mongo_db()
-        uid = str(user.id)
-        documentos_bytes = next(
-            mongo.documents.aggregate([
-                {"$match": {"owner_user_id": uid}},
-                {"$group": {"_id": None, "total": {"$sum": {"$ifNull": ["$size_bytes", 0]}}}},
-            ]),
-            {},
-        ).get("total", 0)
-        used_bytes = int(documentos_bytes)
+        mongo_bytes = int(
+            next(
+                mongo.documents.aggregate([
+                    {"$match": {"owner_user_id": str(user.id)}},
+                    {"$group": {"_id": None, "total": {"$sum": {"$ifNull": ["$size_bytes", 0]}}}},
+                ]),
+                {},
+            ).get("total", 0)
+        )
     except Exception:
-        # Fallback si Mongo opera en modo desconectado
-        used_bytes = 1048576  # 1 MB mock
+        mongo_bytes = 0
+
+    used_bytes = r2_bytes + mongo_bytes
 
     return jsonify({
         "used_bytes": used_bytes,

@@ -4,7 +4,7 @@ import {
   Plus, ArrowUpDown, FileText, FileSpreadsheet,
   Presentation, Image as ImageIcon, FileCode, File,
   MoreVertical, Pencil, Trash2, ArrowLeft, FolderPlus, UploadCloud, Loader2, Download, Eye,
-  LayoutGrid, List, Search, X, Folder, HardDrive, Check,
+  LayoutGrid, List, Search, X, Folder, HardDrive, Check, BookUp,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import FeedbackFab from '../../components/shared/FeedbackFab';
@@ -12,6 +12,7 @@ import WelcomeOverlay from '../../components/shared/WelcomeOverlay';
 import FolderModal from '../../components/dashboard/FolderModal';
 import UploadDocumentModal from '../../components/dashboard/UploadDocumentModal';
 import DocumentPreviewView from '../../components/dashboard/DocumentPreviewView';
+import PublicarEnBibliotecaModal from '../../components/dashboard/PublicarEnBibliotecaModal';
 import { formatFileSize, readFileAsBase64 } from '../../utils/fileUpload';
 import { mainAuthErrorMessage } from '../../data/mainAuth';
 import {
@@ -20,6 +21,7 @@ import {
   type DocumentFolder, type DocumentSummary,
 } from '../../data/documentosApi';
 import { getStorageUsage, type StorageUsage } from '../../data/usuariosApi';
+import { publicarEnBiblioteca } from '../../data/almacenamientoApi';
 
 const SORT_OPTIONS = ['Más reciente', 'Más antiguo', 'Nombre A–Z', 'Tamaño (Mayor)'] as const;
 type SortOption = typeof SORT_OPTIONS[number];
@@ -236,6 +238,7 @@ export default function DashboardPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [confirmDeleteFolder, setConfirmDeleteFolder] = useState<DocumentFolder | null>(null);
   const [previewDoc, setPreviewDoc] = useState<DocumentSummary | null>(null);
+  const [publicandoDoc, setPublicandoDoc] = useState<DocumentSummary | null>(null);
 
   const [openFolder, setOpenFolder] = useState<DocumentFolder | null>(null);
   const [folderStack, setFolderStack] = useState<DocumentFolder[]>([]);
@@ -482,6 +485,12 @@ export default function DashboardPage() {
     } finally {
       setDownloadingId(null);
     }
+  }
+
+  async function handlePublicarEnBiblioteca(titulo: string) {
+    if (!publicandoDoc) return;
+    await publicarEnBiblioteca(publicandoDoc.id, { titulo });
+    setPublicandoDoc(null);
   }
 
   async function handleDeleteDocument(doc: DocumentSummary, fromFolder: boolean) {
@@ -774,6 +783,11 @@ export default function DashboardPage() {
                 )}
               </button>
               <button type="button" onClick={() => startRename(doc)}><Pencil size={13} /> Renombrar</button>
+              {doc.origen === 'r2' && doc.mime_type === 'application/pdf' && (
+                <button type="button" onClick={() => { setPublicandoDoc(doc); setMenuFor(null); }}>
+                  <BookUp size={13} /> Publicar en biblioteca
+                </button>
+              )}
               <button type="button" className="danger" onClick={() => handleDeleteDocument(doc, fromFolder)}>
                 <Trash2 size={13} /> Eliminar
               </button>
@@ -871,6 +885,11 @@ export default function DashboardPage() {
               {menuFor === doc.id && (
                 <div className="bib2-file-menu gdrive-menu-fix">
                   <button type="button" onClick={() => startRename(doc)}><Pencil size={13} /> Renombrar</button>
+                  {doc.origen === 'r2' && doc.mime_type === 'application/pdf' && (
+                    <button type="button" onClick={() => { setPublicandoDoc(doc); setMenuFor(null); }}>
+                      <BookUp size={13} /> Publicar en biblioteca
+                    </button>
+                  )}
                   <button type="button" className="danger" onClick={() => handleDeleteDocument(doc, fromFolder)}>
                     <Trash2 size={13} /> Eliminar
                   </button>
@@ -1262,6 +1281,13 @@ export default function DashboardPage() {
             onUpload={handleUpload}
           />
         )}
+        {publicandoDoc && (
+          <PublicarEnBibliotecaModal
+            doc={publicandoDoc}
+            onClose={() => setPublicandoDoc(null)}
+            onPublish={handlePublicarEnBiblioteca}
+          />
+        )}
         {confirmDeleteFolder && (
           <motion.div
             className="dfm-backdrop"
@@ -1282,9 +1308,9 @@ export default function DashboardPage() {
                 <button type="button" className="dfm-close-btn" onClick={() => setConfirmDeleteFolder(null)}><ArrowLeft size={16} /></button>
               </div>
               <p className="dfm-confirm-text">
-                ¿Eliminar <strong>{confirmDeleteFolder.name}</strong>? Se van a borrar también los{' '}
-                {confirmDeleteFolder.file_count} archivo{confirmDeleteFolder.file_count === 1 ? '' : 's'} que tiene adentro.
-                Esto no se puede deshacer.
+                ¿Eliminar <strong>{confirmDeleteFolder.name}</strong>? Tiene {confirmDeleteFolder.file_count} archivo
+                {confirmDeleteFolder.file_count === 1 ? '' : 's'} adentro: los que ya están en la nube quedan sin
+                carpeta (no se borran), y los documentos viejos sí se eliminan. La carpeta no se puede deshacer.
               </p>
               <button
                 type="button"
