@@ -5,7 +5,7 @@ import FeedbackFab from '../../components/shared/FeedbackFab';
 import { useCurrentUser } from '../../utils/currentUser';
 import { listMyCourses, type Course } from '../../data/consultasApi';
 import { crearCurso, borrarCurso, listarEstudiantesDeCurso, type EstudianteDeCurso } from '../../data/cursosApi';
-import { mainAuthErrorMessage } from '../../data/mainAuth';
+import { mainAuthErrorMessage, getStoredUser } from '../../data/mainAuth';
 import '../../styles/cursos.css';
 
 export default function CursosPage() {
@@ -80,7 +80,9 @@ export default function CursosPage() {
   }
 
   // Esta pantalla es solo para docentes — un estudiante no tiene nada que hacer acá.
-  if (user && user.role !== 'Docente · Preceptor') {
+  // Compara contra el rol real (TEACHER), no contra la etiqueta traducida: así
+  // no depende de que el texto coincida carácter por carácter.
+  if (user && getStoredUser()?.role !== 'TEACHER') {
     return (
       <div className="dash-root">
         <Sidebar />
