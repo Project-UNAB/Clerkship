@@ -32,15 +32,25 @@ import CronogramaPage from './pages/cronograma/CronogramaPage';
 import DesarrolloPage from './pages/desarrollo/DesarrolloPage';
 import ThemeToggleFloating from './components/shared/ThemeToggleFloating';
 import { isAuthenticated, hasUserAcceptedConsent } from './utils/authConsent';
+import { getStoredUser } from './data/mainAuth';
+
+function isAdmin(): boolean {
+  return getStoredUser()?.role === 'ADMIN';
+}
 
 /**
- * 🔒 Guard para Rutas Protegidas del Dashboard
+ * 🔒 Guard para Rutas Protegidas del Dashboard (estudiante/docente)
  * 1. Exige haber iniciado sesión en una cuenta válida.
  * 2. Exige haber realizado la autorización de consentimiento en esa cuenta.
+ * 3. Un administrador no tiene esta vista — se lo manda a /admin.
  */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (isAdmin()) {
+    return <Navigate to="/admin" replace />;
   }
 
   if (!hasUserAcceptedConsent()) {
@@ -53,7 +63,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 /**
  * 🔒 Guard Exclusivo para la Pestaña de Consentimiento (/consent)
  * 1. Exige haber iniciado sesión (un usuario anónimo NO puede entrar).
- * 2. Si el usuario YA completó la autorización de tratamiento de datos de su cuenta,
+ * 2. Un administrador no pasa por consentimiento — no es su vista.
+ * 3. Si el usuario YA completó la autorización de tratamiento de datos de su cuenta,
  *    se bloquea el acceso y se redirige directamente a /dashboard (1 sola vez por cuenta).
  */
 function ConsentRoute({ children }: { children: React.ReactNode }) {
@@ -61,7 +72,29 @@ function ConsentRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
+  if (isAdmin()) {
+    return <Navigate to="/admin" replace />;
+  }
+
   if (hasUserAcceptedConsent()) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+/**
+ * 🔒 Guard exclusivo del Panel de Administrador (/admin)
+ * Solo exige sesión iniciada y rol ADMIN — no pasa por el consentimiento,
+ * que es un trámite de la experiencia clínica (estudiante/docente), no de
+ * quien administra la plataforma.
+ */
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdmin()) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -125,7 +158,7 @@ export default function App() {
         <Route path="/explorar"               element={<ProtectedRoute><ExplorarPage /></ProtectedRoute>} />
         <Route path="/documentacion"          element={<ProtectedRoute><DocumentacionPage /></ProtectedRoute>} />
         <Route path="/biblioteca"             element={<ProtectedRoute><BibliotecaPage /></ProtectedRoute>} />
-        <Route path="/admin"                  element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+        <Route path="/admin"                  element={<AdminRoute><AdminPage /></AdminRoute>} />
         <Route path="/simulacion"             element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
         <Route path="/simulacion/:id"         element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
         <Route path="/casos"                  element={<ProtectedRoute><CasosPage /></ProtectedRoute>} />

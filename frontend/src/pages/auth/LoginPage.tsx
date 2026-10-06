@@ -9,7 +9,7 @@ import logoUrl from '../../assets/Logo Clerkship.svg';
 import InteractiveBackgroundCanvas from '../../components/shared/InteractiveBackgroundCanvas';
 import ThemeToggleFloating from '../../components/shared/ThemeToggleFloating';
 import { setActiveUser, hasUserAcceptedConsent } from '../../utils/authConsent';
-import { loginWithEmailPassword, mainAuthErrorMessage, EmailNotVerifiedError } from '../../data/mainAuth';
+import { loginWithEmailPassword, getStoredUser, mainAuthErrorMessage, EmailNotVerifiedError } from '../../data/mainAuth';
 import VerifyEmailStep from '../../components/auth/VerifyEmailStep';
 import '../../styles/landing.css';
 import '../../styles/auth.css';
@@ -89,10 +89,15 @@ export default function LoginPage() {
   }
 
   function handleExitComplete() {
+    const esAdmin = getStoredUser()?.role === 'ADMIN';
     const hasConsent = hasUserAcceptedConsent(form.email);
     /* Wait for assembly animation (~2.5s) before navigating */
     setTimeout(() => {
-      if (hasConsent) {
+      if (esAdmin) {
+        // El administrador no pasa por consentimiento ni ve el Dashboard —
+        // va directo a su panel.
+        navigate('/admin', { replace: true });
+      } else if (hasConsent) {
         sessionStorage.setItem('clerkship_show_welcome', 'true');
         navigate('/dashboard', { replace: true });
       } else {
