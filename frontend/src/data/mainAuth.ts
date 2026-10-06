@@ -19,7 +19,7 @@ export interface MainUser {
   first_name: string;
   last_name: string;
   email: string;
-  role: 'STUDENT' | 'TEACHER';
+  role: 'STUDENT' | 'TEACHER' | 'ADMIN';
   email_verified?: boolean;
   avatar_svg?: string | null;
 }

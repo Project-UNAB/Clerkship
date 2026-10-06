@@ -46,6 +46,7 @@ from app.schemas.documentos import (
     UpdateFolderRequest,
     UploadDocumentRequest,
 )
+from app.schemas.admin import ActualizarUsuarioRequest
 from app.schemas.comunidad import (
     CommunityCommentResponse,
     CommunityPostResponse,
@@ -91,6 +92,8 @@ from app.schemas.agentes import (
 )
 
 __all__ = [
+    # Admin
+    "ActualizarUsuarioRequest",
     # Base
     "BaseSchema",
     "DatabaseStatus",

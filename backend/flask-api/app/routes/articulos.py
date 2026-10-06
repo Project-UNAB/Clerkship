@@ -47,7 +47,7 @@ def listar():
 
 
 @articulos_bp.post("")
-@role_required("TEACHER")
+@role_required("TEACHER", "ADMIN")
 @validate_body(CreateArticleRequest)
 def crear(validated_body: CreateArticleRequest):
     user = get_current_user()

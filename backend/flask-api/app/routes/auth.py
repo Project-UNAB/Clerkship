@@ -282,6 +282,9 @@ def login(validated_body: LoginRequest):
     if user is None or not check_password_hash(user.password_hash, password):
         return jsonify({"error": "Unauthorized", "message": "Credenciales inválidas", "status_code": 401}), 401
 
+    if not user.activo:
+        return jsonify({"error": "Forbidden", "message": "Esta cuenta está desactivada.", "status_code": 403}), 403
+
     if not user.email_verified:
         elapsed = _seconds_since_last_code(user)
         if elapsed is None or elapsed >= RESEND_COOLDOWN_SECONDS:

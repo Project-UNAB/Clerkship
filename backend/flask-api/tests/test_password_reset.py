@@ -38,6 +38,7 @@ def fake_user(monkeypatch):
         reset_code_expires_at=None,
         reset_attempts=0,
         role="STUDENT",
+        activo=True,
         to_dict=lambda: {"id": "u1", "email": "estudiante@unab.edu.co"},
     )
     store = {user.id: user}
@@ -139,6 +140,12 @@ def test_reset_password_valida_formato_del_codigo(client, fake_user):
         "email": fake_user.email, "code": "12ab", "new_password": "NuevaClave456",
     })
     assert res.status_code == 400
+
+
+def test_login_rechaza_cuenta_desactivada(client, fake_user):
+    fake_user.activo = False
+    res = client.post("/api/auth/login", json={"email": fake_user.email, "password": "ViejaClave123"})
+    assert res.status_code == 403
 
 
 def test_login_no_reenvia_codigo_si_aun_esta_en_cooldown(client, fake_user, monkeypatch):

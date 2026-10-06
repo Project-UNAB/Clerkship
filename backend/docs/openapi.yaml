@@ -1613,6 +1613,209 @@ paths:
           $ref: '#/components/responses/BadRequestError'
         '429':
           description: Demasiados envíos desde esta IP
+  /api/admin/estadisticas:
+    get:
+      tags:
+      - Administración
+      summary: Estadísticas generales de la plataforma
+      operationId: adminEstadisticas
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/usuarios:
+    get:
+      tags:
+      - Administración
+      summary: Lista y busca usuarios
+      operationId: adminListarUsuarios
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/usuarios/{user_id}:
+    patch:
+      tags:
+      - Administración
+      summary: Cambia el rol o activa/desactiva una cuenta
+      operationId: adminActualizarUsuario
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema: {type: string}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role: {type: string, enum: [STUDENT, TEACHER, ADMIN]}
+                activo: {type: boolean}
+      responses:
+        '200':
+          description: Correcto
+        '400':
+          description: Datos inválidos
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/comunidad/posts:
+    get:
+      tags:
+      - Administración
+      summary: Lista publicaciones de la comunidad
+      operationId: adminListarPosts
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/comunidad/posts/{post_id}:
+    delete:
+      tags:
+      - Administración
+      summary: Borra cualquier publicación
+      operationId: adminBorrarPost
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: post_id
+        in: path
+        required: true
+        schema: {type: string}
+      responses:
+        '200':
+          description: Correcto
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/comunidad/comentarios/{comentario_id}:
+    delete:
+      tags:
+      - Administración
+      summary: Borra cualquier comentario
+      operationId: adminBorrarComentario
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: comentario_id
+        in: path
+        required: true
+        schema: {type: string}
+      responses:
+        '200':
+          description: Correcto
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/biblioteca:
+    get:
+      tags:
+      - Administración
+      summary: Lista los recursos de la biblioteca
+      operationId: adminListarBiblioteca
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/biblioteca/{article_id}:
+    delete:
+      tags:
+      - Administración
+      summary: Borra un recurso de la biblioteca
+      operationId: adminBorrarArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: article_id
+        in: path
+        required: true
+        schema: {type: string}
+      responses:
+        '200':
+          description: Correcto
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/feedback/{pestana}:
+    get:
+      tags:
+      - Administración
+      summary: Lista las respuestas de retroalimentación de una pestaña
+      operationId: adminListarFeedback
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: pestana
+        in: path
+        required: true
+        schema: {type: string}
+      responses:
+        '200':
+          description: Correcto
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/validacion/{pestana}:
+    get:
+      tags:
+      - Administración
+      summary: Lista las respuestas de validación por expertos de una pestaña
+      operationId: adminListarValidacion
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: pestana
+        in: path
+        required: true
+        schema: {type: string}
+      responses:
+        '200':
+          description: Correcto
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
   /api/feedback/inicio:
     post:
       tags:

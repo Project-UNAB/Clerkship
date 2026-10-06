@@ -15,6 +15,7 @@ export interface CurrentUserInfo {
 const ROLE_LABELS: Record<MainUser['role'], string> = {
   STUDENT: 'Estudiante de Medicina',
   TEACHER: 'Docente · Preceptor',
+  ADMIN: 'Administrador',
 };
 
 function initialsFrom(name: string): string {

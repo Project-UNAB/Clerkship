@@ -13,7 +13,7 @@ class User(db.Model):
     last_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.Text, nullable=False)
-    role = db.Column(db.Enum("STUDENT", "TEACHER", name="user_role", create_type=False), nullable=False)
+    role = db.Column(db.Enum("STUDENT", "TEACHER", "ADMIN", name="user_role", create_type=False), nullable=False)
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now())
 
@@ -36,6 +36,9 @@ class User(db.Model):
     # dirección real {username}@clerk-ship.online (ver app/routes/mailbox.py).
     mailbox_created = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
 
+    # Cuenta desactivada por un administrador — no puede iniciar sesión.
+    activo = db.Column(db.Boolean, nullable=False, server_default=db.text("true"))
+
     def to_dict(self):
         return {
             "id": str(self.id),
@@ -47,4 +50,5 @@ class User(db.Model):
             "email_verified": self.email_verified,
             "avatar_svg": self.avatar_svg,
             "mailbox_created": self.mailbox_created,
+            "activo": self.activo,
         }
