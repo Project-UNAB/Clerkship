@@ -42,4 +42,7 @@ class Article(db.Model):
             "url": self.url,
             "created_by": str(self.created_by) if self.created_by else None,
             "tags": tags or [],
+            # No se expone archivo_key (clave interna de R2) — solo si hay
+            # algo para descargar, vía GET /api/almacenamiento/biblioteca/<id>/descarga.
+            "tiene_pdf": bool(self.archivo_key),
         }

@@ -7365,6 +7365,35 @@
   border-radius: 0 2px 2px 0;
 }
 
+/* ── Acciones reales del recurso (descargar / estante) ── */
+.bib-book-acciones {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+}
+.bib-book:hover .bib-book-acciones,
+.bib-book:focus-within .bib-book-acciones {
+  opacity: 1;
+}
+.bib-book-btn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #fff;
+  cursor: pointer;
+}
+.bib-book-btn:hover { background: #0369a1; }
+.bib-book-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ── Empty state ── */
 .bib-empty {
   grid-column: 1 / -1;

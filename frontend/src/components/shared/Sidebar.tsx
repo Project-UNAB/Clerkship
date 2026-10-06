@@ -2,13 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from 'firebase/auth';
-import { ChevronLeft, ChevronDown, Settings, LogOut, User, Sun, Moon, Menu, X } from 'lucide-react';
+import { ChevronLeft, ChevronDown, Settings, LogOut, User, Sun, Moon, Menu, X, GraduationCap } from 'lucide-react';
 import { DASH_NAV } from '../../data/dashNav';
 import { auth } from '../../data/firebase';
 import { getInitialTheme, triggerThemeToggle, type ThemeMode } from '../../utils/themeHelper';
 import { logoutUserSession } from '../../utils/authConsent';
 import { useCurrentUser } from '../../utils/currentUser';
-import { clearMainAuthSession } from '../../data/mainAuth';
+import { clearMainAuthSession, getStoredUser } from '../../data/mainAuth';
 import logoUrl from '../../assets/Logo Clerkship.svg';
 
 /* ── Panel content per section ─────────────────────────────── */
@@ -69,6 +69,13 @@ export default function Sidebar() {
   const activeModulo          = searchParams.get('modulo');
   const currentUser           = useCurrentUser();
 
+  // "Mis cursos" solo aplica a docentes — no se agrega al DASH_NAV
+  // compartido para no mostrárselo también a estudiantes.
+  const esDocente = getStoredUser()?.role === 'TEACHER';
+  const navTabs = esDocente
+    ? [...DASH_NAV, { id: 'mis-cursos', label: 'Mis cursos', Icon: GraduationCap, route: '/mis-cursos' }]
+    : DASH_NAV;
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [panelOpen, setPanelOpenRaw] = useState<boolean>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -100,7 +107,7 @@ export default function Sidebar() {
     setTheme(next);
   }
 
-  const initialId = DASH_NAV.find(t => t.route === pathname)?.id ?? 'overview';
+  const initialId = navTabs.find(t => t.route === pathname)?.id ?? 'overview';
   const [activeId, setActiveId] = useState(initialId);
 
   /* Auto-open the group that contains the current active sub-item */
@@ -130,7 +137,7 @@ export default function Sidebar() {
     });
   }
 
-  const activeTab    = DASH_NAV.find(t => t.id === activeId)!;
+  const activeTab    = navTabs.find(t => t.id === activeId)!;
   const panelContent = PANEL[activeId] ?? { flat: [] };
 
   /* Active state helpers */
@@ -256,7 +263,7 @@ export default function Sidebar() {
 
               <div className="sb-mobile-drawer-body">
                 <nav className="sb-mobile-nav-list">
-                  {DASH_NAV.map(({ id, label, Icon, route }) => {
+                  {navTabs.map(({ id, label, Icon, route }) => {
                     const active = (pathname === route) || (route === '/dashboard' && pathname === '/');
                     return (
                       <button
@@ -342,7 +349,7 @@ export default function Sidebar() {
 
           {/* Nav icons */}
           <nav className="sb-rail-nav">
-            {DASH_NAV.map(({ id, label, Icon, route }) => {
+            {navTabs.map(({ id, label, Icon, route }) => {
               const on = activeId === id && panelOpen;
               return (
                 <motion.button

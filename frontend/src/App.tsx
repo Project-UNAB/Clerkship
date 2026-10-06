@@ -11,6 +11,7 @@ import LoginPage from './pages/auth/LoginPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ValidacionExpertoPage from './pages/validacion/ValidacionExpertoPage';
 import AdminPage from './pages/admin/AdminPage';
+import CursosPage from './pages/cursos/CursosPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ConsentPage from './pages/auth/ConsentPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -158,6 +159,7 @@ export default function App() {
         <Route path="/explorar"               element={<ProtectedRoute><ExplorarPage /></ProtectedRoute>} />
         <Route path="/documentacion"          element={<ProtectedRoute><DocumentacionPage /></ProtectedRoute>} />
         <Route path="/biblioteca"             element={<ProtectedRoute><BibliotecaPage /></ProtectedRoute>} />
+        <Route path="/mis-cursos"             element={<ProtectedRoute><CursosPage /></ProtectedRoute>} />
         <Route path="/admin"                  element={<AdminRoute><AdminPage /></AdminRoute>} />
         <Route path="/simulacion"             element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
         <Route path="/simulacion/:id"         element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />

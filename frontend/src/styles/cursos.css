@@ -1,0 +1,107 @@
+/* Página "Mis cursos" — docentes. */
+
+.cur-wrapper {
+  flex: 1;
+  padding: 28px 32px 60px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cur-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.cur-title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 24px; font-weight: 800; color: var(--ink, #0f172a); }
+.cur-subtitle { margin: 6px 0 0; font-size: 14px; color: var(--ink3, #64748b); }
+
+.cur-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0ea5e9, #0369a1);
+  color: #fff;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+.cur-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.cur-error { color: #b91c1c; font-size: 13px; margin-bottom: 14px; }
+.cur-vacio { color: var(--ink3, #64748b); font-size: 13px; padding: 20px 4px; }
+
+.cur-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+
+.cur-lista { display: flex; flex-direction: column; gap: 8px; }
+.cur-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #fff);
+  cursor: pointer;
+}
+.cur-card.is-active { border-color: #0284c7; background: rgba(14, 165, 233, 0.08); }
+.cur-card-nombre { margin: 0; font-size: 14px; font-weight: 700; color: var(--ink, #0f172a); }
+.cur-card-sub { margin: 2px 0 0; font-size: 12px; color: var(--ink3, #64748b); }
+
+.cur-icon-btn { border: none; background: transparent; color: var(--ink2, #475569); cursor: pointer; padding: 4px; }
+.cur-icon-btn:hover { color: #b91c1c; }
+
+.cur-roster {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #fff);
+  min-height: 160px;
+}
+.cur-roster-titulo { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 16px; font-weight: 800; }
+
+.cur-tabla-wrap { overflow-x: auto; }
+.cur-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cur-tabla th, .cur-tabla td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border, #e2e8f0); white-space: nowrap; }
+.cur-tabla th { font-weight: 700; color: var(--ink2, #475569); }
+
+.cur-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.5);
+}
+.cur-modal {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e2e8f0);
+}
+.cur-modal-head { display: flex; justify-content: space-between; align-items: center; font-weight: 800; color: var(--ink, #0f172a); margin-bottom: 4px; }
+.cur-modal-head button { border: none; background: transparent; cursor: pointer; color: var(--ink2, #475569); }
+.cur-label { font-size: 13px; font-weight: 700; color: var(--ink, #0f172a); }
+.cur-input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--surface2, #f8fafc);
+  color: var(--ink, #0f172a);
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+@media (max-width: 760px) {
+  .cur-wrapper { padding: 20px 16px 40px; }
+  .cur-layout { grid-template-columns: 1fr; }
+}

@@ -3,53 +3,33 @@ import { motion } from 'framer-motion';
 import {
   Search, BookOpen, ScrollText, FlaskConical,
   Microscope, Stethoscope as Steth,
-  BookMarked, X, Calendar, ChevronDown,
+  BookMarked, X, Calendar, ChevronDown, Download, BookmarkPlus, Check, Loader2,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import FeedbackFab from '../../components/shared/FeedbackFab';
+import { getStoredUser, mainAuthErrorMessage } from '../../data/mainAuth';
+import {
+  listarArticulos, obtenerEstante, guardarEnEstante, quitarDeEstante, descargarArticulo,
+  type Articulo, type ItemEstante,
+} from '../../data/articulosApi';
 
-/* ── Resource types ──────────────────────────────────────── */
+/* ── Tipos de recurso ────────────────────────────────────── */
 const TYPES = [
   { id: 'todos',     label: 'Todos los tipos', Icon: BookMarked  },
-  { id: 'libro',     label: 'Libros',          Icon: BookOpen    },
-  { id: 'guia',      label: 'Guías clínicas',  Icon: ScrollText  },
-  { id: 'ensayo',    label: 'Ensayos',         Icon: FlaskConical},
-  { id: 'protocolo', label: 'Protocolos',      Icon: Microscope  },
-  { id: 'caso',      label: 'Casos clínicos',  Icon: Steth       },
+  { id: 'LIBRO',     label: 'Libros',          Icon: BookOpen    },
+  { id: 'GUIA',      label: 'Guías clínicas',  Icon: ScrollText  },
+  { id: 'ENSAYO',    label: 'Ensayos',         Icon: FlaskConical},
+  { id: 'PROTOCOLO', label: 'Protocolos',      Icon: Microscope  },
+  { id: 'CASO',      label: 'Casos clínicos',  Icon: Steth       },
 ];
 
-/* ── Mock resources: Gastroenterología y Medicina Digestiva ── */
-interface Resource {
-  id: number; type: string; title: string; author: string;
-  source: string; year: number; specialty: string;
-  tags: string[]; pages?: number; abstract: string;
-  shelf: 'reading' | 'next' | 'finished';
-}
-
-const RESOURCES: Resource[] = [
-  { id:1,  type:'libro',     title:'Harrison — Gastroenterología y Hepatología',                             author:'Fauci, Kasper, Longo et al.',     source:'McGraw-Hill',                            year:2023, specialty:'Gastroenterología', tags:['medicina interna','digestivo','referencia'],            pages:1450, abstract:'Sección especializada en patología digestiva del clásico tratado de Medicina Interna. Cubre esófago, estómago, hígado, páncreas y colon.', shelf:'reading'  },
-  { id:2,  type:'guia',      title:'Guía de práctica clínica: Diagnóstico y manejo de la ERGE',             author:'Sociedad Colombiana de Gastroenterología', source:'Rev. Col. Gastroenterol.',               year:2024, specialty:'Gastroenterología', tags:['ERGE','pirosis','esofagitis','inhibidores bomba'],       abstract:'Lineamientos y consenso colombiano para el manejo farmacológico y quirúrgico de la enfermedad por reflujo gastroesofágico.', shelf:'reading'  },
-  { id:3,  type:'protocolo', title:'Protocolo institucional: Manejo de la Hemorragia Digestiva Alta',       author:'Servicio de Gastroenterología HIC',source:'Hospital Internacional de Colombia',   year:2024, specialty:'Gastroenterología', tags:['HDA','endoscopia','úlcera péptica','varices'],          abstract:'Protocolo asistencial para estratificación de riesgo con Glasgow-Blatchford y algoritmo terapéutico en sangrado digestivo alto.', shelf:'reading'  },
-  { id:4,  type:'guia',      title:'Guía WGO 2023: Diagnóstico y tratamiento de la pancreatitis aguda',     author:'World Gastroenterology Organisation', source:'WGO Clinical Guidelines',               year:2023, specialty:'Gastroenterología', tags:['pancreatitis','criterios Atlanta','amilasa','lipasa'],   abstract:'Recomendaciones internacionales para el manejo de pancreatitis aguda gallstone y alcohólica, clasificación de gravedad y nutrición temprana.', shelf:'reading'  },
-  { id:5,  type:'guia',      title:'Guía de práctica clínica: Manejo de la Úlcera Péptica e infección por H. pylori', author:'Asociación Española de Gastroenterología', source:'AEG Guidelines', year:2023, specialty:'Gastroenterología', tags:['úlcera péptica','H. pylori','terapia cuádruple'],         abstract:'Abordaje de la úlcera gástrica y duodenal, esquemas erradicadores de primera y segunda línea contra Helicobacter pylori.', shelf:'next'     },
-  { id:6,  type:'libro',     title:'Semiología Médica del Aparato Digestivo — Argente & Álvarez',           author:'Argente H, Álvarez M.',           source:'Editorial Médica Panamericana',           year:2022, specialty:'Gastroenterología', tags:['semiología','examen físico','abomen agudo'],          pages:850,  abstract:'Guía completa de inspección, auscultación, palpación y percusión abdominal, signos apendiculares y maniobras biliares.', shelf:'next'     },
-  { id:7,  type:'protocolo', title:'Protocolo de urgencias: Abordaje del Dolor Abdominal Agudo y Apendicitis', author:'Sociedad de Cirugía General y Gastroenterología', source:'Minsalud Colombia', year:2023, specialty:'Gastroenterología', tags:['apendicitis','dolor abdominal','ecografía abdominal'],  abstract:'Ruta de atención rápida para la sospecha de apendicitis aguda, escala de Alvarado y criterios de laparoscopia.', shelf:'next'     },
-  { id:8,  type:'libro',     title:'Fisiología Gastrointestinal — Guyton & Hall',                           author:'Hall J, Hall M.',                 source:'Elsevier',                               year:2021, specialty:'Gastroenterología', tags:['fisiología','motilidad','secreción gástrica'],          pages:480,  abstract:'Bases fisiológicas de la digestión, secreción biliar y pancreática, motilidad intestinal y absorción de nutrientes.', shelf:'next'     },
-  { id:9,  type:'ensayo',    title:'Sesgos cognitivos en el razonamiento diagnóstico del abdomen agudo',     author:'Croskerry P, Singhal G, Mamede S.',source:'BMJ Quality & Safety',                  year:2022, specialty:'Gastroenterología', tags:['sesgos cognitivos','razonamiento clínico','diagnóstico'], abstract:'Estudio sobre los sesgos de anclaje y disponibilidad al evaluar pacientes con dolor en fosa ilíaca derecha y epigastralgias.', shelf:'finished' },
-  { id:10, type:'caso',      title:'Caso clínico: Apendicitis aguda atípica en paciente joven',               author:'Ramírez J, Torres M, Gómez L.',   source:'Revista Colombiana de Gastroenterología', year:2023, specialty:'Gastroenterología', tags:['apendicitis','caso clínico','retrocecal'],            abstract:'Discusión interactiva de un caso con apendicitis retrocecal subserosa y su correlación histopatológica post-quirúrgica.', shelf:'finished' },
-  { id:11, type:'ensayo',    title:'Evaluación del aprendizaje basado en simulación clínica digestiva',    author:'Cook DA, Hatala R, Brydges R et al.', source:'JAMA Medical Education',             year:2021, specialty:'Gastroenterología', tags:['simulación','educación médica','competencias'],         abstract:'Meta-análisis sobre el impacto de pacientes virtuales en la adquisición de competencias en gastroenterología y cirugía.', shelf:'finished' },
-  { id:12, type:'caso',      title:'Caso clínico: Diagnóstico diferencial de Ictericia Obstructiva',         author:'Herrera A, Castillo P.',         source:'Acta Médica Colombiana',              year:2023, specialty:'Gastroenterología', tags:['ictericia','colestasis','coledocolitiasis'],          abstract:'Abordaje diagnóstico en un paciente de 45 años con síndrome colestásico, perfil hepático y colangiorresonancia.', shelf:'finished' }
-];
-
-const YEARS = [...new Set(RESOURCES.map(r => r.year))].sort((a, b) => b - a);
-
-/* ── Type badge styles ───────────────────────────────────── */
+/* ── Estilos por tipo ────────────────────────────────────── */
 const TYPE_STYLE: Record<string, { bg: string; color: string; label: string; gradient: string }> = {
-  libro:     { bg:'#EEF2FF', color:'#4338CA', label:'Libro',        gradient:'linear-gradient(160deg, #3730A3 0%, #818CF8 100%)' },
-  guia:      { bg:'#F0FDF4', color:'#166534', label:'Guía clínica', gradient:'linear-gradient(160deg, #14532D 0%, #4ADE80 100%)' },
-  ensayo:    { bg:'#FFF7ED', color:'#C2410C', label:'Ensayo',       gradient:'linear-gradient(160deg, #9A3412 0%, #FB923C 100%)' },
-  protocolo: { bg:'#F0F9FF', color:'#0369A1', label:'Protocolo',    gradient:'linear-gradient(160deg, #075985 0%, #38BDF8 100%)' },
-  caso:      { bg:'#FDF4FF', color:'#7E22CE', label:'Caso clínico', gradient:'linear-gradient(160deg, #6B21A8 0%, #C084FC 100%)' },
+  LIBRO:     { bg:'#EEF2FF', color:'#4338CA', label:'Libro',        gradient:'linear-gradient(160deg, #3730A3 0%, #818CF8 100%)' },
+  GUIA:      { bg:'#F0FDF4', color:'#166534', label:'Guía clínica', gradient:'linear-gradient(160deg, #14532D 0%, #4ADE80 100%)' },
+  ENSAYO:    { bg:'#FFF7ED', color:'#C2410C', label:'Ensayo',       gradient:'linear-gradient(160deg, #9A3412 0%, #FB923C 100%)' },
+  PROTOCOLO: { bg:'#F0F9FF', color:'#0369A1', label:'Protocolo',    gradient:'linear-gradient(160deg, #075985 0%, #38BDF8 100%)' },
+  CASO:      { bg:'#FDF4FF', color:'#7E22CE', label:'Caso clínico', gradient:'linear-gradient(160deg, #6B21A8 0%, #C084FC 100%)' },
 };
 
 /* ── Dropdown hook ───────────────────────────────────────── */
@@ -67,8 +47,19 @@ function useDropdown() {
   return { open, setOpen, ref };
 }
 
-/* ── Resource card ───────────────────────────────────────── */
-function ResourceCard({ res, delay }: { res: Resource; delay: number }) {
+interface AccionesEstante {
+  esEstudiante: boolean;
+  estado: 'NEXT' | 'FINISHED' | null;
+  ocupado: boolean;
+  onAgregar: () => void;
+  onTerminar: () => void;
+  onQuitar: () => void;
+}
+
+/* ── Tarjeta de recurso ──────────────────────────────────── */
+function ResourceCard({ res, delay, descargando, onDescargar, estante }: {
+  res: Articulo; delay: number; descargando: boolean; onDescargar: () => void; estante: AccionesEstante;
+}) {
   const ts = TYPE_STYLE[res.type] ?? {
     bg:'#F3F4F6', color:'#475569', label:res.type,
     gradient:'linear-gradient(160deg,#475569,#94A3B8)',
@@ -85,16 +76,51 @@ function ResourceCard({ res, delay }: { res: Resource; delay: number }) {
         <span className="bib-book-badge">{ts.label}</span>
         <div className="bib-book-cover-body">
           <h3 className="bib-book-title">{res.title}</h3>
-          <p className="bib-book-author">{res.author.split(',')[0]}</p>
+          {res.authors && <p className="bib-book-author">{res.authors.split(',')[0]}</p>}
         </div>
       </div>
       <div className="bib-book-pages" />
+
+      <div className="bib-book-acciones">
+        {res.tiene_pdf && (
+          <button type="button" className="bib-book-btn" title="Descargar PDF" onClick={onDescargar} disabled={descargando}>
+            {descargando ? <Loader2 size={13} className="dfm-spin" /> : <Download size={13} />}
+          </button>
+        )}
+        {estante.esEstudiante && (
+          estante.estado === null ? (
+            <button type="button" className="bib-book-btn" title="Agregar a mi estante" onClick={estante.onAgregar} disabled={estante.ocupado}>
+              <BookmarkPlus size={13} />
+            </button>
+          ) : (
+            <>
+              {estante.estado === 'NEXT' && (
+                <button type="button" className="bib-book-btn" title="Marcar como terminado" onClick={estante.onTerminar} disabled={estante.ocupado}>
+                  <Check size={13} />
+                </button>
+              )}
+              <button type="button" className="bib-book-btn" title="Quitar del estante" onClick={estante.onQuitar} disabled={estante.ocupado}>
+                <X size={13} />
+              </button>
+            </>
+          )
+        )}
+      </div>
     </motion.div>
   );
 }
 
-/* ── Main component ──────────────────────────────────────── */
+/* ── Página principal ────────────────────────────────────── */
 export default function BibliotecaPage() {
+  const esEstudiante = getStoredUser()?.role === 'STUDENT';
+
+  const [articulos, setArticulos] = useState<Articulo[]>([]);
+  const [estante, setEstante] = useState<ItemEstante[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [descargandoId, setDescargandoId] = useState<string | null>(null);
+  const [estanteOcupadoId, setEstanteOcupadoId] = useState<string | null>(null);
+
   const [query,      setQuery]      = useState('');
   const [typeFilter, setTypeFilter] = useState('todos');
   const [yearFilter, setYearFilter] = useState<number | null>(null);
@@ -102,26 +128,134 @@ export default function BibliotecaPage() {
   const typeDD = useDropdown();
   const yearDD = useDropdown();
 
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      listarArticulos(),
+      esEstudiante ? obtenerEstante() : Promise.resolve([]),
+    ])
+      .then(([arts, est]) => { setArticulos(arts); setEstante(est); })
+      .catch(err => setError(mainAuthErrorMessage(err)))
+      .finally(() => setLoading(false));
+  }, [esEstudiante]);
+
+  const estanteMap = useMemo(() => {
+    const m = new Map<string, ItemEstante>();
+    estante.forEach(e => m.set(e.article_id, e));
+    return m;
+  }, [estante]);
+
+  const YEARS = useMemo(
+    () => [...new Set(articulos.map(a => a.year).filter((y): y is number => !!y))].sort((a, b) => b - a),
+    [articulos],
+  );
+
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
-    return RESOURCES.filter(r => {
-      const matchType = typeFilter === 'todos' || r.type === typeFilter;
-      const matchYear = yearFilter === null    || r.year === yearFilter;
-      const matchQ    = !q
-        || r.title.toLowerCase().includes(q)
-        || r.author.toLowerCase().includes(q)
-        || r.tags.some(t => t.toLowerCase().includes(q))
-        || r.specialty.toLowerCase().includes(q);
+    return articulos.filter(a => {
+      const matchType = typeFilter === 'todos' || a.type === typeFilter;
+      const matchYear = yearFilter === null || a.year === yearFilter;
+      const matchQ = !q
+        || a.title.toLowerCase().includes(q)
+        || (a.authors || '').toLowerCase().includes(q)
+        || a.tags.some(t => t.toLowerCase().includes(q))
+        || (a.specialty || '').toLowerCase().includes(q);
       return matchType && matchYear && matchQ;
     });
-  }, [query, typeFilter, yearFilter]);
+  }, [articulos, query, typeFilter, yearFilter]);
 
-  const readingShelf  = filtered.filter(r => r.shelf === 'reading');
-  const nextShelf     = filtered.filter(r => r.shelf === 'next');
-  const finishedShelf = filtered.filter(r => r.shelf === 'finished');
+  const nextShelf     = esEstudiante ? filtered.filter(a => estanteMap.get(a.id)?.status === 'NEXT') : [];
+  const finishedShelf  = esEstudiante ? filtered.filter(a => estanteMap.get(a.id)?.status === 'FINISHED') : [];
+  const catalogShelf  = esEstudiante ? filtered.filter(a => !estanteMap.has(a.id)) : filtered;
 
   const typeLabel = TYPES.find(t => t.id === typeFilter)?.label ?? 'Todos';
   const hasFilters = !!query || typeFilter !== 'todos' || yearFilter !== null;
+
+  async function handleDescargar(articulo: Articulo) {
+    setDescargandoId(articulo.id);
+    try {
+      const { url } = await descargarArticulo(articulo.id);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      setError(mainAuthErrorMessage(err));
+    } finally {
+      setDescargandoId(null);
+    }
+  }
+
+  async function handleAgregar(articulo: Articulo) {
+    setEstanteOcupadoId(articulo.id);
+    try {
+      const item = await guardarEnEstante(articulo.id, 'NEXT');
+      setEstante(prev => [...prev.filter(e => e.article_id !== articulo.id), item]);
+    } catch (err) {
+      setError(mainAuthErrorMessage(err));
+    } finally {
+      setEstanteOcupadoId(null);
+    }
+  }
+
+  async function handleTerminar(articulo: Articulo) {
+    setEstanteOcupadoId(articulo.id);
+    try {
+      const item = await guardarEnEstante(articulo.id, 'FINISHED');
+      setEstante(prev => [...prev.filter(e => e.article_id !== articulo.id), item]);
+    } catch (err) {
+      setError(mainAuthErrorMessage(err));
+    } finally {
+      setEstanteOcupadoId(null);
+    }
+  }
+
+  async function handleQuitar(articulo: Articulo) {
+    setEstanteOcupadoId(articulo.id);
+    try {
+      await quitarDeEstante(articulo.id);
+      setEstante(prev => prev.filter(e => e.article_id !== articulo.id));
+    } catch (err) {
+      setError(mainAuthErrorMessage(err));
+    } finally {
+      setEstanteOcupadoId(null);
+    }
+  }
+
+  function accionesPara(articulo: Articulo): AccionesEstante {
+    return {
+      esEstudiante,
+      estado: estanteMap.get(articulo.id)?.status ?? null,
+      ocupado: estanteOcupadoId === articulo.id,
+      onAgregar: () => handleAgregar(articulo),
+      onTerminar: () => handleTerminar(articulo),
+      onQuitar: () => handleQuitar(articulo),
+    };
+  }
+
+  function renderFila(titulo: string, lista: Articulo[]) {
+    if (lista.length === 0) return null;
+    return (
+      <div className="bib-shelf-row">
+        <div className="bib-shelf-header">
+          <h2 className="bib-shelf-title">{titulo}</h2>
+        </div>
+        <div className="bib-shelf-container">
+          <div className="bib-shelf-books">
+            {lista.map((a, i) => (
+              <ResourceCard
+                key={a.id}
+                res={a}
+                delay={i * 0.04}
+                descargando={descargandoId === a.id}
+                onDescargar={() => handleDescargar(a)}
+                estante={accionesPara(a)}
+              />
+            ))}
+          </div>
+          <div className="bib-shelf-board" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dash-root">
@@ -140,7 +274,7 @@ export default function BibliotecaPage() {
 
             <input
               className="bib-sbar-input"
-              placeholder="Busca libros, guías y referencias gastroenterológicas…"
+              placeholder="Busca libros, guías y referencias…"
               value={query}
               onChange={e => setQuery(e.target.value)}
             />
@@ -220,69 +354,34 @@ export default function BibliotecaPage() {
           </div>
 
           <p className="bib-sbar-meta">
-            {filtered.length} recurso{filtered.length !== 1 ? 's' : ''} gastroenterológicos
+            {loading ? 'Cargando…' : `${filtered.length} ${filtered.length === 1 ? 'recurso' : 'recursos'}`}
           </p>
+          {error && <p className="bib-sbar-meta" style={{ color: '#b91c1c' }}>{error}</p>}
         </div>
 
-        {/* ══ Shelves ══ */}
+        {/* ══ Estantes ══ */}
         <div className="bib-shelves">
+          {!loading && esEstudiante && renderFila('Mi estante', nextShelf)}
+          {!loading && esEstudiante && renderFila('Terminados', finishedShelf)}
+          {!loading && renderFila(esEstudiante ? 'Catálogo' : 'Todos los recursos', catalogShelf)}
 
-          {readingShelf.length > 0 && (
-            <div className="bib-shelf-row">
-              <div className="bib-shelf-header">
-                <h2 className="bib-shelf-title">Actualmente leyendo</h2>
-                <button className="bib-shelf-more">Ver todos <span>&rarr;</span></button>
-              </div>
-              <div className="bib-shelf-container">
-                <div className="bib-shelf-books">
-                  {readingShelf.map((r, i) => <ResourceCard key={r.id} res={r} delay={i * 0.04} />)}
-                </div>
-                <div className="bib-shelf-board" />
-              </div>
-            </div>
-          )}
-
-          {nextShelf.length > 0 && (
-            <div className="bib-shelf-row">
-              <div className="bib-shelf-header">
-                <h2 className="bib-shelf-title">Siguientes</h2>
-                <button className="bib-shelf-more">Ver estante completo <span>&rarr;</span></button>
-              </div>
-              <div className="bib-shelf-container">
-                <div className="bib-shelf-books">
-                  {nextShelf.map((r, i) => <ResourceCard key={r.id} res={r} delay={i * 0.04} />)}
-                </div>
-                <div className="bib-shelf-board" />
-              </div>
-            </div>
-          )}
-
-          {finishedShelf.length > 0 && (
-            <div className="bib-shelf-row">
-              <div className="bib-shelf-header">
-                <h2 className="bib-shelf-title">Terminados</h2>
-                <button className="bib-shelf-more">Ver estante completo <span>&rarr;</span></button>
-              </div>
-              <div className="bib-shelf-container">
-                <div className="bib-shelf-books">
-                  {finishedShelf.map((r, i) => <ResourceCard key={r.id} res={r} delay={i * 0.04} />)}
-                </div>
-                <div className="bib-shelf-board" />
-              </div>
-            </div>
-          )}
-
-          {filtered.length === 0 && (
+          {!loading && filtered.length === 0 && (
             <motion.div className="bib-empty" initial={{ opacity:0 }} animate={{ opacity:1 }}>
               <BookOpen size={40} strokeWidth={1.2} />
-              <p>No se encontraron recursos gastroenterológicos con esos criterios.</p>
-              <button
-                className="bib-chip bib-chip-on"
-                style={{ marginTop:8 }}
-                onClick={() => { setQuery(''); setTypeFilter('todos'); setYearFilter(null); }}
-              >
-                Limpiar búsqueda
-              </button>
+              <p>
+                {articulos.length === 0
+                  ? 'Todavía no hay recursos publicados en la biblioteca.'
+                  : 'No se encontraron recursos con esos criterios.'}
+              </p>
+              {hasFilters && (
+                <button
+                  className="bib-chip bib-chip-on"
+                  style={{ marginTop:8 }}
+                  onClick={() => { setQuery(''); setTypeFilter('todos'); setYearFilter(null); }}
+                >
+                  Limpiar búsqueda
+                </button>
+              )}
             </motion.div>
           )}
         </div>

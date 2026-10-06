@@ -1,0 +1,32 @@
+/**
+ * Gestión de cursos para docentes: crear, ver el roster de un curso y
+ * borrarlo. Listar/matricularse ya vive en consultasApi.ts (lo necesita
+ * también el flujo de simulación del estudiante) — acá solo lo que falta.
+ */
+import { apiFetch } from './apiClient';
+import type { Course } from './consultasApi';
+
+export function crearCurso(payload: { name: string; description?: string; academic_period?: string }): Promise<Course> {
+  return apiFetch('/api/cursos', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function borrarCurso(courseId: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/cursos/${courseId}`, { method: 'DELETE' });
+}
+
+export interface EstudianteDeCurso {
+  user_id: string;
+  nombre: string;
+  email: string;
+  student_code: string;
+  enrolled_at: string | null;
+  casos_completados: number;
+  casos_en_progreso: number;
+}
+
+export function listarEstudiantesDeCurso(courseId: string): Promise<{ estudiantes: EstudianteDeCurso[] }> {
+  return apiFetch(`/api/cursos/${courseId}/estudiantes`);
+}

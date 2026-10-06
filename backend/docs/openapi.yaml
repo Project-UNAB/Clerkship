@@ -537,6 +537,29 @@ paths:
                   $ref: '#/components/schemas/CourseResponse'
           description: Cursos del usuario obtenidos con éxito
   /api/cursos/{id}:
+    delete:
+      tags:
+      - Cursos
+      summary: Borra un curso propio (falla si ya tiene sesiones creadas)
+      operationId: borrarCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '409':
+          description: Ya tiene sesiones de simulación
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
     get:
       tags:
       - Cursos
@@ -1831,6 +1854,28 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+  /api/cursos/{course_id}/estudiantes:
+    get:
+      tags:
+      - Cursos
+      summary: Lista los estudiantes matriculados en un curso (solo el docente dueño)
+      operationId: listarEstudiantesCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/feedback/inicio:
     post:
       tags:

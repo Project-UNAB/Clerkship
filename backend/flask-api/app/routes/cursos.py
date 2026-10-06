@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 
 from app import db
-from app.models import Course, StudentCourse
+from app.models import Consultation, Course, Student, StudentCourse, User
 from app.schemas import CourseResponse, CreateCourseRequest, EnrollmentResponse, validate_body
 from app.utils import get_current_user, role_required
 
@@ -91,6 +91,67 @@ def matricular(course_id):
         "course_id": str(course_id),
         "student_id": str(user.id),
     }), 201
+
+
+@cursos_bp.get("/<course_id>/estudiantes")
+@role_required("TEACHER")
+def listar_estudiantes(course_id):
+    """Roster del curso: solo lo ve el docente dueño del curso."""
+    user = get_current_user()
+    course = Course.query.get(course_id)
+    if course is None:
+        return jsonify({"error": "Not Found", "message": "Curso no encontrado", "status_code": 404}), 404
+    if str(course.teacher_id) != str(user.id):
+        return jsonify({"error": "Forbidden", "message": "No eres el docente de este curso", "status_code": 403}), 403
+
+    matriculas = (
+        db.session.query(StudentCourse, Student, User)
+        .join(Student, Student.user_id == StudentCourse.student_id)
+        .join(User, User.id == Student.user_id)
+        .filter(StudentCourse.course_id == course_id)
+        .order_by(StudentCourse.enrolled_at.desc())
+        .all()
+    )
+
+    resultado = []
+    for matricula, student, estudiante in matriculas:
+        completados = Consultation.query.filter_by(student_id=estudiante.id, course_id=course_id, status="COMPLETED").count()
+        en_progreso = Consultation.query.filter_by(student_id=estudiante.id, course_id=course_id, status="IN_PROGRESS").count()
+        resultado.append({
+            "user_id": str(estudiante.id),
+            "nombre": f"{estudiante.first_name} {estudiante.last_name}",
+            "email": estudiante.email,
+            "student_code": student.student_code,
+            "enrolled_at": matricula.enrolled_at.isoformat() if matricula.enrolled_at else None,
+            "casos_completados": completados,
+            "casos_en_progreso": en_progreso,
+        })
+
+    return jsonify({"estudiantes": resultado}), 200
+
+
+@cursos_bp.delete("/<course_id>")
+@role_required("TEACHER")
+def borrar_curso(course_id):
+    user = get_current_user()
+    course = Course.query.get(course_id)
+    if course is None:
+        return jsonify({"error": "Not Found", "message": "Curso no encontrado", "status_code": 404}), 404
+    if str(course.teacher_id) != str(user.id):
+        return jsonify({"error": "Forbidden", "message": "No eres el docente de este curso", "status_code": 403}), 403
+
+    try:
+        db.session.delete(course)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({
+            "error": "Conflict",
+            "message": "No se puede borrar: ya hay sesiones de simulación creadas en este curso.",
+            "status_code": 409,
+        }), 409
+
+    return jsonify({"ok": True}), 200
 
 
 @cursos_bp.delete("/<course_id>/matricular")
