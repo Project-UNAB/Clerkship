@@ -3,7 +3,7 @@ Course management Request and Response schemas for Clerkship API.
 """
 
 from typing import Optional
-from pydantic import Field
+from pydantic import EmailStr, Field
 from app.schemas.base import BaseSchema
 
 
@@ -31,4 +31,10 @@ class EnrollmentResponse(BaseSchema):
     message: str
     course_id: str
     student_id: str
+
+
+class AgregarEstudianteRequest(BaseSchema):
+    """El docente agrega a un estudiante a su curso por correo."""
+
+    email: EmailStr
 

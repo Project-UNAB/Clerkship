@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 
 from app import db
 from app.models import Consultation, Course, Student, StudentCourse, User
-from app.schemas import CourseResponse, CreateCourseRequest, EnrollmentResponse, validate_body
+from app.schemas import AgregarEstudianteRequest, CourseResponse, CreateCourseRequest, EnrollmentResponse, validate_body
 from app.utils import get_current_user, role_required
 
 cursos_bp = Blueprint("cursos", __name__)
@@ -128,6 +128,66 @@ def listar_estudiantes(course_id):
         })
 
     return jsonify({"estudiantes": resultado}), 200
+
+
+@cursos_bp.post("/<course_id>/estudiantes")
+@role_required("TEACHER")
+@validate_body(AgregarEstudianteRequest)
+def agregar_estudiante(course_id, validated_body: AgregarEstudianteRequest):
+    """El docente agrega a un estudiante existente a su curso, por correo.
+    No crea la cuenta: el estudiante tiene que haberse registrado antes."""
+    user = get_current_user()
+    course = Course.query.get(course_id)
+    if course is None:
+        return jsonify({"error": "Not Found", "message": "Curso no encontrado", "status_code": 404}), 404
+    if str(course.teacher_id) != str(user.id):
+        return jsonify({"error": "Forbidden", "message": "No eres el docente de este curso", "status_code": 403}), 403
+
+    email = validated_body.email.strip().lower()
+    estudiante = User.query.filter_by(email=email, role="STUDENT").first()
+    if estudiante is None:
+        return jsonify({
+            "error": "Not Found",
+            "message": "No hay ninguna cuenta de estudiante con ese correo. Pídele que se registre primero.",
+            "status_code": 404,
+        }), 404
+
+    if StudentCourse.query.filter_by(student_id=estudiante.id, course_id=course_id).first() is not None:
+        return jsonify({"error": "Conflict", "message": "Ese estudiante ya está matriculado en este curso.", "status_code": 409}), 409
+
+    db.session.add(StudentCourse(student_id=estudiante.id, course_id=course_id))
+    db.session.commit()
+
+    student = Student.query.get(estudiante.id)
+    return jsonify({
+        "user_id": str(estudiante.id),
+        "nombre": f"{estudiante.first_name} {estudiante.last_name}",
+        "email": estudiante.email,
+        "student_code": student.student_code if student else None,
+        "casos_completados": 0,
+        "casos_en_progreso": 0,
+    }), 201
+
+
+@cursos_bp.delete("/<course_id>/estudiantes/<student_id>")
+@role_required("TEACHER")
+def quitar_estudiante(course_id, student_id):
+    """El docente quita a un estudiante de su curso (no borra su cuenta, ni
+    las sesiones que ya haya hecho ahí — solo la matrícula)."""
+    user = get_current_user()
+    course = Course.query.get(course_id)
+    if course is None:
+        return jsonify({"error": "Not Found", "message": "Curso no encontrado", "status_code": 404}), 404
+    if str(course.teacher_id) != str(user.id):
+        return jsonify({"error": "Forbidden", "message": "No eres el docente de este curso", "status_code": 403}), 403
+
+    matricula = StudentCourse.query.filter_by(student_id=student_id, course_id=course_id).first()
+    if matricula is None:
+        return jsonify({"error": "Not Found", "message": "Ese estudiante no está matriculado en este curso", "status_code": 404}), 404
+
+    db.session.delete(matricula)
+    db.session.commit()
+    return jsonify({"ok": True}), 200
 
 
 @cursos_bp.delete("/<course_id>")

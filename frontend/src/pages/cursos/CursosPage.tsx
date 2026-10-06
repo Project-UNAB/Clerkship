@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Plus, Users, Trash2, X, GraduationCap } from 'lucide-react';
+import { Plus, Users, Trash2, X, GraduationCap, UserPlus } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import FeedbackFab from '../../components/shared/FeedbackFab';
 import { useCurrentUser } from '../../utils/currentUser';
 import { listMyCourses, type Course } from '../../data/consultasApi';
-import { crearCurso, borrarCurso, listarEstudiantesDeCurso, type EstudianteDeCurso } from '../../data/cursosApi';
+import {
+  crearCurso, borrarCurso, listarEstudiantesDeCurso,
+  agregarEstudianteACurso, quitarEstudianteDeCurso,
+  type EstudianteDeCurso,
+} from '../../data/cursosApi';
 import { mainAuthErrorMessage, getStoredUser } from '../../data/mainAuth';
 import '../../styles/cursos.css';
 
@@ -25,6 +29,11 @@ export default function CursosPage() {
   const [guardando, setGuardando] = useState(false);
   const [errorModal, setErrorModal] = useState<string | null>(null);
 
+  const [correoNuevo, setCorreoNuevo] = useState('');
+  const [agregando, setAgregando] = useState(false);
+  const [errorRoster, setErrorRoster] = useState<string | null>(null);
+  const [quitandoId, setQuitandoId] = useState<string | null>(null);
+
   function cargarCursos() {
     setLoading(true);
     setError(null);
@@ -37,11 +46,47 @@ export default function CursosPage() {
 
   function verRoster(curso: Course) {
     setSeleccionado(curso);
+    setErrorRoster(null);
     setCargandoRoster(true);
     listarEstudiantesDeCurso(curso.id)
       .then(r => setEstudiantes(r.estudiantes))
       .catch(err => setError(mainAuthErrorMessage(err)))
       .finally(() => setCargandoRoster(false));
+  }
+
+  async function handleAgregarEstudiante(e: React.FormEvent) {
+    e.preventDefault();
+    if (!seleccionado) return;
+    const correo = correoNuevo.trim().toLowerCase();
+    if (!correo) {
+      setErrorRoster('Escribe el correo del estudiante.');
+      return;
+    }
+    setAgregando(true);
+    setErrorRoster(null);
+    try {
+      const nuevo = await agregarEstudianteACurso(seleccionado.id, correo);
+      setEstudiantes(prev => [nuevo, ...prev]);
+      setCorreoNuevo('');
+    } catch (err) {
+      setErrorRoster(err instanceof Error ? err.message : 'No se pudo agregar al estudiante.');
+    } finally {
+      setAgregando(false);
+    }
+  }
+
+  async function handleQuitarEstudiante(estudiante: EstudianteDeCurso) {
+    if (!seleccionado) return;
+    if (!window.confirm(`¿Quitar a ${estudiante.nombre} de este curso? Sus sesiones ya hechas no se borran.`)) return;
+    setQuitandoId(estudiante.user_id);
+    try {
+      await quitarEstudianteDeCurso(seleccionado.id, estudiante.user_id);
+      setEstudiantes(prev => prev.filter(e => e.user_id !== estudiante.user_id));
+    } catch (err) {
+      setErrorRoster(err instanceof Error ? err.message : 'No se pudo quitar al estudiante.');
+    } finally {
+      setQuitandoId(null);
+    }
   }
 
   async function handleCrear(e: React.FormEvent) {
@@ -138,14 +183,30 @@ export default function CursosPage() {
             ) : (
               <>
                 <h2 className="cur-roster-titulo"><Users size={16} /> {seleccionado.name}</h2>
+
+                <form className="cur-agregar" onSubmit={handleAgregarEstudiante}>
+                  <input
+                    type="email"
+                    className="cur-input"
+                    placeholder="correo@del-estudiante.com"
+                    value={correoNuevo}
+                    onChange={e => setCorreoNuevo(e.target.value)}
+                  />
+                  <button type="submit" className="cur-btn cur-btn-sm" disabled={agregando}>
+                    <UserPlus size={14} /> {agregando ? 'Agregando…' : 'Agregar'}
+                  </button>
+                </form>
+                <p className="cur-card-sub">El estudiante tiene que haberse registrado antes — esto no crea la cuenta.</p>
+                {errorRoster && <p className="cur-error">{errorRoster}</p>}
+
                 {cargandoRoster ? (
                   <p className="cur-vacio">Cargando…</p>
                 ) : estudiantes.length === 0 ? (
-                  <p className="cur-vacio">Todavía no hay estudiantes matriculados. Se matriculan solos al iniciar su primera simulación.</p>
+                  <p className="cur-vacio">Todavía no hay estudiantes matriculados. Se matriculan solos al iniciar su primera simulación, o los agregás arriba por correo.</p>
                 ) : (
                   <div className="cur-tabla-wrap">
                     <table className="cur-tabla">
-                      <thead><tr><th>Nombre</th><th>Correo</th><th>Código</th><th>Completados</th><th>En progreso</th></tr></thead>
+                      <thead><tr><th>Nombre</th><th>Correo</th><th>Código</th><th>Completados</th><th>En progreso</th><th></th></tr></thead>
                       <tbody>
                         {estudiantes.map(e => (
                           <tr key={e.user_id}>
@@ -154,6 +215,11 @@ export default function CursosPage() {
                             <td>{e.student_code}</td>
                             <td>{e.casos_completados}</td>
                             <td>{e.casos_en_progreso}</td>
+                            <td>
+                              <button type="button" className="cur-icon-btn" title="Quitar del curso" disabled={quitandoId === e.user_id} onClick={() => handleQuitarEstudiante(e)}>
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>

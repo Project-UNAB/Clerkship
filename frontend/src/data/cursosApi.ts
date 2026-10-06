@@ -30,3 +30,14 @@ export interface EstudianteDeCurso {
 export function listarEstudiantesDeCurso(courseId: string): Promise<{ estudiantes: EstudianteDeCurso[] }> {
   return apiFetch(`/api/cursos/${courseId}/estudiantes`);
 }
+
+export function agregarEstudianteACurso(courseId: string, email: string): Promise<EstudianteDeCurso> {
+  return apiFetch(`/api/cursos/${courseId}/estudiantes`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function quitarEstudianteDeCurso(courseId: string, userId: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/cursos/${courseId}/estudiantes/${userId}`, { method: 'DELETE' });
+}
