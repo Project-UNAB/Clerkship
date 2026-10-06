@@ -190,7 +190,7 @@ INSTRUCCIONES CLÍNICAS:
 
         if openrouter.is_configured():
             try:
-                data, or_model = openrouter.generate_json(
+                data, or_model, _usage = openrouter.generate_json(
                     prompt, GeneratedCaseResponse.model_json_schema(), temperature=0.3)
                 parsed = GeneratedCaseResponse.model_validate(data)
                 parsed.provider_used = "OpenRouter"
@@ -367,7 +367,7 @@ REGLAS DE ACTUACIÓN Y COMPORTAMIENTO:
                 parsed = json.loads(raw_content)
             elif openrouter.is_configured():
                 logger.warning("Gemini no respondió en Agente 2 (%s). Probando OpenRouter.", model_err)
-                parsed, used_model = openrouter.generate_json(
+                parsed, used_model, _usage = openrouter.generate_json(
                     system_prompt, temperature=0.4, user_message=request.message)
                 provider = "OpenRouter"
             else:
@@ -540,7 +540,7 @@ TAREAS DE EVALUACIÓN:
 
             if openrouter.is_configured():
                 try:
-                    data, or_model = openrouter.generate_json(
+                    data, or_model, _usage = openrouter.generate_json(
                         prompt, EvaluationResultResponse.model_json_schema(), temperature=0.2)
                     parsed = EvaluationResultResponse.model_validate(data)
                     if request.consultation_id and not parsed.consultation_id:

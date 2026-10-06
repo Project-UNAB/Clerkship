@@ -106,6 +106,7 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
             caso, subtema, dificultad, avisos,
             provider_used="Mock", model_used=None,
             is_mock=True, error_details=error_details or resp.error,
+            uso_tokens=None,
         )
 
     avisos.extend(validar_signos_vitales(caso.get("signos_vitales")))
@@ -185,10 +186,11 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
     return _finalizar_caso(
         caso, subtema, dificultad, avisos,
         provider_used=resp.proveedor, model_used=resp.modelo, is_mock=False, error_details=None,
+        uso_tokens={"prompt_tokens": resp.prompt_tokens, "completion_tokens": resp.completion_tokens, "total_tokens": resp.total_tokens},
     )
 
 
-def _finalizar_caso(caso, subtema, dificultad, avisos, provider_used, model_used, is_mock, error_details) -> dict:
+def _finalizar_caso(caso, subtema, dificultad, avisos, provider_used, model_used, is_mock, error_details, uso_tokens=None) -> dict:
     presentacion, guardrail_saludo_activado = guardrail_saludo(caso["presentacion_inicial"], caso.get("sintomas_principales") or [])
     caso["presentacion_inicial"] = presentacion
 
@@ -208,6 +210,7 @@ def _finalizar_caso(caso, subtema, dificultad, avisos, provider_used, model_used
         "paciente": {"nombre": caso["datos_paciente"]["nombre"]},
         "estado_emocional_inicial": caso["estado_emocional_inicial"],
         "presentacion_inicial": caso["presentacion_inicial"],
+        "uso_tokens": uso_tokens,
         "meta": {
             "guardrail_saludo_activado": guardrail_saludo_activado,
             "avisos": avisos,
@@ -250,6 +253,7 @@ def chat(system_prompt_paciente: str, caso_completo_oculto: dict, historial: lis
             "consulta_terminada": demo["consulta_terminada"],
             "guardrails": [],
             "formato_valido": True,
+            "uso_tokens": None,
         }
 
     formato_valido = True
@@ -283,6 +287,7 @@ def chat(system_prompt_paciente: str, caso_completo_oculto: dict, historial: lis
         "consulta_terminada": consulta_terminada,
         "guardrails": guardrails,
         "formato_valido": formato_valido,
+        "uso_tokens": {"prompt_tokens": resp.prompt_tokens, "completion_tokens": resp.completion_tokens, "total_tokens": resp.total_tokens},
     }
 
 
@@ -365,7 +370,7 @@ def evaluar(caso_completo_oculto: dict, historial: list, hipotesis: str, diferen
     if resp.es_mock:
         ev = mock.evaluacion_demo()
         ev = calcular_puntaje(ev, caso_completo_oculto, acciones_clinicas, duracion_segundos)
-        return {"is_mock": True, "provider_used": "Mock", "model_used": None, "error_details": resp.error, "evaluacion": ev}
+        return {"is_mock": True, "provider_used": "Mock", "model_used": None, "error_details": resp.error, "evaluacion": ev, "uso_tokens": None}
 
     from app.services.simulador.scoring import validar_evaluacion
 
@@ -379,8 +384,11 @@ def evaluar(caso_completo_oculto: dict, historial: list, hipotesis: str, diferen
         ev = calcular_puntaje(ev, caso_completo_oculto, acciones_clinicas, duracion_segundos)
         return {
             "is_mock": True, "provider_used": "Mock", "model_used": None,
-            "error_details": f"La evaluacion devuelta no es utilizable: {exc}", "evaluacion": ev,
+            "error_details": f"La evaluacion devuelta no es utilizable: {exc}", "evaluacion": ev, "uso_tokens": None,
         }
 
     ev = calcular_puntaje(ev, caso_completo_oculto, acciones_clinicas, duracion_segundos)
-    return {"is_mock": False, "provider_used": resp.proveedor, "model_used": resp.modelo, "error_details": None, "evaluacion": ev}
+    return {
+        "is_mock": False, "provider_used": resp.proveedor, "model_used": resp.modelo, "error_details": None, "evaluacion": ev,
+        "uso_tokens": {"prompt_tokens": resp.prompt_tokens, "completion_tokens": resp.completion_tokens, "total_tokens": resp.total_tokens},
+    }

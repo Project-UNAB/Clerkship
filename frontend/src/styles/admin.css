@@ -77,6 +77,27 @@
 .adm-tabla th { background: var(--surface2, #f8fafc); font-weight: 700; }
 .adm-tabla tr:last-child td { border-bottom: none; }
 
+.adm-seccion-titulo { margin: 18px 0 10px; font-size: 14px; font-weight: 800; }
+
+/* Barra horizontal comparativa (tokens por agente) */
+.adm-chart-barras { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.adm-chart-fila { display: grid; grid-template-columns: 180px 1fr 80px; align-items: center; gap: 10px; }
+.adm-chart-label { font-size: 12px; color: var(--ink2, #475569); }
+.adm-chart-pista { height: 18px; border-radius: 6px; background: var(--surface2, #f1f5f9); overflow: hidden; }
+.adm-chart-relleno { height: 100%; border-radius: 6px; transition: width 0.3s ease; min-width: 2px; }
+.adm-chart-valor { font-size: 12px; font-weight: 700; text-align: right; }
+
+/* Columnas diarias apiladas */
+.adm-chart-dias { display: flex; align-items: flex-end; gap: 6px; height: 160px; padding: 10px 4px; border: 1px solid var(--border, #e2e8f0); border-radius: 10px; overflow-x: auto; }
+.adm-chart-dia { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 22px; flex: 1; }
+.adm-chart-dia-barras { display: flex; flex-direction: column-reverse; width: 14px; height: 100%; justify-content: flex-start; }
+.adm-chart-dia-segmento { width: 100%; }
+.adm-chart-dia-fecha { margin-top: 4px; font-size: 10px; color: var(--ink3, #64748b); white-space: nowrap; }
+
+.adm-chart-leyenda { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+.adm-chart-leyenda-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink2, #475569); }
+.adm-chart-leyenda-item i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+
 .adm-error { color: #b91c1c; font-size: 13px; margin-bottom: 10px; }
 .adm-vacio { color: var(--ink3, #64748b); font-size: 13px; }
 

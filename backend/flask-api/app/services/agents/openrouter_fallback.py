@@ -41,7 +41,9 @@ def _extract_json(text: str) -> Dict[str, Any]:
 
 def generate_json(prompt: str, schema: Optional[dict] = None, temperature: float = 0.3,
                   user_message: Optional[str] = None, attempts: int = 2) -> tuple:
-    """Devuelve (dict_json, modelo_usado). Lanza excepción si todos los modelos fallan."""
+    """Devuelve (dict_json, modelo_usado, usage). `usage` es el dict
+    prompt_tokens/completion_tokens/total_tokens que manda OpenRouter
+    (formato compatible con OpenAI), o None si no vino."""
     key = os.getenv("OPENROUTER_API_KEY", "").strip()
     if not key:
         raise RuntimeError("OPENROUTER_API_KEY no configurada")
@@ -81,8 +83,9 @@ def generate_json(prompt: str, schema: Optional[dict] = None, temperature: float
                 if res.status_code in (429, 502, 503, 504):
                     raise RuntimeError(f"OpenRouter {res.status_code}: {res.text[:200]}")
                 res.raise_for_status()
-                content = ((res.json().get("choices") or [{}])[0].get("message") or {}).get("content")
-                return _extract_json(content or ""), model
+                payload = res.json()
+                content = ((payload.get("choices") or [{}])[0].get("message") or {}).get("content")
+                return _extract_json(content or ""), model, payload.get("usage")
             except Exception as exc:  # noqa: BLE001
                 last = exc
                 logger.warning("OpenRouter modelo '%s' falló (intento %d): %s", model, i + 1, exc)

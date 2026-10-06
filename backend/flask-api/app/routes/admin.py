@@ -10,7 +10,7 @@ from flask import Blueprint, jsonify, request
 
 from app import db
 from app.models import (
-    Article, CommunityComment, CommunityLike, CommunityPost, Consultation, Course,
+    AgenteUsoTokens, Article, CommunityComment, CommunityLike, CommunityPost, Consultation, Course,
     FeedbackBiblioteca, FeedbackCasos, FeedbackHistorial,
     FeedbackInicio, Student, Teacher, User, UserFile,
     ValidacionBiblioteca, ValidacionCasos, ValidacionHistorial, ValidacionInicio,
@@ -28,6 +28,7 @@ VALIDACION_MODELOS = {
     "inicio": ValidacionInicio, "casos": ValidacionCasos,
     "historial": ValidacionHistorial, "biblioteca": ValidacionBiblioteca,
 }
+AGENTES_SIMULADOR = ("GENERADOR", "PACIENTE", "EVALUADOR")
 
 
 def _error(status: int, mensaje: str):
@@ -228,3 +229,65 @@ def listar_validacion_admin(pestana):
         return _error(404, "Pestaña no válida.")
     filas = modelo.query.order_by(modelo.created_at.desc()).limit(200).all()
     return jsonify({"respuestas": [_fila_a_dict(f) for f in filas]}), 200
+
+
+@admin_bp.get("/tokens")
+@role_required("ADMIN")
+def estadisticas_tokens():
+    """Uso de tokens de los 3 agentes del simulador (Generador, Paciente,
+    Evaluador), divididos por agente, más un resumen general y una serie
+    diaria de los últimos 14 días para graficar."""
+    por_agente = {}
+    for ag in AGENTES_SIMULADOR:
+        total = AgenteUsoTokens.query.filter_by(agente=ag).count()
+        reales = AgenteUsoTokens.query.filter_by(agente=ag, es_mock=False).count()
+        prompt_t, completion_t, total_t, latencia_prom = db.session.query(
+            db.func.coalesce(db.func.sum(AgenteUsoTokens.prompt_tokens), 0),
+            db.func.coalesce(db.func.sum(AgenteUsoTokens.completion_tokens), 0),
+            db.func.coalesce(db.func.sum(AgenteUsoTokens.total_tokens), 0),
+            db.func.avg(AgenteUsoTokens.latency_ms),
+        ).filter(AgenteUsoTokens.agente == ag).one()
+        por_agente[ag] = {
+            "llamadas": total,
+            "llamadas_reales": reales,
+            "llamadas_mock": total - reales,
+            "prompt_tokens": int(prompt_t),
+            "completion_tokens": int(completion_t),
+            "total_tokens": int(total_t),
+            "latencia_prom_ms": round(float(latencia_prom), 1) if latencia_prom is not None else None,
+        }
+
+    general = {
+        "llamadas": sum(v["llamadas"] for v in por_agente.values()),
+        "llamadas_reales": sum(v["llamadas_reales"] for v in por_agente.values()),
+        "llamadas_mock": sum(v["llamadas_mock"] for v in por_agente.values()),
+        "prompt_tokens": sum(v["prompt_tokens"] for v in por_agente.values()),
+        "completion_tokens": sum(v["completion_tokens"] for v in por_agente.values()),
+        "total_tokens": sum(v["total_tokens"] for v in por_agente.values()),
+    }
+
+    por_proveedor = dict(
+        db.session.query(AgenteUsoTokens.proveedor, db.func.count(AgenteUsoTokens.id))
+        .group_by(AgenteUsoTokens.proveedor).all()
+    )
+
+    desde = datetime.now(timezone.utc) - timedelta(days=14)
+    filas = AgenteUsoTokens.query.filter(AgenteUsoTokens.created_at >= desde).all()
+    serie: dict = {}
+    for f in filas:
+        if not f.created_at:
+            continue
+        dia = f.created_at.date().isoformat()
+        bucket = serie.setdefault(dia, {"GENERADOR": 0, "PACIENTE": 0, "EVALUADOR": 0})
+        bucket[f.agente] = bucket.get(f.agente, 0) + (f.total_tokens or 0)
+    serie_diaria = [
+        {"fecha": dia, **valores, "total": sum(valores.values())}
+        for dia, valores in sorted(serie.items())
+    ]
+
+    return jsonify({
+        "general": general,
+        "por_agente": por_agente,
+        "por_proveedor": por_proveedor,
+        "serie_diaria": serie_diaria,
+    }), 200

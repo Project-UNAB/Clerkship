@@ -25,13 +25,18 @@ logger = logging.getLogger(__name__)
 
 class RespuestaModelo:
     def __init__(self, texto: Optional[str], proveedor: str, modelo: Optional[str], es_mock: bool,
-                 error: Optional[str] = None, latency_ms: Optional[float] = None):
+                 error: Optional[str] = None, latency_ms: Optional[float] = None,
+                 prompt_tokens: Optional[int] = None, completion_tokens: Optional[int] = None,
+                 total_tokens: Optional[int] = None):
         self.texto = texto
         self.proveedor = proveedor
         self.modelo = modelo
         self.es_mock = es_mock
         self.error = error
         self.latency_ms = latency_ms
+        self.prompt_tokens = prompt_tokens
+        self.completion_tokens = completion_tokens
+        self.total_tokens = total_tokens
 
 
 def parsear_json(raw: str) -> dict:
@@ -88,7 +93,14 @@ def llamar_modelo(partes_contenido: List[str], temperature: float = 0.4) -> Resp
                 )
                 texto = (getattr(response, "text", None) or "").strip()
                 if texto:
-                    return RespuestaModelo(texto, "Google Gemini", candidato, False, latency_ms=(time.perf_counter() - start) * 1000)
+                    uso = getattr(response, "usage_metadata", None)
+                    return RespuestaModelo(
+                        texto, "Google Gemini", candidato, False,
+                        latency_ms=(time.perf_counter() - start) * 1000,
+                        prompt_tokens=getattr(uso, "prompt_token_count", None) if uso else None,
+                        completion_tokens=getattr(uso, "candidates_token_count", None) if uso else None,
+                        total_tokens=getattr(uso, "total_token_count", None) if uso else None,
+                    )
             except Exception as exc:  # noqa: BLE001
                 ultimo_error = exc
                 logger.warning("Simulador: Gemini modelo '%s' fallo: %s", candidato, exc)
@@ -97,10 +109,13 @@ def llamar_modelo(partes_contenido: List[str], temperature: float = 0.4) -> Resp
         try:
             sistema = partes_contenido[0]
             usuario = partes_contenido[-1] if len(partes_contenido) > 1 else "Responde en el formato indicado."
-            data, modelo_or = openrouter.generate_json(sistema, temperature=temperature, user_message=usuario)
+            data, modelo_or, uso = openrouter.generate_json(sistema, temperature=temperature, user_message=usuario)
+            uso = uso or {}
             return RespuestaModelo(
                 json.dumps(data, ensure_ascii=False), "OpenRouter", modelo_or, False,
                 latency_ms=(time.perf_counter() - start) * 1000,
+                prompt_tokens=uso.get("prompt_tokens"), completion_tokens=uso.get("completion_tokens"),
+                total_tokens=uso.get("total_tokens"),
             )
         except Exception as exc:  # noqa: BLE001
             ultimo_error = exc

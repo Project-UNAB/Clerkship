@@ -23,7 +23,7 @@ from flask_jwt_extended import jwt_required
 from sqlalchemy.sql import func
 
 from app import db, get_mongo_db
-from app.models import AiEvaluation, Consultation, Course, StudentCourse
+from app.models import AgenteUsoTokens, AiEvaluation, Consultation, Course, StudentCourse
 from app.schemas import (
     ConsultationDetailResponse,
     ConsultationResponse,
@@ -60,6 +60,27 @@ def _real_ai_expected() -> bool:
         os.getenv("AI_AGENT_PROVIDER", "gemini").lower() != "mock"
         and bool(os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("OPENROUTER_API_KEY", "").strip())
     )
+
+
+def _registrar_uso_tokens(agente: str, consultation_id, resultado: dict):
+    """Guarda una fila de uso de tokens del agente, si la llamada llegó a un
+    proveedor real (resultado['uso_tokens'] viene None en mock). No hace
+    fallar el endpoint si algo sale mal acá — es solo estadística."""
+    uso = resultado.get("uso_tokens")
+    try:
+        db.session.add(AgenteUsoTokens(
+            agente=agente,
+            consultation_id=consultation_id,
+            proveedor=resultado.get("provider_used") or "Mock",
+            modelo=resultado.get("model_used"),
+            es_mock=bool(resultado.get("is_mock")),
+            prompt_tokens=(uso or {}).get("prompt_tokens"),
+            completion_tokens=(uso or {}).get("completion_tokens"),
+            total_tokens=(uso or {}).get("total_tokens"),
+        ))
+        db.session.commit()
+    except Exception:  # noqa: BLE001
+        db.session.rollback()
 
 
 def _servicio_no_disponible(que: str, detalle=None):
@@ -239,6 +260,7 @@ def crear_consulta(validated_body: CreateConsultationRequest):
     )
     db.session.add(consultation)
     db.session.commit()
+    _registrar_uso_tokens("GENERADOR", consultation.id, resultado)
 
     supabase_externo.registrar_caso_generado(seleccion["subtema"], seleccion["dificultad"])
 
@@ -371,6 +393,7 @@ def enviar_mensaje(consultation_id, validated_body: SendMessageRequest):
         historial=_historial_para_agentes(chat_history),
         mensaje_estudiante=content,
     )
+    _registrar_uso_tokens("PACIENTE", consultation.id, resultado)
 
     if resultado["is_mock"] and _real_ai_expected():
         return _servicio_no_disponible("responder", resultado.get("error_details"))
@@ -484,6 +507,7 @@ def finalizar_consulta(consultation_id, validated_body: FinishConsultationReques
         duracion_segundos=validated_body.duration_seconds,
     )
     execution_time = time.perf_counter() - inicio
+    _registrar_uso_tokens("EVALUADOR", consultation.id, resultado)
 
     if resultado["is_mock"] and _real_ai_expected():
         return _servicio_no_disponible("evaluar", resultado.get("error_details"))

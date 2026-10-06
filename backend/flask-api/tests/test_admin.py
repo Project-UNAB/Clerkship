@@ -19,6 +19,7 @@ RUTAS = [
     ("delete", "/api/admin/biblioteca/11111111-1111-1111-1111-111111111111"),
     ("get", "/api/admin/feedback/inicio"),
     ("get", "/api/admin/validacion/inicio"),
+    ("get", "/api/admin/tokens"),
 ]
 
 

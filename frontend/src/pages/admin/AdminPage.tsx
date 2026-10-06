@@ -5,7 +5,8 @@ import {
   listarPostsAdmin, borrarPostAdmin,
   listarBibliotecaAdmin, borrarArticuloAdmin,
   listarFeedbackAdmin, listarValidacionAdmin,
-  type Estadisticas, type AdminUsuario,
+  getEstadisticasTokens,
+  type Estadisticas, type AdminUsuario, type EstadisticasTokens, type NombreAgente,
 } from '../../data/adminApi';
 import { mainAuthErrorMessage } from '../../data/mainAuth';
 import {
@@ -15,7 +16,7 @@ import {
 import { formatFileSize } from '../../utils/fileUpload';
 import '../../styles/admin.css';
 
-type Tab = 'resumen' | 'usuarios' | 'comunidad' | 'biblioteca' | 'feedback' | 'validacion';
+type Tab = 'resumen' | 'usuarios' | 'comunidad' | 'biblioteca' | 'feedback' | 'validacion' | 'tokens';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'resumen', label: 'Resumen' },
   { id: 'usuarios', label: 'Usuarios' },
@@ -23,7 +24,19 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'biblioteca', label: 'Biblioteca' },
   { id: 'feedback', label: 'Retroalimentación' },
   { id: 'validacion', label: 'Validación expertos' },
+  { id: 'tokens', label: 'Tokens de agentes' },
 ];
+
+const NOMBRES_AGENTE: Record<NombreAgente, string> = {
+  GENERADOR: 'Agente 1 · Generador de casos',
+  PACIENTE: 'Agente 2 · Paciente virtual',
+  EVALUADOR: 'Agente 3 · Evaluador',
+};
+const COLOR_AGENTE: Record<NombreAgente, string> = {
+  GENERADOR: '#0ea5e9',
+  PACIENTE: '#8b5cf6',
+  EVALUADOR: '#f97316',
+};
 const PESTANAS = ['inicio', 'casos', 'historial', 'biblioteca'] as const;
 
 /** Tabla genérica: cada fila puede tener columnas distintas (feedback y
@@ -409,6 +422,98 @@ function PanelValidacion() {
   );
 }
 
+function PanelTokens() {
+  const [datos, setDatos] = useState<EstadisticasTokens | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { getEstadisticasTokens().then(setDatos).catch(err => setError(mainAuthErrorMessage(err))); }, []);
+
+  if (error) return <p className="adm-error">{error}</p>;
+  if (!datos) return <p className="adm-vacio">Cargando…</p>;
+
+  const agentes = Object.entries(datos.por_agente) as [NombreAgente, typeof datos.por_agente[NombreAgente]][];
+  const maxTokensAgente = Math.max(1, ...agentes.map(([, v]) => v.total_tokens));
+  const maxTokensDia = Math.max(1, ...datos.serie_diaria.map(d => d.total));
+
+  return (
+    <div>
+      {/* Resumen general */}
+      <div className="adm-stats-grid" style={{ marginBottom: 22 }}>
+        <div className="adm-stat-card">
+          <h3>Llamadas totales (los 3 agentes)</h3>
+          <p className="adm-stat-num">{datos.general.llamadas}</p>
+          <p className="adm-stat-sub">{datos.general.llamadas_reales} reales · {datos.general.llamadas_mock} mock</p>
+        </div>
+        <div className="adm-stat-card">
+          <h3>Tokens totales</h3>
+          <p className="adm-stat-num">{datos.general.total_tokens.toLocaleString('es-CO')}</p>
+          <p className="adm-stat-sub">{datos.general.prompt_tokens.toLocaleString('es-CO')} de entrada · {datos.general.completion_tokens.toLocaleString('es-CO')} de salida</p>
+        </div>
+        <div className="adm-stat-card">
+          <h3>Proveedor usado</h3>
+          {Object.entries(datos.por_proveedor).map(([p, n]) => <p key={p} className="adm-stat-sub">{p}: {n} llamadas</p>)}
+        </div>
+      </div>
+
+      {/* Por agente: tarjeta + barra comparativa */}
+      <h3 className="adm-seccion-titulo">Por agente</h3>
+      <div className="adm-stats-grid" style={{ marginBottom: 10 }}>
+        {agentes.map(([nombre, v]) => (
+          <div key={nombre} className="adm-stat-card">
+            <h3>{NOMBRES_AGENTE[nombre]}</h3>
+            <p className="adm-stat-num">{v.total_tokens.toLocaleString('es-CO')}</p>
+            <p className="adm-stat-sub">{v.llamadas} llamadas ({v.llamadas_reales} reales, {v.llamadas_mock} mock)</p>
+            <p className="adm-stat-sub">Entrada {v.prompt_tokens.toLocaleString('es-CO')} · Salida {v.completion_tokens.toLocaleString('es-CO')}</p>
+            {v.latencia_prom_ms !== null && <p className="adm-stat-sub">{(v.latencia_prom_ms / 1000).toFixed(1)}s de latencia promedio</p>}
+          </div>
+        ))}
+      </div>
+
+      <div className="adm-chart-barras">
+        {agentes.map(([nombre, v]) => (
+          <div key={nombre} className="adm-chart-fila">
+            <span className="adm-chart-label">{NOMBRES_AGENTE[nombre]}</span>
+            <div className="adm-chart-pista">
+              <div className="adm-chart-relleno" style={{ width: `${(v.total_tokens / maxTokensAgente) * 100}%`, background: COLOR_AGENTE[nombre] }} />
+            </div>
+            <span className="adm-chart-valor">{v.total_tokens.toLocaleString('es-CO')}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Serie diaria, últimos 14 días */}
+      <h3 className="adm-seccion-titulo">Últimos 14 días</h3>
+      {datos.serie_diaria.length === 0 ? (
+        <p className="adm-vacio">Sin uso registrado todavía en este período.</p>
+      ) : (
+        <>
+          <div className="adm-chart-dias">
+            {datos.serie_diaria.map(d => (
+              <div key={d.fecha} className="adm-chart-dia" title={`${d.fecha}: ${d.total} tokens`}>
+                <div className="adm-chart-dia-barras">
+                  {(['EVALUADOR', 'PACIENTE', 'GENERADOR'] as NombreAgente[]).map(ag => (
+                    <div
+                      key={ag}
+                      className="adm-chart-dia-segmento"
+                      style={{ height: `${(d[ag] / maxTokensDia) * 100}%`, background: COLOR_AGENTE[ag] }}
+                    />
+                  ))}
+                </div>
+                <span className="adm-chart-dia-fecha">{d.fecha.slice(5)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="adm-chart-leyenda">
+            {(Object.keys(NOMBRES_AGENTE) as NombreAgente[]).map(ag => (
+              <span key={ag} className="adm-chart-leyenda-item"><i style={{ background: COLOR_AGENTE[ag] }} />{NOMBRES_AGENTE[ag]}</span>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Panel de administrador. A propósito minimalista: tablas simples, sin
  *  animaciones ni componentes pesados — el trabajo real está en el backend. */
 export default function AdminPage() {
@@ -447,6 +552,7 @@ export default function AdminPage() {
         {tab === 'biblioteca' && <PanelBiblioteca />}
         {tab === 'feedback' && <PanelFeedback />}
         {tab === 'validacion' && <PanelValidacion />}
+        {tab === 'tokens' && <PanelTokens />}
       </main>
     </div>
   );

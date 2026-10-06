@@ -1816,6 +1816,21 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+  /api/admin/tokens:
+    get:
+      tags:
+      - Administración
+      summary: Uso de tokens de los 3 agentes del simulador, con resumen general
+      operationId: adminEstadisticasTokens
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
   /api/feedback/inicio:
     post:
       tags:

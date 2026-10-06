@@ -67,3 +67,26 @@ export function listarFeedbackAdmin(pestana: string): Promise<{ respuestas: Reco
 export function listarValidacionAdmin(pestana: string): Promise<{ respuestas: Record<string, any>[] }> {
   return apiFetch(`/api/admin/validacion/${pestana}`);
 }
+
+export type NombreAgente = 'GENERADOR' | 'PACIENTE' | 'EVALUADOR';
+
+export interface UsoAgente {
+  llamadas: number;
+  llamadas_reales: number;
+  llamadas_mock: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  latencia_prom_ms: number | null;
+}
+
+export interface EstadisticasTokens {
+  general: Omit<UsoAgente, 'latencia_prom_ms'>;
+  por_agente: Record<NombreAgente, UsoAgente>;
+  por_proveedor: Record<string, number>;
+  serie_diaria: { fecha: string; GENERADOR: number; PACIENTE: number; EVALUADOR: number; total: number }[];
+}
+
+export function getEstadisticasTokens(): Promise<EstadisticasTokens> {
+  return apiFetch('/api/admin/tokens');
+}
