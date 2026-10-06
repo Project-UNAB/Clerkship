@@ -38,6 +38,7 @@
 .cur-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
 
 .cur-lista { display: flex; flex-direction: column; gap: 8px; }
+.cur-lista-estudiante { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
 .cur-card {
   display: flex;
   align-items: center;

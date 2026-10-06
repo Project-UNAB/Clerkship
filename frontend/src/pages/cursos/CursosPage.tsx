@@ -1,22 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Plus, Users, Trash2, X, GraduationCap, UserPlus } from 'lucide-react';
+import { Plus, Users, Trash2, X, GraduationCap, UserPlus, LogOut } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import FeedbackFab from '../../components/shared/FeedbackFab';
-import { useCurrentUser } from '../../utils/currentUser';
 import { listMyCourses, type Course } from '../../data/consultasApi';
 import {
   crearCurso, borrarCurso, listarEstudiantesDeCurso,
-  agregarEstudianteACurso, quitarEstudianteDeCurso,
+  agregarEstudianteACurso, quitarEstudianteDeCurso, salirDeCurso,
   type EstudianteDeCurso,
 } from '../../data/cursosApi';
 import { mainAuthErrorMessage, getStoredUser } from '../../data/mainAuth';
 import '../../styles/cursos.css';
 
 export default function CursosPage() {
-  const user = useCurrentUser();
+  const esDocente = getStoredUser()?.role === 'TEACHER';
   const [cursos, setCursos] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saliendoId, setSaliendoId] = useState<string | null>(null);
 
   const [seleccionado, setSeleccionado] = useState<Course | null>(null);
   const [estudiantes, setEstudiantes] = useState<EstudianteDeCurso[]>([]);
@@ -124,15 +124,56 @@ export default function CursosPage() {
     }
   }
 
-  // Esta pantalla es solo para docentes — un estudiante no tiene nada que hacer acá.
-  // Compara contra el rol real (TEACHER), no contra la etiqueta traducida: así
-  // no depende de que el texto coincida carácter por carácter.
-  if (user && getStoredUser()?.role !== 'TEACHER') {
+  async function handleSalir(curso: Course) {
+    if (!window.confirm(`¿Salir de "${curso.name}"? Tus sesiones ya hechas no se borran.`)) return;
+    setSaliendoId(curso.id);
+    try {
+      await salirDeCurso(curso.id);
+      setCursos(prev => prev.filter(c => c.id !== curso.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo salir del curso.');
+    } finally {
+      setSaliendoId(null);
+    }
+  }
+
+  // Vista del estudiante: solo lectura, sin crear/borrar cursos ni roster.
+  if (!esDocente) {
     return (
       <div className="dash-root">
         <Sidebar />
+        <FeedbackFab pestana="inicio" />
         <div className="cur-wrapper">
-          <p className="cur-vacio">Esta pantalla es solo para docentes.</p>
+          <header className="cur-header">
+            <div>
+              <h1 className="cur-title"><GraduationCap size={22} /> Mis cursos</h1>
+              <p className="cur-subtitle">Los cursos en los que estás matriculado.</p>
+            </div>
+          </header>
+
+          {error && <p className="cur-error">{error}</p>}
+
+          {loading ? (
+            <p className="cur-vacio">Cargando…</p>
+          ) : cursos.length === 0 ? (
+            <p className="cur-vacio">Todavía no estás matriculado en ningún curso. Se matricula solo al iniciar tu primera simulación, o tu docente te agrega por tu correo.</p>
+          ) : (
+            <div className="cur-lista cur-lista-estudiante">
+              {cursos.map(c => (
+                <div key={c.id} className="cur-card">
+                  <div>
+                    <p className="cur-card-nombre">{c.name}</p>
+                    <p className="cur-card-sub">
+                      {c.academic_period || 'Sin período'}{c.teacher_name ? ` · Docente: ${c.teacher_name}` : ''}
+                    </p>
+                  </div>
+                  <button type="button" className="cur-icon-btn" title="Salir del curso" disabled={saliendoId === c.id} onClick={() => handleSalir(c)}>
+                    <LogOut size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );

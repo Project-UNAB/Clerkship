@@ -97,6 +97,8 @@ export interface Course {
   description: string | null;
   academic_period: string | null;
   teacher_id: string;
+  /** Solo viene cuando lo pide un estudiante (GET /api/cursos/mios). */
+  teacher_name?: string | null;
 }
 
 export function listMyCourses(): Promise<Course[]> {

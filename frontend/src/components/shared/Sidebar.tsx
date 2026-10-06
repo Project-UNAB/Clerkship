@@ -8,7 +8,7 @@ import { auth } from '../../data/firebase';
 import { getInitialTheme, triggerThemeToggle, type ThemeMode } from '../../utils/themeHelper';
 import { logoutUserSession } from '../../utils/authConsent';
 import { useCurrentUser } from '../../utils/currentUser';
-import { clearMainAuthSession, getStoredUser } from '../../data/mainAuth';
+import { clearMainAuthSession } from '../../data/mainAuth';
 import logoUrl from '../../assets/Logo Clerkship.svg';
 
 /* ── Panel content per section ─────────────────────────────── */
@@ -69,12 +69,10 @@ export default function Sidebar() {
   const activeModulo          = searchParams.get('modulo');
   const currentUser           = useCurrentUser();
 
-  // "Mis cursos" solo aplica a docentes — no se agrega al DASH_NAV
-  // compartido para no mostrárselo también a estudiantes.
-  const esDocente = getStoredUser()?.role === 'TEACHER';
-  const navTabs = esDocente
-    ? [...DASH_NAV, { id: 'mis-cursos', label: 'Mis cursos', Icon: GraduationCap, route: '/mis-cursos' }]
-    : DASH_NAV;
+  // "Mis cursos" aplica a estudiantes y docentes (cada uno ve una vista
+  // distinta ahí) — no se agrega al DASH_NAV compartido porque ADMIN nunca
+  // usa este Sidebar (tiene el suyo propio en /admin).
+  const navTabs = [...DASH_NAV, { id: 'mis-cursos', label: 'Mis cursos', Icon: GraduationCap, route: '/mis-cursos' }];
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [panelOpen, setPanelOpenRaw] = useState<boolean>(() => {

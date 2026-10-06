@@ -41,3 +41,8 @@ export function agregarEstudianteACurso(courseId: string, email: string): Promis
 export function quitarEstudianteDeCurso(courseId: string, userId: string): Promise<{ ok: boolean }> {
   return apiFetch(`/api/cursos/${courseId}/estudiantes/${userId}`, { method: 'DELETE' });
 }
+
+/** El propio estudiante se sale de un curso en el que está matriculado. */
+export function salirDeCurso(courseId: string): Promise<{ message: string }> {
+  return apiFetch(`/api/cursos/${courseId}/matricular`, { method: 'DELETE' });
+}

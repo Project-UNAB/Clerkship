@@ -23,14 +23,20 @@ def listar_mios():
 
     if user.role == "TEACHER":
         courses = Course.query.filter_by(teacher_id=user.id).all()
-    else:
-        courses = (
-            Course.query.join(StudentCourse, StudentCourse.course_id == Course.id)
-            .filter(StudentCourse.student_id == user.id)
-            .all()
-        )
+        return jsonify([c.to_dict() for c in courses]), 200
 
-    return jsonify([c.to_dict() for c in courses]), 200
+    courses = (
+        Course.query.join(StudentCourse, StudentCourse.course_id == Course.id)
+        .filter(StudentCourse.student_id == user.id)
+        .all()
+    )
+    resultado = []
+    for c in courses:
+        d = c.to_dict()
+        docente = User.query.get(c.teacher_id) if c.teacher_id else None
+        d["teacher_name"] = f"{docente.first_name} {docente.last_name}" if docente else None
+        resultado.append(d)
+    return jsonify(resultado), 200
 
 
 @cursos_bp.post("")
