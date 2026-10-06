@@ -11,10 +11,23 @@
 .adm-sidebar {
   width: 220px;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
   padding: 24px 16px;
   border-right: 1px solid var(--border, #e2e8f0);
   background: var(--surface, #fff);
 }
+
+.adm-sidebar-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.adm-logout-btn { display: flex; align-items: center; gap: 8px; color: #b91c1c; }
+.adm-logout-btn:hover { background: rgba(185, 28, 28, 0.08); }
 .adm-logo { font-size: 16px; font-weight: 800; margin: 0 0 20px; }
 
 .adm-nav-btn {

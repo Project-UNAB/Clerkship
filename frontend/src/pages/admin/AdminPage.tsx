@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { signOut } from 'firebase/auth';
+import { LogOut } from 'lucide-react';
+import { auth } from '../../data/firebase';
+import { logoutUserSession } from '../../utils/authConsent';
+import { clearMainAuthSession } from '../../data/mainAuth';
 import { useCurrentUser } from '../../utils/currentUser';
 import {
   getEstadisticas, listarUsuarios, actualizarUsuario,
@@ -518,7 +524,19 @@ function PanelTokens() {
  *  animaciones ni componentes pesados — el trabajo real está en el backend. */
 export default function AdminPage() {
   const user = useCurrentUser();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('resumen');
+
+  async function handleLogout() {
+    logoutUserSession();
+    clearMainAuthSession();
+    try {
+      await signOut(auth);
+    } catch {
+      // Sin sesión de Firebase activa
+    }
+    navigate('/', { replace: true });
+  }
 
   if (!user) return <div className="adm-root"><p className="adm-vacio">Cargando…</p></div>;
 
@@ -544,6 +562,12 @@ export default function AdminPage() {
             </button>
           ))}
         </nav>
+        <div className="adm-sidebar-footer">
+          <span className="adm-stat-sub">{user.email}</span>
+          <button type="button" className="adm-nav-btn adm-logout-btn" onClick={handleLogout}>
+            <LogOut size={14} /> Cerrar sesión
+          </button>
+        </div>
       </aside>
       <main className="adm-content">
         {tab === 'resumen' && <PanelResumen />}
