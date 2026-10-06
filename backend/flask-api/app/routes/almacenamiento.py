@@ -7,7 +7,7 @@ Flujo de subida:
 """
 import uuid
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from pydantic import Field
 from sqlalchemy import func
@@ -31,6 +31,11 @@ class PublicarRequest(BaseSchema):
     titulo: str | None = Field(None, max_length=255)
     descripcion: str | None = Field(None, max_length=2000)
     specialty: str | None = Field(None, max_length=100)
+
+
+class ActualizarArchivoRequest(BaseSchema):
+    nombre: str | None = Field(None, min_length=1, max_length=255)
+    carpeta_id: str | None = Field(None, description="null o vacío para quitar la carpeta")
 
 
 def _error(status: int, mensaje: str):
@@ -65,11 +70,14 @@ def uso():
 @almacenamiento_bp.get("/archivos")
 @jwt_required()
 def listar_archivos():
-    archivos = (
-        UserFile.query.filter_by(owner_id=_usuario_id(), estado="LISTO")
-        .order_by(UserFile.created_at.desc())
-        .all()
-    )
+    query = UserFile.query.filter_by(owner_id=_usuario_id(), estado="LISTO")
+    carpeta_id = request.args.get("carpeta_id")
+    if carpeta_id:
+        try:
+            query = query.filter_by(carpeta_id=uuid.UUID(carpeta_id))
+        except ValueError:
+            return _error(400, "carpeta_id inválido.")
+    archivos = query.order_by(UserFile.created_at.desc()).all()
     return jsonify({"archivos": [a.to_dict() for a in archivos]}), 200
 
 
@@ -78,7 +86,7 @@ def listar_archivos():
 @validate_body(SubidaRequest)
 def iniciar_subida(validated_body: SubidaRequest):
     if validated_body.mime_type not in storage.TIPOS_PERMITIDOS:
-        return _error(400, "Solo se permiten archivos PDF.")
+        return _error(400, "Ese tipo de archivo no está permitido.")
     if validated_body.size_bytes > storage.MAX_FILE_BYTES:
         return _error(413, "El archivo supera el máximo de 100 MB.")
 
@@ -96,7 +104,7 @@ def iniciar_subida(validated_body: SubidaRequest):
             return _error(404, "Carpeta no encontrada.")
         carpeta_id = carpeta.id
 
-    clave = storage.nueva_clave(str(owner_id), validated_body.nombre)
+    clave = storage.nueva_clave(str(owner_id), validated_body.mime_type)
     archivo = UserFile(
         owner_id=owner_id,
         nombre=validated_body.nombre.strip(),
@@ -163,6 +171,36 @@ def descargar(file_id):
         return _error(503, str(err))
 
 
+@almacenamiento_bp.patch("/archivos/<file_id>")
+@jwt_required()
+@validate_body(ActualizarArchivoRequest)
+def actualizar_archivo(file_id, validated_body: ActualizarArchivoRequest):
+    owner_id = _usuario_id()
+    archivo = _archivo_del_usuario(file_id, owner_id)
+    if archivo is None:
+        return _error(404, "Archivo no encontrado.")
+
+    if validated_body.nombre:
+        archivo.nombre = validated_body.nombre.strip()
+
+    data = request.get_json(silent=True) or {}
+    if "carpeta_id" in data:
+        carpeta_id_raw = data["carpeta_id"]
+        if carpeta_id_raw:
+            try:
+                carpeta = DocumentFolder.query.filter_by(id=uuid.UUID(carpeta_id_raw), owner_user_id=owner_id).first()
+            except ValueError:
+                carpeta = None
+            if carpeta is None:
+                return _error(404, "Carpeta no encontrada.")
+            archivo.carpeta_id = carpeta.id
+        else:
+            archivo.carpeta_id = None
+
+    db.session.commit()
+    return jsonify({"archivo": archivo.to_dict()}), 200
+
+
 @almacenamiento_bp.delete("/archivos/<file_id>")
 @jwt_required()
 def borrar_archivo(file_id):
@@ -186,6 +224,8 @@ def publicar_en_biblioteca(file_id, validated_body: PublicarRequest):
     archivo = _archivo_del_usuario(file_id, owner_id)
     if archivo is None or archivo.estado != "LISTO":
         return _error(404, "Archivo no encontrado.")
+    if archivo.mime_type != "application/pdf":
+        return _error(400, "Solo se pueden publicar archivos PDF en la biblioteca.")
 
     article_id = uuid.uuid4()
     titulo = (validated_body.titulo or archivo.nombre.rsplit(".", 1)[0]).strip()

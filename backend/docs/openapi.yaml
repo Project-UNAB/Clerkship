@@ -1348,6 +1348,36 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   /api/almacenamiento/archivos/{file_id}:
+    patch:
+      tags:
+      - Almacenamiento
+      summary: Renombra un archivo propio o lo mueve de carpeta
+      operationId: actualizarArchivo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: file_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: {type: string, maxLength: 255}
+                carpeta_id: {type: string, format: uuid, nullable: true, description: "null para quitar la carpeta"}
+      responses:
+        '200':
+          description: Correcto
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
     delete:
       tags:
       - Almacenamiento

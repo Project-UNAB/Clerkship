@@ -49,6 +49,11 @@ const PANEL: Record<string, PanelSection> = {
       { label: 'Todos los recursos', route: '/biblioteca' },
     ],
   },
+  almacenamiento: {
+    flat: [
+      { label: 'Mis archivos', route: '/almacenamiento' },
+    ],
+  },
 };
 
 /* ── Helpers ────────────────────────────────────────────────── */

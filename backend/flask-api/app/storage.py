@@ -14,7 +14,41 @@ from botocore.exceptions import ClientError
 PRESIGN_TTL_SECONDS = 15 * 60
 MAX_FILE_BYTES = 100 * 1024 * 1024
 QUOTA_BYTES_PER_USER = 5 * 1024 ** 3
-TIPOS_PERMITIDOS = {"application/pdf"}
+
+# Almacenamiento personal: los mismos tipos que ya acepta la Carpeta de
+# Documentos (PDF, Word, Excel, PowerPoint, imágenes y texto plano).
+# Publicar en la biblioteca sigue restringido solo a PDF (ver almacenamiento.py).
+TIPOS_PERMITIDOS = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/gif",
+    "text/plain",
+    "text/csv",
+}
+
+_EXTENSIONES = {
+    "application/pdf": ".pdf",
+    "application/msword": ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.ms-excel": ".xls",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.ms-powerpoint": ".ppt",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+    "text/plain": ".txt",
+    "text/csv": ".csv",
+}
 
 
 class StorageNotConfigured(RuntimeError):
@@ -42,9 +76,9 @@ def _bucket() -> str:
     return os.environ["R2_BUCKET"]
 
 
-def nueva_clave(owner_id: str, nombre: str) -> str:
+def nueva_clave(owner_id: str, mime_type: str) -> str:
     """Clave única por archivo, agrupada por dueño. El nombre original no forma parte de la clave."""
-    extension = ".pdf" if nombre.lower().endswith(".pdf") else ""
+    extension = _EXTENSIONES.get(mime_type, "")
     return f"usuarios/{owner_id}/{uuid.uuid4().hex}{extension}"
 
 
