@@ -8,6 +8,11 @@ import {
   type Estadisticas, type AdminUsuario,
 } from '../../data/adminApi';
 import { mainAuthErrorMessage } from '../../data/mainAuth';
+import {
+  obtenerUso, listarArchivos, subirArchivo, publicarEnBiblioteca, borrarArchivo,
+  TIPOS_PERMITIDOS, MAX_FILE_BYTES, type ArchivoR2, type UsoAlmacenamiento,
+} from '../../data/almacenamientoApi';
+import { formatFileSize } from '../../utils/fileUpload';
 import '../../styles/admin.css';
 
 type Tab = 'resumen' | 'usuarios' | 'comunidad' | 'biblioteca' | 'feedback' | 'validacion';
@@ -214,6 +219,109 @@ function PanelComunidad() {
   );
 }
 
+/** Subir un PDF propio y publicarlo como recurso de biblioteca. El admin no
+ *  tiene Dashboard, así que esto reemplaza el "Mi nube" que usan estudiantes
+ *  y docentes — mismo backend (/api/almacenamiento), sin carpetas. */
+function SubirYPublicar({ onPublicado }: { onPublicado: () => void }) {
+  const [uso, setUso] = useState<UsoAlmacenamiento | null>(null);
+  const [archivos, setArchivos] = useState<ArchivoR2[]>([]);
+  const [subiendo, setSubiendo] = useState(false);
+  const [publicandoId, setPublicandoId] = useState<string | null>(null);
+  const [titulo, setTitulo] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  function cargar() {
+    Promise.all([obtenerUso(), listarArchivos()])
+      .then(([u, a]) => { setUso(u); setArchivos(a.archivos); })
+      .catch(err => setError(mainAuthErrorMessage(err)));
+  }
+  useEffect(cargar, []);
+
+  async function handleFile(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    if (!TIPOS_PERMITIDOS.includes(file.type)) {
+      setError('Ese tipo de archivo no está permitido.');
+      return;
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      setError('El archivo supera el máximo de 100 MB.');
+      return;
+    }
+    setSubiendo(true);
+    try {
+      const archivo = await subirArchivo(file, null);
+      setArchivos(prev => [archivo, ...prev]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo subir el archivo.');
+    } finally {
+      setSubiendo(false);
+    }
+  }
+
+  async function publicar(archivo: ArchivoR2) {
+    setPublicandoId(archivo.id);
+    setError(null);
+    try {
+      await publicarEnBiblioteca(archivo.id, { titulo: titulo.trim() || undefined });
+      setArchivos(prev => prev.filter(a => a.id !== archivo.id));
+      setTitulo('');
+      onPublicado();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo publicar.');
+    } finally {
+      setPublicandoId(null);
+    }
+  }
+
+  async function quitar(archivo: ArchivoR2) {
+    if (!window.confirm(`¿Borrar "${archivo.nombre}" sin publicarlo?`)) return;
+    try {
+      await borrarArchivo(archivo.id);
+      setArchivos(prev => prev.filter(a => a.id !== archivo.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo borrar.');
+    }
+  }
+
+  return (
+    <div className="adm-upload-box">
+      <div className="adm-toolbar">
+        <label className="adm-btn">
+          {subiendo ? 'Subiendo…' : 'Subir PDF / archivo'}
+          <input type="file" style={{ display: 'none' }} disabled={subiendo} accept={TIPOS_PERMITIDOS.join(',')} onChange={e => handleFile(e.target.files?.[0])} />
+        </label>
+        {uso && <span className="adm-stat-sub">{formatFileSize(uso.usado_bytes)} de {formatFileSize(uso.limite_bytes)} usados</span>}
+      </div>
+      {error && <p className="adm-error">{error}</p>}
+      {archivos.length > 0 && (
+        <div className="adm-tabla-wrap">
+          <table className="adm-tabla">
+            <thead><tr><th>Archivo</th><th>Tamaño</th><th>Título para publicar</th><th></th></tr></thead>
+            <tbody>
+              {archivos.map(a => (
+                <tr key={a.id}>
+                  <td>{a.nombre}</td>
+                  <td>{formatFileSize(a.size_bytes)}</td>
+                  <td><input className="adm-input" placeholder={a.nombre.replace(/\.pdf$/i, '')} value={titulo} onChange={e => setTitulo(e.target.value)} /></td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    {a.mime_type === 'application/pdf' && (
+                      <button type="button" className="adm-btn adm-btn-sm" disabled={publicandoId === a.id} onClick={() => publicar(a)}>
+                        {publicandoId === a.id ? 'Publicando…' : 'Publicar'}
+                      </button>
+                    )}
+                    <button type="button" className="adm-btn adm-btn-sm adm-btn-danger" onClick={() => quitar(a)}>Quitar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PanelBiblioteca() {
   const [articulos, setArticulos] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -235,7 +343,7 @@ function PanelBiblioteca() {
 
   return (
     <div>
-      <p className="adm-stat-sub">Para publicar un libro/PDF nuevo, súbelo desde el Dashboard (Carpeta de Documentos) y usa "Publicar en biblioteca".</p>
+      <SubirYPublicar onPublicado={cargar} />
       {error && <p className="adm-error">{error}</p>}
       <div className="adm-tabla-wrap">
         <table className="adm-tabla">
