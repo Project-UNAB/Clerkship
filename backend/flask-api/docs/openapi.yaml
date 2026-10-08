@@ -2263,6 +2263,192 @@ paths:
           description: Gotenberg no está configurado
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/entregas:
+    post:
+      tags:
+      - Cursos
+      summary: El estudiante entrega (o vuelve a entregar) un archivo para una tarea
+      operationId: entregarTarea
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, file_base64]
+              properties:
+                name: {type: string}
+                mime_type: {type: string}
+                file_base64: {type: string}
+      responses:
+        '201':
+          description: Creado
+        '400':
+          description: Fuera de la ventana de entrega o datos inválidos
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '413':
+          description: Archivo demasiado pesado
+        '503':
+          description: Almacenamiento no configurado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    get:
+      tags:
+      - Cursos
+      summary: El docente dueño lista todas las entregas de una tarea para calificarlas
+      operationId: listarEntregasTarea
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/entregas/mia:
+    get:
+      tags:
+      - Cursos
+      summary: El estudiante consulta el estado de su propia entrega (o null si no ha entregado)
+      operationId: miEntregaTarea
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/entregas/{submission_id}:
+    patch:
+      tags:
+      - Cursos
+      summary: El docente dueño califica una entrega (puntaje + retroalimentación)
+      operationId: calificarEntrega
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: submission_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [score]
+              properties:
+                score: {type: number}
+                feedback: {type: string}
+      responses:
+        '200':
+          description: Correcto
+        '400':
+          description: El puntaje supera el máximo de la tarea
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/entregas/{submission_id}/archivo:
+    get:
+      tags:
+      - Cursos
+      summary: Descarga el archivo de una entrega (el docente dueño, o el estudiante autor de esa entrega)
+      operationId: obtenerArchivoEntrega
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: submission_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/feedback/inicio:
     post:
       tags:

@@ -5,6 +5,7 @@ from app.models.course import Course
 from app.models.student_course import StudentCourse
 from app.models.course_block import CourseBlock
 from app.models.course_content_item import CourseContentItem
+from app.models.assignment_submission import AssignmentSubmission
 from app.models.article import Article
 from app.models.article_tag import ArticleTag
 from app.models.student_library import StudentLibrary
@@ -39,6 +40,7 @@ __all__ = [
     "StudentCourse",
     "CourseBlock",
     "CourseContentItem",
+    "AssignmentSubmission",
     "Article",
     "ArticleTag",
     "StudentLibrary",
