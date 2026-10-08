@@ -15,6 +15,7 @@ import {
 } from '../../data/cursoContenidoApi';
 import AgregarContenidoModal from '../../components/cursos/AgregarContenidoModal';
 import ContenidoPreviewModal from '../../components/cursos/ContenidoPreviewModal';
+import AvisosPanel from '../../components/cursos/AvisosPanel';
 import '../../styles/cursos.css';
 
 const ICONOS: Record<CourseContentItem['type'], typeof FileText> = {
@@ -157,6 +158,8 @@ export default function CursoDetallePage() {
               </header>
 
               {error && <p className="ccv-form-error" style={{ marginBottom: 12 }}>{error}</p>}
+
+              {id && <AvisosPanel courseId={id} esDocente={esDocente} />}
 
               <div className="ccv-blocks-list">
                 {bloques.map(bloque => {

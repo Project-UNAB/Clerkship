@@ -559,3 +559,143 @@
   cursor: pointer;
 }
 .ccv-file-drop:hover { border-color: #0284c7; color: #0284c7; }
+
+.ccv-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #0f172a);
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Avisos (foro de noticias del curso) — panel + tarjetas + detalle
+   ══════════════════════════════════════════════════════════════ */
+.ccv-avisos-panel {
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #fff);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.ccv-avisos-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  padding: 2px 0;
+}
+
+.ccv-avisos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.ccv-aviso-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--surface2, #f8fafc);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.ccv-aviso-card:hover { border-color: #0284c7; }
+.ccv-aviso-pin { color: #f59e0b; flex-shrink: 0; }
+
+.ccv-aviso-card-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ccv-aviso-card-title { font-size: 13.5px; font-weight: 700; color: var(--ink, #0f172a); }
+.ccv-aviso-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--ink3, #64748b);
+}
+
+/* ── Detalle de un aviso ── */
+.ccv-aviso-meta {
+  display: flex;
+  gap: 10px;
+  padding: 10px 18px 0;
+  font-size: 12px;
+  color: var(--ink3, #64748b);
+  font-weight: 600;
+}
+
+.ccv-aviso-body {
+  padding: 14px 18px;
+  font-size: 14px;
+  color: var(--ink, #0f172a);
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.ccv-aviso-comments {
+  padding: 14px 18px 18px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.ccv-aviso-comments h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+}
+
+.ccv-comment-item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border, #f1f5f9);
+}
+.ccv-comment-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.ccv-comment-author { font-size: 12.5px; font-weight: 700; color: var(--ink, #0f172a); }
+.ccv-comment-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.1);
+  border-radius: 999px;
+  padding: 1px 6px;
+  margin-left: 4px;
+}
+.ccv-comment-date { font-size: 11px; color: var(--ink3, #64748b); margin-left: auto; }
+.ccv-comment-delete { border: none; background: transparent; color: var(--ink3, #64748b); cursor: pointer; padding: 2px; }
+.ccv-comment-delete:hover { color: #dc2626; }
+.ccv-comment-content { margin: 0; font-size: 13px; color: var(--ink2, #475569); line-height: 1.5; }
+
+.ccv-comment-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.ccv-comment-form input {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--surface2, #f8fafc);
+  color: var(--ink, #0f172a);
+  font: inherit;
+}

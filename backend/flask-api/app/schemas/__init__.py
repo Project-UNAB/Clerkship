@@ -42,6 +42,11 @@ from app.schemas.curso_contenido import (
     CrearContenidoRequest,
     EntregarTareaRequest,
 )
+from app.schemas.avisos import (
+    ActualizarAvisoRequest,
+    CrearAvisoRequest,
+    CrearComentarioAvisoRequest,
+)
 from app.schemas.articulos import (
     ArticleResponse,
     CreateArticleRequest,
@@ -135,6 +140,9 @@ __all__ = [
     "CrearContenidoRequest",
     "ActualizarContenidoRequest",
     "EntregarTareaRequest",
+    "CrearAvisoRequest",
+    "ActualizarAvisoRequest",
+    "CrearComentarioAvisoRequest",
     "CalificarEntregaRequest",
     # Articulos
     "CreateArticleRequest",
