@@ -105,3 +105,54 @@ def test_borrar_curso_rechaza_docente_que_no_es_dueno(app, client, monkeypatch):
     headers = {"Authorization": f"Bearer {_token(app, 'TEACHER')}"}
     res = client.delete(f"/api/cursos/{curso_falso.id}", headers=headers)
     assert res.status_code == 403
+
+
+def test_actualizar_curso_requiere_sesion(client):
+    res = client.patch("/api/cursos/11111111-1111-1111-1111-111111111111", json={"name": "Nuevo"})
+    assert res.status_code == 401
+
+
+def test_actualizar_curso_rechaza_rol_estudiante(app, client):
+    headers = {"Authorization": f"Bearer {_token(app, 'STUDENT')}"}
+    res = client.patch("/api/cursos/11111111-1111-1111-1111-111111111111", json={"name": "Nuevo"}, headers=headers)
+    assert res.status_code == 403
+
+
+def test_actualizar_curso_rechaza_docente_que_no_es_dueno(app, client, monkeypatch):
+    curso_falso = SimpleNamespace(id=uuid.uuid4(), teacher_id=uuid.uuid4())
+    with app.app_context():
+        monkeypatch.setattr(cursos_routes, "get_current_user", lambda: SimpleNamespace(id=uuid.uuid4()))
+        monkeypatch.setattr(cursos_routes.Course, "query", SimpleNamespace(get=lambda _id: curso_falso))
+    headers = {"Authorization": f"Bearer {_token(app, 'TEACHER')}"}
+    res = client.patch(f"/api/cursos/{curso_falso.id}", json={"name": "Nuevo"}, headers=headers)
+    assert res.status_code == 403
+
+
+def test_actualizar_curso_exitoso_sanitiza_descripcion(app, client, monkeypatch):
+    docente_id = uuid.uuid4()
+    curso = SimpleNamespace(id=uuid.uuid4(), teacher_id=docente_id, name="Viejo", description=None, academic_period=None)
+    curso.to_dict = lambda: {
+        "id": str(curso.id), "teacher_id": str(curso.teacher_id),
+        "name": curso.name, "description": curso.description, "academic_period": curso.academic_period,
+    }
+    with app.app_context():
+        monkeypatch.setattr(cursos_routes, "get_current_user", lambda: SimpleNamespace(id=docente_id))
+        monkeypatch.setattr(cursos_routes.Course, "query", SimpleNamespace(get=lambda _id: curso))
+        monkeypatch.setattr(cursos_routes.db.session, "commit", lambda: None)
+
+    headers = {"Authorization": f"Bearer {_token(app, 'TEACHER', identity=str(docente_id))}"}
+    res = client.patch(
+        f"/api/cursos/{curso.id}",
+        json={
+            "name": "Proyecto de Grado II",
+            "description": "<p>Bienvenida</p><script>alert(1)</script>",
+            "academic_period": "2026-2",
+        },
+        headers=headers,
+    )
+    assert res.status_code == 200
+    body = res.get_json()
+    assert body["name"] == "Proyecto de Grado II"
+    assert "<script>" not in body["description"]
+    assert "<p>Bienvenida</p>" in body["description"]
+    assert body["academic_period"] == "2026-2"

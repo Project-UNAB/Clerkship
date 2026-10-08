@@ -29,6 +29,7 @@ from app.schemas.usuarios import (
     UserSummary,
 )
 from app.schemas.cursos import (
+    ActualizarCursoRequest,
     AgregarEstudianteRequest,
     CourseResponse,
     CreateCourseRequest,
@@ -136,6 +137,7 @@ __all__ = [
     "StorageUsageResponse",
     # Cursos
     "CreateCourseRequest",
+    "ActualizarCursoRequest",
     "CourseResponse",
     "EnrollmentResponse",
     "AgregarEstudianteRequest",

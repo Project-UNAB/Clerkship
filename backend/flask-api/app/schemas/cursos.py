@@ -11,8 +11,16 @@ class CreateCourseRequest(BaseSchema):
     """Payload to create a new academic course."""
 
     name: str = Field(..., min_length=1, max_length=150, description="Nombre del curso")
-    description: Optional[str] = Field(None, max_length=500, description="Descripción del programa")
+    description: Optional[str] = Field(None, max_length=20000, description="Descripción del programa (HTML del editor WYSIWYG)")
     academic_period: Optional[str] = Field(None, max_length=20, description="Período académico (ej. 2026-1)")
+
+
+class ActualizarCursoRequest(BaseSchema):
+    """El docente dueño edita su curso — nombre, descripción (HTML) y período."""
+
+    name: Optional[str] = Field(None, min_length=1, max_length=150)
+    description: Optional[str] = Field(None, max_length=20000)
+    academic_period: Optional[str] = Field(None, max_length=20)
 
 
 class CourseResponse(BaseSchema):

@@ -21,6 +21,17 @@ export function borrarCurso(courseId: string): Promise<{ ok: boolean }> {
   return apiFetch(`/api/cursos/${courseId}`, { method: 'DELETE' });
 }
 
+/** El docente dueño edita nombre, descripción (HTML) o período de su curso. */
+export function actualizarCurso(
+  courseId: string,
+  updates: { name?: string; description?: string; academic_period?: string },
+): Promise<Course> {
+  return apiFetch(`/api/cursos/${courseId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
 export interface EstudianteDeCurso {
   user_id: string;
   nombre: string;

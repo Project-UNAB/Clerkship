@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import {
   ArrowLeft, Plus, FolderOpen, FileText, Video, Link as LinkIcon, Type,
   Pencil, Trash2, Loader2, ChevronDown, ChevronRight, ClipboardList, HelpCircle, BarChart3,
@@ -19,7 +20,17 @@ import AvisosPanel from '../../components/cursos/AvisosPanel';
 import GestionarQuizModal from '../../components/cursos/GestionarQuizModal';
 import TomarQuizModal from '../../components/cursos/TomarQuizModal';
 import CalificacionesModal from '../../components/cursos/CalificacionesModal';
+import EditarCursoModal from '../../components/cursos/EditarCursoModal';
 import '../../styles/cursos.css';
+
+const SANITIZE_OPTS = {
+  ALLOWED_TAGS: [
+    'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+    'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'a',
+    'blockquote', 'code', 'pre', 'span', 'div',
+  ],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'style'],
+};
 
 const ICONOS: Record<CourseContentItem['type'], typeof FileText> = {
   DOCUMENT: FileText,
@@ -52,6 +63,7 @@ export default function CursoDetallePage() {
   const [itemPreview, setItemPreview] = useState<CourseContentItem | null>(null);
   const [quizItem, setQuizItem] = useState<{ item: CourseContentItem; blockId: string } | null>(null);
   const [calificacionesAbierto, setCalificacionesAbierto] = useState(false);
+  const [editandoCurso, setEditandoCurso] = useState(false);
 
   function handleAbrirItem(item: CourseContentItem, blockId: string) {
     if (item.type === 'QUIZ') {
@@ -165,17 +177,29 @@ export default function CursoDetallePage() {
             <>
               <header className="ccv-page-header">
                 <div className="ccv-page-header-row">
-                  <div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
                     <h1>{curso.name}</h1>
-                    {curso.description && <p className="ccv-page-desc">{curso.description}</p>}
+                    {curso.description && (
+                      <div
+                        className="ccv-page-desc ccv-rte-content"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(curso.description, SANITIZE_OPTS) }}
+                      />
+                    )}
                     <div className="ccv-page-meta">
                       {curso.academic_period && <span>{curso.academic_period}</span>}
                       {!esDocente && curso.teacher_name && <span>Docente: {curso.teacher_name}</span>}
                     </div>
                   </div>
-                  <button type="button" className="ccv-btn-secondary" onClick={() => setCalificacionesAbierto(true)}>
-                    <BarChart3 size={14} /> {esDocente ? 'Calificaciones' : 'Mis calificaciones'}
-                  </button>
+                  <div className="ccv-page-header-actions">
+                    {esDocente && (
+                      <button type="button" className="ccv-btn-secondary" onClick={() => setEditandoCurso(true)}>
+                        <Pencil size={14} /> Editar curso
+                      </button>
+                    )}
+                    <button type="button" className="ccv-btn-secondary" onClick={() => setCalificacionesAbierto(true)}>
+                      <BarChart3 size={14} /> {esDocente ? 'Calificaciones' : 'Mis calificaciones'}
+                    </button>
+                  </div>
                 </div>
               </header>
 
@@ -335,6 +359,14 @@ export default function CursoDetallePage() {
 
       {calificacionesAbierto && id && (
         <CalificacionesModal courseId={id} esDocente={esDocente} onClose={() => setCalificacionesAbierto(false)} />
+      )}
+
+      {editandoCurso && curso && (
+        <EditarCursoModal
+          curso={curso}
+          onClose={() => setEditandoCurso(false)}
+          onSaved={setCurso}
+        />
       )}
     </div>
   );

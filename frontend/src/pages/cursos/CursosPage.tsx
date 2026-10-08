@@ -10,6 +10,7 @@ import {
   type EstudianteDeCurso,
 } from '../../data/cursosApi';
 import { mainAuthErrorMessage, getStoredUser } from '../../data/mainAuth';
+import RichTextEditor from '../../components/cursos/RichTextEditor';
 import '../../styles/cursos.css';
 
 export default function CursosPage() {
@@ -26,7 +27,7 @@ export default function CursosPage() {
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [nombre, setNombre] = useState('');
-  const [descripcion, setDescripcion] = useState('');
+  const [descripcion, setDescripcion] = useState('<p></p>');
   const [periodo, setPeriodo] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [errorModal, setErrorModal] = useState<string | null>(null);
@@ -100,14 +101,15 @@ export default function CursosPage() {
     setGuardando(true);
     setErrorModal(null);
     try {
+      const descripcionVacia = !descripcion.replace(/<[^>]*>/g, '').trim();
       const curso = await crearCurso({
         name: nombre.trim(),
-        description: descripcion.trim() || undefined,
+        description: descripcionVacia ? undefined : descripcion,
         academic_period: periodo.trim() || undefined,
       });
       setCursos(prev => [curso, ...prev]);
       setModalAbierto(false);
-      setNombre(''); setDescripcion(''); setPeriodo('');
+      setNombre(''); setDescripcion('<p></p>'); setPeriodo('');
     } catch (err) {
       setErrorModal(err instanceof Error ? err.message : 'No se pudo crear el curso.');
     } finally {
@@ -295,7 +297,7 @@ export default function CursosPage() {
             <label className="cur-label">Nombre *</label>
             <input className="cur-input" value={nombre} onChange={e => setNombre(e.target.value)} autoFocus maxLength={150} />
             <label className="cur-label">Descripción (opcional)</label>
-            <textarea className="cur-input" rows={3} value={descripcion} onChange={e => setDescripcion(e.target.value)} maxLength={500} />
+            <RichTextEditor content={descripcion} onChange={setDescripcion} placeholder="Bienvenida, objetivos, cronograma..." />
             <label className="cur-label">Período académico (opcional)</label>
             <input className="cur-input" placeholder="2026-2" value={periodo} onChange={e => setPeriodo(e.target.value)} maxLength={20} />
             {errorModal && <p className="cur-error">{errorModal}</p>}

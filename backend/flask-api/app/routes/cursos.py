@@ -3,7 +3,15 @@ from flask_jwt_extended import jwt_required
 
 from app import db
 from app.models import Consultation, Course, Student, StudentCourse, User
-from app.schemas import AgregarEstudianteRequest, CourseResponse, CreateCourseRequest, EnrollmentResponse, validate_body
+from app.schemas import (
+    ActualizarCursoRequest,
+    AgregarEstudianteRequest,
+    CourseResponse,
+    CreateCourseRequest,
+    EnrollmentResponse,
+    validate_body,
+)
+from app.services.sanitize import sanitizar_html
 from app.utils import get_current_user, role_required
 
 cursos_bp = Blueprint("cursos", __name__)
@@ -48,13 +56,37 @@ def crear(validated_body: CreateCourseRequest):
     course = Course(
         teacher_id=user.id,
         name=validated_body.name.strip(),
-        description=validated_body.description,
+        description=sanitizar_html(validated_body.description) if validated_body.description else None,
         academic_period=validated_body.academic_period,
     )
     db.session.add(course)
     db.session.commit()
 
     return jsonify(course.to_dict()), 201
+
+
+@cursos_bp.patch("/<course_id>")
+@role_required("TEACHER")
+@validate_body(ActualizarCursoRequest)
+def actualizar(course_id, validated_body: ActualizarCursoRequest):
+    """El docente dueño edita su curso — nombre, descripción (HTML del
+    editor WYSIWYG, se sanitiza igual que avisos y notas de bloque) y período."""
+    user = get_current_user()
+    course = Course.query.get(course_id)
+    if course is None:
+        return jsonify({"error": "Not Found", "message": "Curso no encontrado", "status_code": 404}), 404
+    if str(course.teacher_id) != str(user.id):
+        return jsonify({"error": "Forbidden", "message": "No eres el docente de este curso", "status_code": 403}), 403
+
+    if validated_body.name is not None:
+        course.name = validated_body.name.strip()
+    if validated_body.description is not None:
+        course.description = sanitizar_html(validated_body.description)
+    if validated_body.academic_period is not None:
+        course.academic_period = validated_body.academic_period
+
+    db.session.commit()
+    return jsonify(course.to_dict()), 200
 
 
 @cursos_bp.get("/<course_id>")
