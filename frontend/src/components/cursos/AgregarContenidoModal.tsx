@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, FileText, Video, Link as LinkIcon, Type, Loader2, Upload } from 'lucide-react';
 import { crearContenido, type ContentType } from '../../data/cursoContenidoApi';
 import { readFileAsBase64, base64ByteLength, formatFileSize } from '../../utils/fileUpload';
+import RichTextEditor from './RichTextEditor';
 
 interface Props {
   courseId: string;
@@ -25,7 +26,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
   const [description, setDescription] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
-  const [textContent, setTextContent] = useState('');
+  const [textContent, setTextContent] = useState('<p></p>');
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +48,8 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
       setError('Pega la URL del enlace.');
       return;
     }
-    if (tipo === 'TEXT' && !textContent.trim()) {
+    const textoPlano = textContent.replace(/<[^>]*>/g, '').trim();
+    if (tipo === 'TEXT' && !textoPlano) {
       setError('Escribe el contenido de la nota.');
       return;
     }
@@ -87,7 +89,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
           type: 'TEXT',
           title: title.trim(),
           description: description.trim() || undefined,
-          text_content: textContent.trim(),
+          text_content: textContent,
         });
       }
       onCreated();
@@ -101,7 +103,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
 
   return (
     <div className="ccv-modal-backdrop" onClick={onClose}>
-      <div className="ccv-modal ccv-modal-form" onClick={e => e.stopPropagation()}>
+      <div className={`ccv-modal ccv-modal-form ${tipo === 'TEXT' ? 'ccv-modal-form-wide' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="ccv-modal-header">
           <h3>Agregar contenido</h3>
           <button type="button" className="ccv-modal-close" onClick={onClose} aria-label="Cerrar">
@@ -159,7 +161,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
           {tipo === 'TEXT' && (
             <label className="ccv-form-label">
               Contenido de la nota
-              <textarea value={textContent} onChange={e => setTextContent(e.target.value)} rows={6} placeholder="Instrucciones, lectura, apuntes..." />
+              <RichTextEditor content={textContent} onChange={setTextContent} placeholder="Instrucciones, lectura, apuntes..." />
             </label>
           )}
 

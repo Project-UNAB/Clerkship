@@ -358,6 +358,7 @@
   box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.35);
 }
 .ccv-modal-form { width: min(460px, 100%); max-height: none; }
+.ccv-modal-form-wide { width: min(640px, 100%); }
 
 .ccv-modal-header {
   display: flex;
@@ -425,9 +426,85 @@
 .ccv-text-block {
   flex: 1;
   padding: 20px 22px;
-  white-space: pre-wrap;
   font-size: 14px;
   line-height: 1.6;
+  color: var(--ink, #0f172a);
+}
+
+/* ── Tipografía compartida entre el editor TipTap y el texto ya guardado ── */
+.ccv-rte-content { outline: none; }
+.ccv-rte-content p { margin: 0 0 0.75em; }
+.ccv-rte-content p:last-child { margin-bottom: 0; }
+.ccv-rte-content h2 { font-size: 1.25em; font-weight: 800; margin: 0.8em 0 0.4em; }
+.ccv-rte-content h3 { font-size: 1.1em; font-weight: 700; margin: 0.8em 0 0.4em; }
+.ccv-rte-content ul, .ccv-rte-content ol { padding-left: 1.4em; margin: 0 0 0.75em; }
+.ccv-rte-content li { margin: 0.2em 0; }
+.ccv-rte-content blockquote {
+  border-left: 3px solid var(--border, #cbd5e1);
+  margin: 0 0 0.75em;
+  padding: 2px 0 2px 12px;
+  color: var(--ink3, #64748b);
+}
+.ccv-rte-content a { color: #0284c7; text-decoration: underline; }
+.ccv-rte-content code {
+  background: var(--surface2, #f1f5f9);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+}
+.ccv-rte-content pre {
+  background: var(--surface2, #f1f5f9);
+  border-radius: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+.ccv-rte-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--ink3, #64748b);
+  opacity: 0.7;
+}
+
+/* ── Editor TipTap (toolbar + área editable) ── */
+.ccv-rte-wrap {
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--surface2, #f8fafc);
+  overflow: hidden;
+}
+.ccv-rte-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #fff);
+}
+.ccv-rte-toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--ink2, #475569);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ccv-rte-toolbar button:hover { background: var(--surface2, #f1f5f9); }
+.ccv-rte-toolbar button.is-active { background: rgba(2, 132, 199, 0.12); color: #0284c7; }
+.ccv-rte-divider { width: 1px; height: 18px; background: var(--border, #e2e8f0); margin: 0 4px; flex-shrink: 0; }
+
+.ccv-rte-wrap .ccv-rte-content {
+  min-height: 160px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 12px 14px;
+  font-size: 14px;
   color: var(--ink, #0f172a);
 }
 

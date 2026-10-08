@@ -35,6 +35,7 @@ from app.schemas import (
     validate_body,
 )
 from app.services import conversion
+from app.services.sanitize import sanitizar_html
 from app.utils import get_current_user, role_required
 
 curso_contenido_bp = Blueprint("curso_contenido", __name__)
@@ -282,6 +283,10 @@ def crear_contenido(course_id, block_id, validated_body: CrearContenidoRequest):
     elif tipo == "TEXT" and not validated_body.text_content:
         return jsonify({"error": "Bad Request", "message": "Falta 'text_content' para una nota", "status_code": 400}), 400
 
+    # El docente lo escribe con un editor WYSIWYG — nunca se confía en el
+    # HTML tal como llega del cliente, se limpia acá (contra XSS).
+    text_content = sanitizar_html(validated_body.text_content) if tipo == "TEXT" else None
+
     open_at = due_at = None
     if tipo == "ASSIGNMENT":
         try:
@@ -303,7 +308,7 @@ def crear_contenido(course_id, block_id, validated_body: CrearContenidoRequest):
         file_id=file_id,
         video_url=validated_body.video_url,
         link_url=validated_body.link_url,
-        text_content=validated_body.text_content,
+        text_content=text_content,
         open_at=open_at,
         due_at=due_at,
         max_score=validated_body.max_score if tipo == "ASSIGNMENT" else None,
@@ -342,7 +347,7 @@ def actualizar_contenido(course_id, block_id, item_id, validated_body: Actualiza
     if validated_body.link_url is not None:
         item.link_url = validated_body.link_url
     if validated_body.text_content is not None:
-        item.text_content = validated_body.text_content
+        item.text_content = sanitizar_html(validated_body.text_content)
     if validated_body.max_score is not None:
         item.max_score = validated_body.max_score
     if validated_body.allow_late is not None:

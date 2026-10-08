@@ -1,7 +1,20 @@
+import DOMPurify from 'dompurify';
 import { X, FileText, Link as LinkIcon } from 'lucide-react';
 import type { CourseContentItem } from '../../data/cursoContenidoApi';
 import { toEmbedUrl } from '../../utils/videoEmbed';
 import ContenidoDocumentoViewer from './ContenidoDocumentoViewer';
+
+// El backend ya sanitiza text_content antes de guardarlo (bleach), pero se
+// vuelve a limpiar acá como defensa en profundidad: si por lo que sea llega
+// HTML sin pasar por esa ruta, nunca se inyecta sin filtrar.
+const SANITIZE_OPTS = {
+  ALLOWED_TAGS: [
+    'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+    'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'a',
+    'blockquote', 'code', 'pre', 'span', 'div',
+  ],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'style'],
+};
 
 interface Props {
   courseId: string;
@@ -66,9 +79,10 @@ export default function ContenidoPreviewModal({ courseId, item, onClose }: Props
           )}
 
           {item.type === 'TEXT' && (
-            <div className="ccv-text-block">
-              {item.text_content}
-            </div>
+            <div
+              className="ccv-text-block ccv-rte-content"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.text_content || '', SANITIZE_OPTS) }}
+            />
           )}
         </div>
       </div>
