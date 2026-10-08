@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Plus, FolderOpen, FileText, Video, Link as LinkIcon, Type,
-  Pencil, Trash2, Loader2, ChevronDown, ChevronRight, ClipboardList, HelpCircle,
+  Pencil, Trash2, Loader2, ChevronDown, ChevronRight, ClipboardList, HelpCircle, BarChart3,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import FeedbackFab from '../../components/shared/FeedbackFab';
@@ -18,6 +18,7 @@ import ContenidoPreviewModal from '../../components/cursos/ContenidoPreviewModal
 import AvisosPanel from '../../components/cursos/AvisosPanel';
 import GestionarQuizModal from '../../components/cursos/GestionarQuizModal';
 import TomarQuizModal from '../../components/cursos/TomarQuizModal';
+import CalificacionesModal from '../../components/cursos/CalificacionesModal';
 import '../../styles/cursos.css';
 
 const ICONOS: Record<CourseContentItem['type'], typeof FileText> = {
@@ -50,6 +51,7 @@ export default function CursoDetallePage() {
   const [agregarContenidoEnBloque, setAgregarContenidoEnBloque] = useState<string | null>(null);
   const [itemPreview, setItemPreview] = useState<CourseContentItem | null>(null);
   const [quizItem, setQuizItem] = useState<{ item: CourseContentItem; blockId: string } | null>(null);
+  const [calificacionesAbierto, setCalificacionesAbierto] = useState(false);
 
   function handleAbrirItem(item: CourseContentItem, blockId: string) {
     if (item.type === 'QUIZ') {
@@ -162,11 +164,18 @@ export default function CursoDetallePage() {
           {!loading && curso && (
             <>
               <header className="ccv-page-header">
-                <h1>{curso.name}</h1>
-                {curso.description && <p className="ccv-page-desc">{curso.description}</p>}
-                <div className="ccv-page-meta">
-                  {curso.academic_period && <span>{curso.academic_period}</span>}
-                  {!esDocente && curso.teacher_name && <span>Docente: {curso.teacher_name}</span>}
+                <div className="ccv-page-header-row">
+                  <div>
+                    <h1>{curso.name}</h1>
+                    {curso.description && <p className="ccv-page-desc">{curso.description}</p>}
+                    <div className="ccv-page-meta">
+                      {curso.academic_period && <span>{curso.academic_period}</span>}
+                      {!esDocente && curso.teacher_name && <span>Docente: {curso.teacher_name}</span>}
+                    </div>
+                  </div>
+                  <button type="button" className="ccv-btn-secondary" onClick={() => setCalificacionesAbierto(true)}>
+                    <BarChart3 size={14} /> {esDocente ? 'Calificaciones' : 'Mis calificaciones'}
+                  </button>
                 </div>
               </header>
 
@@ -322,6 +331,10 @@ export default function CursoDetallePage() {
         ) : (
           <TomarQuizModal courseId={id} blockId={quizItem.blockId} item={quizItem.item} onClose={() => setQuizItem(null)} />
         )
+      )}
+
+      {calificacionesAbierto && id && (
+        <CalificacionesModal courseId={id} esDocente={esDocente} onClose={() => setCalificacionesAbierto(false)} />
       )}
     </div>
   );

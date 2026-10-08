@@ -138,6 +138,10 @@
 .ccv-page-header h1 { margin: 0; font-size: 24px; font-weight: 800; color: var(--ink, #0f172a); }
 .ccv-page-desc { margin: 6px 0 0; font-size: 14px; color: var(--ink3, #64748b); }
 .ccv-page-meta { display: flex; gap: 14px; margin-top: 8px; font-size: 12.5px; color: var(--ink3, #64748b); font-weight: 600; }
+.ccv-page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+.ccv-grade-table th, .ccv-grade-table td { white-space: nowrap; }
+.ccv-grade-col-head { display: flex; align-items: center; gap: 5px; }
 
 .ccv-blocks-list { display: flex; flex-direction: column; gap: 14px; }
 

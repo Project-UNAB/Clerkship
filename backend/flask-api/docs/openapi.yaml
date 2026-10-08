@@ -2968,6 +2968,50 @@ paths:
           description: No encontrado
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/calificaciones:
+    get:
+      tags:
+      - Cursos
+      summary: Libro de calificaciones completo del curso (todos los estudiantes x todas las Tareas/Cuestionarios) — solo el docente dueño
+      operationId: calificacionesCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/calificaciones/mias:
+    get:
+      tags:
+      - Cursos
+      summary: Las calificaciones propias del estudiante matriculado en este curso
+      operationId: misCalificaciones
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/feedback/inicio:
     post:
       tags:
