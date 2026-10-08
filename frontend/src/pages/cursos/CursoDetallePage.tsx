@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Plus, FolderOpen, FileText, Video, Link as LinkIcon, Type,
-  Pencil, Trash2, Loader2, ChevronDown, ChevronRight,
+  Pencil, Trash2, Loader2, ChevronDown, ChevronRight, ClipboardList, HelpCircle,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import FeedbackFab from '../../components/shared/FeedbackFab';
@@ -16,6 +16,8 @@ import {
 import AgregarContenidoModal from '../../components/cursos/AgregarContenidoModal';
 import ContenidoPreviewModal from '../../components/cursos/ContenidoPreviewModal';
 import AvisosPanel from '../../components/cursos/AvisosPanel';
+import GestionarQuizModal from '../../components/cursos/GestionarQuizModal';
+import TomarQuizModal from '../../components/cursos/TomarQuizModal';
 import '../../styles/cursos.css';
 
 const ICONOS: Record<CourseContentItem['type'], typeof FileText> = {
@@ -23,6 +25,8 @@ const ICONOS: Record<CourseContentItem['type'], typeof FileText> = {
   VIDEO: Video,
   LINK: LinkIcon,
   TEXT: Type,
+  ASSIGNMENT: ClipboardList,
+  QUIZ: HelpCircle,
 };
 
 export default function CursoDetallePage() {
@@ -45,6 +49,15 @@ export default function CursoDetallePage() {
 
   const [agregarContenidoEnBloque, setAgregarContenidoEnBloque] = useState<string | null>(null);
   const [itemPreview, setItemPreview] = useState<CourseContentItem | null>(null);
+  const [quizItem, setQuizItem] = useState<{ item: CourseContentItem; blockId: string } | null>(null);
+
+  function handleAbrirItem(item: CourseContentItem, blockId: string) {
+    if (item.type === 'QUIZ') {
+      setQuizItem({ item, blockId });
+    } else {
+      setItemPreview(item);
+    }
+  }
 
   function cargar() {
     if (!id) return;
@@ -214,7 +227,7 @@ export default function CursoDetallePage() {
                           {bloque.contenido.map(item => {
                             const Icon = ICONOS[item.type];
                             return (
-                              <div key={item.id} className="ccv-item-card" onClick={() => setItemPreview(item)}>
+                              <div key={item.id} className="ccv-item-card" onClick={() => handleAbrirItem(item, bloque.id)}>
                                 <div className={`ccv-item-icon ccv-item-icon-${item.type.toLowerCase()}`}>
                                   <Icon size={18} />
                                 </div>
@@ -301,6 +314,14 @@ export default function CursoDetallePage() {
 
       {itemPreview && id && (
         <ContenidoPreviewModal courseId={id} item={itemPreview} onClose={() => setItemPreview(null)} />
+      )}
+
+      {quizItem && id && (
+        esDocente ? (
+          <GestionarQuizModal courseId={id} blockId={quizItem.blockId} item={quizItem.item} onClose={() => setQuizItem(null)} />
+        ) : (
+          <TomarQuizModal courseId={id} blockId={quizItem.blockId} item={quizItem.item} onClose={() => setQuizItem(null)} />
+        )
       )}
     </div>
   );

@@ -1,8 +1,10 @@
 """Un elemento de material dentro de un bloque de curso: documento (en R2),
-video (enlace externo a YouTube/Vimeo), enlace externo, nota de texto o
-tarea (entrega de archivo calificable, con ventana de apertura/cierre).
-Creado por backend/database/migrations/2026-10-08_contenido_de_cursos.sql
-y extendido por 2026-10-08b_tareas_de_curso.sql (ASSIGNMENT)."""
+video (enlace externo a YouTube/Vimeo), enlace externo, nota de texto,
+tarea (entrega de archivo calificable, con ventana de apertura/cierre) o
+cuestionario (banco de preguntas con calificación automática).
+Creado por backend/database/migrations/2026-10-08_contenido_de_cursos.sql,
+extendido por 2026-10-08b_tareas_de_curso.sql (ASSIGNMENT) y
+2026-10-08d_cuestionarios_de_curso.sql (QUIZ)."""
 from datetime import timezone
 
 from sqlalchemy.dialects.postgresql import UUID
@@ -10,7 +12,7 @@ from sqlalchemy.sql import func
 
 from app import db
 
-TIPOS_CONTENIDO = ("DOCUMENT", "VIDEO", "LINK", "TEXT", "ASSIGNMENT")
+TIPOS_CONTENIDO = ("DOCUMENT", "VIDEO", "LINK", "TEXT", "ASSIGNMENT", "QUIZ")
 
 
 class CourseContentItem(db.Model):
@@ -31,6 +33,10 @@ class CourseContentItem(db.Model):
     due_at = db.Column(db.DateTime)
     max_score = db.Column(db.Numeric(6, 2))
     allow_late = db.Column(db.Boolean, nullable=False, default=False)
+    # Solo QUIZ: duración y reintentos (open_at/due_at arriba se reutilizan
+    # como ventana de disponibilidad del cuestionario).
+    time_limit_minutes = db.Column(db.Integer)
+    max_attempts = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now())
 
@@ -64,4 +70,9 @@ class CourseContentItem(db.Model):
             d["due_at"] = _dt(self.due_at)
             d["max_score"] = float(self.max_score) if self.max_score is not None else None
             d["allow_late"] = bool(self.allow_late)
+        if self.type == "QUIZ":
+            d["open_at"] = _dt(self.open_at)
+            d["due_at"] = _dt(self.due_at)
+            d["time_limit_minutes"] = self.time_limit_minutes
+            d["max_attempts"] = self.max_attempts
         return d

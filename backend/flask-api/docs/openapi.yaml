@@ -2654,6 +2654,320 @@ paths:
           description: No encontrado
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/preguntas:
+    get:
+      tags:
+      - Cursos
+      summary: Lista las preguntas del cuestionario con sus respuestas correctas (solo el docente dueño)
+      operationId: listarPreguntasQuiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    post:
+      tags:
+      - Cursos
+      summary: Agrega una pregunta de opción única, opción múltiple o verdadero/falso (solo el docente dueño)
+      operationId: crearPreguntaQuiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, prompt, choices]
+              properties:
+                type: {type: string, enum: [SINGLE_CHOICE, MULTIPLE_CHOICE, TRUE_FALSE]}
+                prompt: {type: string}
+                points: {type: number}
+                choices:
+                  type: array
+                  items:
+                    type: object
+                    required: [text]
+                    properties:
+                      text: {type: string}
+                      is_correct: {type: boolean}
+      responses:
+        '201':
+          description: Creado
+        '400':
+          description: Petición inválida
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/preguntas/{question_id}:
+    patch:
+      tags:
+      - Cursos
+      summary: Edita una pregunta — si se manda 'choices', reemplaza todas las opciones (solo el docente dueño)
+      operationId: actualizarPreguntaQuiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: question_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt: {type: string}
+                points: {type: number}
+                position: {type: integer}
+                choices:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text: {type: string}
+                      is_correct: {type: boolean}
+      responses:
+        '200':
+          description: Correcto
+        '400':
+          description: Petición inválida
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags:
+      - Cursos
+      summary: Borra una pregunta (solo el docente dueño)
+      operationId: borrarPreguntaQuiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: question_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/intentos:
+    post:
+      tags:
+      - Cursos
+      summary: El estudiante inicia un intento nuevo (devuelve las preguntas sin marcar cuál es la correcta)
+      operationId: iniciarIntentoQuiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '201':
+          description: Creado
+        '400':
+          description: Fuera de ventana, sin intentos disponibles, o sin preguntas
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    get:
+      tags:
+      - Cursos
+      summary: Lista intentos — el docente dueño ve los de todos los estudiantes, el estudiante solo los suyos
+      operationId: listarIntentosQuiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/intentos/{attempt_id}:
+    get:
+      tags:
+      - Cursos
+      summary: Revisión de un intento (con respuestas correctas) — dueño del intento o docente dueño del curso
+      operationId: obtenerIntentoQuiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: attempt_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/intentos/{attempt_id}/responder:
+    post:
+      tags:
+      - Cursos
+      summary: El estudiante entrega sus respuestas — se califica automáticamente (todo o nada por pregunta)
+      operationId: responderIntentoQuiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: attempt_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answers:
+                  type: array
+                  items:
+                    type: object
+                    required: [question_id]
+                    properties:
+                      question_id: {type: string, format: uuid}
+                      selected_choice_ids:
+                        type: array
+                        items: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '400':
+          description: Ya entregado, o selected_choice_ids inválido
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/feedback/inicio:
     post:
       tags:

@@ -5,7 +5,7 @@
  */
 import { apiFetch } from './apiClient';
 
-export type ContentType = 'DOCUMENT' | 'VIDEO' | 'LINK' | 'TEXT';
+export type ContentType = 'DOCUMENT' | 'VIDEO' | 'LINK' | 'TEXT' | 'ASSIGNMENT' | 'QUIZ';
 
 export interface CourseContentFile {
   id: string | null;
@@ -26,6 +26,14 @@ export interface CourseContentItem {
   text_content: string | null;
   file: CourseContentFile | null;
   created_at: string | null;
+  // ASSIGNMENT
+  open_at?: string | null;
+  due_at?: string | null;
+  max_score?: number | null;
+  allow_late?: boolean;
+  // QUIZ (open_at/due_at de arriba se reutilizan como ventana de disponibilidad)
+  time_limit_minutes?: number | null;
+  max_attempts?: number | null;
 }
 
 export interface CourseBlock {
@@ -78,6 +86,14 @@ export interface CrearContenidoPayload {
   link_url?: string;
   // TEXT
   text_content?: string;
+  // ASSIGNMENT
+  open_at?: string;
+  due_at?: string;
+  max_score?: number;
+  allow_late?: boolean;
+  // QUIZ
+  time_limit_minutes?: number;
+  max_attempts?: number;
 }
 
 export function crearContenido(courseId: string, blockId: string, payload: CrearContenidoPayload): Promise<CourseContentItem> {

@@ -135,6 +135,7 @@ def create_app():
     from app.routes.cursos import cursos_bp
     from app.routes.curso_contenido import curso_contenido_bp
     from app.routes.curso_avisos import curso_avisos_bp
+    from app.routes.curso_quiz import curso_quiz_bp
     from app.routes.articulos import articulos_bp
     from app.routes.comunidad import comunidad_bp
     from app.routes.documentos import documentos_bp
@@ -154,6 +155,7 @@ def create_app():
     app.register_blueprint(cursos_bp, url_prefix="/api/cursos")
     app.register_blueprint(curso_contenido_bp, url_prefix="/api/cursos")
     app.register_blueprint(curso_avisos_bp, url_prefix="/api/cursos")
+    app.register_blueprint(curso_quiz_bp, url_prefix="/api/cursos")
     app.register_blueprint(articulos_bp, url_prefix="/api/articulos")
     app.register_blueprint(comunidad_bp, url_prefix="/api/comunidad")
     app.register_blueprint(documentos_bp, url_prefix="/api/documentos")

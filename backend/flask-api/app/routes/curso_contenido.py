@@ -40,7 +40,7 @@ from app.utils import get_current_user, role_required
 
 curso_contenido_bp = Blueprint("curso_contenido", __name__)
 
-TIPOS_VALIDOS = ("DOCUMENT", "VIDEO", "LINK", "TEXT", "ASSIGNMENT")
+TIPOS_VALIDOS = ("DOCUMENT", "VIDEO", "LINK", "TEXT", "ASSIGNMENT", "QUIZ")
 # Mismo límite que la Carpeta de Documentos (~11MB reales en base64).
 MAX_CONTENIDO_BASE64_CHARS = 15 * 1024 * 1024
 
@@ -288,7 +288,7 @@ def crear_contenido(course_id, block_id, validated_body: CrearContenidoRequest):
     text_content = sanitizar_html(validated_body.text_content) if tipo == "TEXT" else None
 
     open_at = due_at = None
-    if tipo == "ASSIGNMENT":
+    if tipo in ("ASSIGNMENT", "QUIZ"):
         try:
             open_at = _parse_iso(validated_body.open_at)
             due_at = _parse_iso(validated_body.due_at)
@@ -313,6 +313,8 @@ def crear_contenido(course_id, block_id, validated_body: CrearContenidoRequest):
         due_at=due_at,
         max_score=validated_body.max_score if tipo == "ASSIGNMENT" else None,
         allow_late=bool(validated_body.allow_late) if tipo == "ASSIGNMENT" else False,
+        time_limit_minutes=validated_body.time_limit_minutes if tipo == "QUIZ" else None,
+        max_attempts=validated_body.max_attempts if tipo == "QUIZ" else None,
     )
     db.session.add(item)
     db.session.commit()
@@ -352,6 +354,10 @@ def actualizar_contenido(course_id, block_id, item_id, validated_body: Actualiza
         item.max_score = validated_body.max_score
     if validated_body.allow_late is not None:
         item.allow_late = validated_body.allow_late
+    if validated_body.time_limit_minutes is not None:
+        item.time_limit_minutes = validated_body.time_limit_minutes
+    if validated_body.max_attempts is not None:
+        item.max_attempts = validated_body.max_attempts
     if validated_body.open_at is not None or validated_body.due_at is not None:
         try:
             nuevo_open = _parse_iso(validated_body.open_at) if validated_body.open_at is not None else item.open_at

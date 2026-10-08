@@ -18,9 +18,9 @@ class ActualizarBloqueRequest(BaseSchema):
 
 
 class CrearContenidoRequest(BaseSchema):
-    """type: DOCUMENT | VIDEO | LINK | TEXT | ASSIGNMENT — los demás campos varían según el tipo."""
+    """type: DOCUMENT | VIDEO | LINK | TEXT | ASSIGNMENT | QUIZ — los demás campos varían según el tipo."""
 
-    type: str = Field(..., description="DOCUMENT | VIDEO | LINK | TEXT | ASSIGNMENT")
+    type: str = Field(..., description="DOCUMENT | VIDEO | LINK | TEXT | ASSIGNMENT | QUIZ")
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
 
@@ -44,6 +44,10 @@ class CrearContenidoRequest(BaseSchema):
     max_score: Optional[float] = Field(None, ge=0, description="Puntaje máximo de la tarea")
     allow_late: Optional[bool] = Field(False, description="Si se puede entregar después de due_at (marcada como tardía)")
 
+    # QUIZ (open_at/due_at arriba se reutilizan como ventana de disponibilidad)
+    time_limit_minutes: Optional[int] = Field(None, ge=1, description="Duración máxima del intento, en minutos")
+    max_attempts: Optional[int] = Field(None, ge=1, description="Intentos permitidos por estudiante (vacío = sin límite)")
+
 
 class ActualizarContenidoRequest(BaseSchema):
     title: Optional[str] = Field(None, min_length=1, max_length=255)
@@ -56,6 +60,8 @@ class ActualizarContenidoRequest(BaseSchema):
     due_at: Optional[str] = Field(None, description="ISO 8601")
     max_score: Optional[float] = Field(None, ge=0)
     allow_late: Optional[bool] = None
+    time_limit_minutes: Optional[int] = Field(None, ge=1)
+    max_attempts: Optional[int] = Field(None, ge=1)
 
 
 class EntregarTareaRequest(BaseSchema):

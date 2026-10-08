@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, FileText, Video, Link as LinkIcon, Type, Loader2, Upload } from 'lucide-react';
+import { X, FileText, Video, Link as LinkIcon, Type, Loader2, Upload, HelpCircle } from 'lucide-react';
 import { crearContenido, type ContentType } from '../../data/cursoContenidoApi';
 import { readFileAsBase64, base64ByteLength, formatFileSize } from '../../utils/fileUpload';
 import RichTextEditor from './RichTextEditor';
@@ -16,7 +16,17 @@ const TIPOS: { type: ContentType; label: string; Icon: typeof FileText }[] = [
   { type: 'VIDEO', label: 'Video', Icon: Video },
   { type: 'LINK', label: 'Enlace', Icon: LinkIcon },
   { type: 'TEXT', label: 'Nota', Icon: Type },
+  { type: 'QUIZ', label: 'Cuestionario', Icon: HelpCircle },
 ];
+
+/** <input type="datetime-local"> da "2026-10-20T23:59" (sin segundos ni
+ * zona) — Date lo interpreta en hora local del navegador, toISOString() lo
+ * manda en UTC, que es lo que espera el backend. */
+function localDatetimeToIso(value: string): string | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+}
 
 const MAX_FILE_BASE64_CHARS = 15 * 1024 * 1024;
 
@@ -28,6 +38,10 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
   const [linkUrl, setLinkUrl] = useState('');
   const [textContent, setTextContent] = useState('<p></p>');
   const [file, setFile] = useState<File | null>(null);
+  const [openAt, setOpenAt] = useState('');
+  const [dueAt, setDueAt] = useState('');
+  const [timeLimit, setTimeLimit] = useState('');
+  const [maxAttempts, setMaxAttempts] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,12 +98,22 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
           description: description.trim() || undefined,
           link_url: linkUrl.trim(),
         });
-      } else {
+      } else if (tipo === 'TEXT') {
         await crearContenido(courseId, blockId, {
           type: 'TEXT',
           title: title.trim(),
           description: description.trim() || undefined,
           text_content: textContent,
+        });
+      } else {
+        await crearContenido(courseId, blockId, {
+          type: 'QUIZ',
+          title: title.trim(),
+          description: description.trim() || undefined,
+          open_at: localDatetimeToIso(openAt),
+          due_at: localDatetimeToIso(dueAt),
+          time_limit_minutes: timeLimit ? Number(timeLimit) : undefined,
+          max_attempts: maxAttempts ? Number(maxAttempts) : undefined,
         });
       }
       onCreated();
@@ -103,7 +127,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
 
   return (
     <div className="ccv-modal-backdrop" onClick={onClose}>
-      <div className={`ccv-modal ccv-modal-form ${tipo === 'TEXT' ? 'ccv-modal-form-wide' : ''}`} onClick={e => e.stopPropagation()}>
+      <div className={`ccv-modal ccv-modal-form ${tipo === 'TEXT' || tipo === 'QUIZ' ? 'ccv-modal-form-wide' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="ccv-modal-header">
           <h3>Agregar contenido</h3>
           <button type="button" className="ccv-modal-close" onClick={onClose} aria-label="Cerrar">
@@ -163,6 +187,32 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
               Contenido de la nota
               <RichTextEditor content={textContent} onChange={setTextContent} placeholder="Instrucciones, lectura, apuntes..." />
             </label>
+          )}
+
+          {tipo === 'QUIZ' && (
+            <>
+              <p className="ccv-form-hint">Las preguntas se agregan después de crear el cuestionario.</p>
+              <div className="ccv-form-row">
+                <label className="ccv-form-label">
+                  Abre (opcional)
+                  <input type="datetime-local" value={openAt} onChange={e => setOpenAt(e.target.value)} />
+                </label>
+                <label className="ccv-form-label">
+                  Cierra (opcional)
+                  <input type="datetime-local" value={dueAt} onChange={e => setDueAt(e.target.value)} />
+                </label>
+              </div>
+              <div className="ccv-form-row">
+                <label className="ccv-form-label">
+                  Duración en minutos (opcional)
+                  <input type="number" min={1} value={timeLimit} onChange={e => setTimeLimit(e.target.value)} placeholder="Sin límite" />
+                </label>
+                <label className="ccv-form-label">
+                  Intentos permitidos (opcional)
+                  <input type="number" min={1} value={maxAttempts} onChange={e => setMaxAttempts(e.target.value)} placeholder="Sin límite" />
+                </label>
+              </div>
+            </>
           )}
 
           {error && <p className="ccv-form-error">{error}</p>}

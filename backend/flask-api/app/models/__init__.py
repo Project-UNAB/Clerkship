@@ -8,6 +8,10 @@ from app.models.course_content_item import CourseContentItem
 from app.models.assignment_submission import AssignmentSubmission
 from app.models.course_announcement import CourseAnnouncement
 from app.models.course_announcement_comment import CourseAnnouncementComment
+from app.models.quiz_question import QuizQuestion
+from app.models.quiz_choice import QuizChoice
+from app.models.quiz_attempt import QuizAttempt
+from app.models.quiz_answer import QuizAnswer
 from app.models.article import Article
 from app.models.article_tag import ArticleTag
 from app.models.student_library import StudentLibrary
@@ -45,6 +49,10 @@ __all__ = [
     "AssignmentSubmission",
     "CourseAnnouncement",
     "CourseAnnouncementComment",
+    "QuizQuestion",
+    "QuizChoice",
+    "QuizAttempt",
+    "QuizAnswer",
     "Article",
     "ArticleTag",
     "StudentLibrary",
