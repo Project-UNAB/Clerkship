@@ -35,7 +35,8 @@ export default function ContenidoPreviewModal({ courseId, item, onClose }: Props
                 <iframe
                   src={embedUrl}
                   title={item.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                 />
               </div>

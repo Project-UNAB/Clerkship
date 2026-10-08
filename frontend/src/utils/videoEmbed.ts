@@ -6,18 +6,25 @@ export function toEmbedUrl(url: string): string | null {
     const u = new URL(url);
     const host = u.hostname.replace(/^www\./, '');
 
+    // youtube-nocookie.com: mismo reproductor, pero carga menos scripts de
+    // seguimiento de YouTube — menos superficie para que falle algo interno
+    // del bundle de youtube.com (como el intento de usar WebGPU que algunos
+    // navegadores/GPUs rechazan con "No available adapters").
     if (host === 'youtube.com' || host === 'm.youtube.com') {
       const id = u.searchParams.get('v');
-      if (id) return `https://www.youtube.com/embed/${id}`;
+      if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
       const shorts = u.pathname.match(/^\/shorts\/([^/]+)/);
-      if (shorts) return `https://www.youtube.com/embed/${shorts[1]}`;
+      if (shorts) return `https://www.youtube-nocookie.com/embed/${shorts[1]}`;
       const embed = u.pathname.match(/^\/embed\/([^/]+)/);
-      if (embed) return url;
+      if (embed) return `https://www.youtube-nocookie.com/embed/${embed[1]}`;
       return null;
     }
     if (host === 'youtu.be') {
       const id = u.pathname.replace('/', '');
-      return id ? `https://www.youtube.com/embed/${id}` : null;
+      return id ? `https://www.youtube-nocookie.com/embed/${id}` : null;
+    }
+    if (host === 'youtube-nocookie.com') {
+      return url;
     }
     if (host === 'vimeo.com') {
       const id = u.pathname.replace('/', '');
