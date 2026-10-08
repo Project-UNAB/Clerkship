@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, Users, Trash2, X, GraduationCap, UserPlus, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Users, Trash2, X, GraduationCap, UserPlus, LogOut, BookOpen } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import FeedbackFab from '../../components/shared/FeedbackFab';
 import { listMyCourses, type Course } from '../../data/consultasApi';
@@ -12,6 +13,7 @@ import { mainAuthErrorMessage, getStoredUser } from '../../data/mainAuth';
 import '../../styles/cursos.css';
 
 export default function CursosPage() {
+  const navigate = useNavigate();
   const esDocente = getStoredUser()?.role === 'TEACHER';
   const [cursos, setCursos] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,16 +162,21 @@ export default function CursosPage() {
           ) : (
             <div className="cur-lista cur-lista-estudiante">
               {cursos.map(c => (
-                <div key={c.id} className="cur-card">
+                <div key={c.id} className="cur-card cur-card-clickable" onClick={() => navigate(`/mis-cursos/${c.id}`)}>
                   <div>
                     <p className="cur-card-nombre">{c.name}</p>
                     <p className="cur-card-sub">
                       {c.academic_period || 'Sin período'}{c.teacher_name ? ` · Docente: ${c.teacher_name}` : ''}
                     </p>
                   </div>
-                  <button type="button" className="cur-icon-btn" title="Salir del curso" disabled={saliendoId === c.id} onClick={() => handleSalir(c)}>
-                    <LogOut size={14} />
-                  </button>
+                  <div className="cur-card-btns">
+                    <button type="button" className="cur-icon-btn" title="Ver contenido del curso" onClick={e => { e.stopPropagation(); navigate(`/mis-cursos/${c.id}`); }}>
+                      <BookOpen size={14} />
+                    </button>
+                    <button type="button" className="cur-icon-btn" title="Salir del curso" disabled={saliendoId === c.id} onClick={e => { e.stopPropagation(); handleSalir(c); }}>
+                      <LogOut size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -210,9 +217,14 @@ export default function CursosPage() {
                     <p className="cur-card-nombre">{c.name}</p>
                     <p className="cur-card-sub">{c.academic_period || 'Sin período'}</p>
                   </div>
-                  <button type="button" className="cur-icon-btn" title="Borrar curso" onClick={e => { e.stopPropagation(); handleBorrar(c); }}>
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="cur-card-btns">
+                    <button type="button" className="cur-icon-btn" title="Ver y administrar contenido" onClick={e => { e.stopPropagation(); navigate(`/mis-cursos/${c.id}`); }}>
+                      <BookOpen size={14} />
+                    </button>
+                    <button type="button" className="cur-icon-btn" title="Borrar curso" onClick={e => { e.stopPropagation(); handleBorrar(c); }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               ))
             )}

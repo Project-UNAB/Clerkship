@@ -6,6 +6,10 @@
 import { apiFetch } from './apiClient';
 import type { Course } from './consultasApi';
 
+export function obtenerCurso(courseId: string): Promise<Course> {
+  return apiFetch(`/api/cursos/${courseId}`);
+}
+
 export function crearCurso(payload: { name: string; description?: string; academic_period?: string }): Promise<Course> {
   return apiFetch('/api/cursos', {
     method: 'POST',

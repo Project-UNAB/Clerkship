@@ -34,6 +34,12 @@ from app.schemas.cursos import (
     CreateCourseRequest,
     EnrollmentResponse,
 )
+from app.schemas.curso_contenido import (
+    ActualizarBloqueRequest,
+    ActualizarContenidoRequest,
+    CrearBloqueRequest,
+    CrearContenidoRequest,
+)
 from app.schemas.articulos import (
     ArticleResponse,
     CreateArticleRequest,
@@ -121,6 +127,11 @@ __all__ = [
     "CourseResponse",
     "EnrollmentResponse",
     "AgregarEstudianteRequest",
+    # Contenido de cursos (bloques y material)
+    "CrearBloqueRequest",
+    "ActualizarBloqueRequest",
+    "CrearContenidoRequest",
+    "ActualizarContenidoRequest",
     # Articulos
     "CreateArticleRequest",
     "ArticleResponse",

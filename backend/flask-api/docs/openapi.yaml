@@ -1962,6 +1962,307 @@ paths:
           description: No encontrado
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques:
+    get:
+      tags:
+      - Cursos
+      summary: Lista los bloques de material del curso con su contenido adentro (docente dueño o estudiante matriculado)
+      operationId: listarBloquesCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    post:
+      tags:
+      - Cursos
+      summary: Crea un bloque (tema/carpeta) de material en el curso (solo el docente dueño)
+      operationId: crearBloqueCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: {type: string}
+                description: {type: string}
+      responses:
+        '201':
+          description: Creado
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}:
+    patch:
+      tags:
+      - Cursos
+      summary: Actualiza título, descripción o posición de un bloque (solo el docente dueño)
+      operationId: actualizarBloqueCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: {type: string}
+                description: {type: string}
+                position: {type: integer}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags:
+      - Cursos
+      summary: Borra un bloque y todo su contenido, incluyendo los archivos en R2 (solo el docente dueño)
+      operationId: borrarBloqueCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido:
+    post:
+      tags:
+      - Cursos
+      summary: Agrega contenido a un bloque — documento (base64), video (enlace externo), enlace o nota de texto (solo el docente dueño)
+      operationId: crearContenidoBloque
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, title]
+              properties:
+                type: {type: string, enum: [DOCUMENT, VIDEO, LINK, TEXT]}
+                title: {type: string}
+                description: {type: string}
+                name: {type: string}
+                mime_type: {type: string}
+                file_base64: {type: string}
+                video_url: {type: string}
+                link_url: {type: string}
+                text_content: {type: string}
+      responses:
+        '201':
+          description: Creado
+        '400':
+          description: Petición inválida
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '413':
+          description: Archivo demasiado pesado
+        '503':
+          description: Almacenamiento no configurado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}:
+    patch:
+      tags:
+      - Cursos
+      summary: Actualiza un elemento de contenido del bloque (solo el docente dueño)
+      operationId: actualizarContenidoBloque
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: {type: string}
+                description: {type: string}
+                position: {type: integer}
+                video_url: {type: string}
+                link_url: {type: string}
+                text_content: {type: string}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags:
+      - Cursos
+      summary: Borra un elemento de contenido del bloque, incluyendo su archivo en R2 si aplica (solo el docente dueño)
+      operationId: borrarContenidoBloque
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/archivo:
+    get:
+      tags:
+      - Cursos
+      summary: Descarga el archivo de un contenido tipo documento (docente dueño o estudiante matriculado)
+      operationId: obtenerArchivoContenidoBloque
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/vista-previa:
+    get:
+      tags:
+      - Cursos
+      summary: Vista previa en PDF del documento del contenido (original si ya es PDF, o convertido vía Gotenberg) — docente dueño o estudiante matriculado
+      operationId: vistaPreviaContenidoBloque
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '415':
+          description: Tipo de archivo sin vista previa disponible
+        '502':
+          description: Gotenberg no pudo convertir el archivo
+        '503':
+          description: Gotenberg no está configurado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/feedback/inicio:
     post:
       tags:
