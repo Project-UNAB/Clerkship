@@ -945,6 +945,33 @@ paths:
       responses:
         '200':
           description: Archivo eliminado
+  /api/documentos/archivos/{id}/vista-previa:
+    get:
+      tags:
+      - Documentos y Carpetas
+      summary: Vista previa en PDF del archivo
+      description: >-
+        Devuelve el archivo como PDF listo para el visor: el original si ya
+        es PDF, o convertido vía Gotenberg (LibreOffice headless) si es Word,
+        Excel o PowerPoint.
+      operationId: getDocumentPreview
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: PDF (original o convertido) en base64
+        '415':
+          description: Tipo de archivo sin vista previa disponible
+        '502':
+          description: Gotenberg no pudo convertir el archivo
+        '503':
+          description: Gotenberg no está configurado
   /api/comunidad/posts:
     get:
       tags:

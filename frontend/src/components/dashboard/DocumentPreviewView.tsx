@@ -3,18 +3,11 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft, Download, ZoomIn, ZoomOut, RotateCw,
   FileText, Image as ImageIcon, FileSpreadsheet, Presentation,
-  ChevronLeft, ChevronRight, Loader2, Copy, Check,
+  Loader2, Copy, Check,
   Maximize2, Minimize2
 } from 'lucide-react';
-import { getDocument, type DocumentSummary, type DocumentDetail } from '../../data/documentosApi';
+import { getDocument, getDocumentPreview, type DocumentSummary, type DocumentDetail } from '../../data/documentosApi';
 import { formatFileSize } from '../../utils/fileUpload';
-import {
-  parseDocxFile,
-  parseExcelFile,
-  parsePptxFile,
-  type ParsedWorkbook,
-  type ParsedSlide
-} from '../../utils/fileParsers';
 
 import CustomPdfViewer from './CustomPdfViewer';
 
@@ -25,20 +18,14 @@ interface DocumentPreviewViewProps {
 
 export default function DocumentPreviewView({ document, onBack }: DocumentPreviewViewProps) {
   const [loading, setLoading] = useState(true);
-  const [parsing, setParsing] = useState(false);
+  const [converting, setConverting] = useState(false);
   const [detail, setDetail] = useState<DocumentDetail | null>(null);
+  const [previewPdfBase64, setPreviewPdfBase64] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Estados de archivos parseados reales
-  const [wordHtml, setWordHtml] = useState<string>('');
-  const [parsedWorkbook, setParsedWorkbook] = useState<ParsedWorkbook | null>(null);
-  const [activeSheetName, setActiveSheetName] = useState<string>('');
-  const [parsedSlides, setParsedSlides] = useState<ParsedSlide[]>([]);
-
-  // Controles de visor
+  // Controles de visor (imagen / texto — el PDF tiene los suyos propios)
   const [zoom, setZoom] = useState(100);
   const [rotation, setRotation] = useState(0);
-  const [activeSlide, setActiveSlide] = useState(1);
   const [copied, setCopied] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -52,11 +39,12 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
   const isPdf = mime.includes('pdf') || ext === 'pdf';
   const isImage = mime.includes('image') || ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(ext);
   const isWord = mime.includes('word') || mime.includes('officedocument.wordprocessingml') || ['doc', 'docx'].includes(ext);
-  const isExcel = mime.includes('excel') || mime.includes('spreadsheetml') || ['xls', 'xlsx', 'csv'].includes(ext);
+  const isExcel = mime.includes('excel') || mime.includes('spreadsheetml') || ['xls', 'xlsx'].includes(ext);
   const isPpt = mime.includes('presentation') || mime.includes('powerpoint') || ['ppt', 'pptx'].includes(ext);
-  const isText = mime.includes('text') || ['txt', 'json', 'md', 'js', 'py', 'ts'].includes(ext);
+  const isOffice = isWord || isExcel || isPpt;
+  const isText = !isOffice && (mime.includes('text') || ['txt', 'json', 'md', 'js', 'py', 'ts', 'csv'].includes(ext));
 
-  // 3. Sincronizar Pantalla Completa nativa (F11 API)
+  // Sincronizar Pantalla Completa nativa (F11 API)
   useEffect(() => {
     function onFsChange() {
       const isFs = !!(
@@ -115,39 +103,26 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
 
   useEffect(() => {
     setLoading(true);
-    setParsing(false);
+    setConverting(false);
     setError(null);
     setZoom(100);
     setRotation(0);
-    setActiveSlide(1);
-    setWordHtml('');
-    setParsedWorkbook(null);
-    setParsedSlides([]);
+    setPreviewPdfBase64(null);
 
     getDocument(document.id)
       .then(async res => {
         const docDetail = res.document;
         setDetail(docDetail);
 
-        // Procesar contenido real según el formato
-        if (docDetail.data) {
-          setParsing(true);
+        if (isOffice) {
+          setConverting(true);
           try {
-            if (isWord) {
-              const resDocx = await parseDocxFile(docDetail.data);
-              setWordHtml(resDocx.html);
-            } else if (isExcel) {
-              const wb = parseExcelFile(docDetail.data);
-              setParsedWorkbook(wb);
-              setActiveSheetName(wb.sheetNames[0] || 'Hoja 1');
-            } else if (isPpt) {
-              const slides = await parsePptxFile(docDetail.data);
-              setParsedSlides(slides);
-            }
-          } catch (parseErr: any) {
-            console.warn('Error al procesar archivo en el cliente:', parseErr);
+            const preview = await getDocumentPreview(document.id);
+            setPreviewPdfBase64(preview.data);
+          } catch (convErr: any) {
+            setError(convErr?.message || 'No se pudo generar la vista previa de este archivo.');
           } finally {
-            setParsing(false);
+            setConverting(false);
           }
         }
       })
@@ -157,15 +132,14 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
       .finally(() => {
         setLoading(false);
       });
-  }, [document.id, isWord, isExcel, isPpt]);
+  }, [document.id, isOffice]);
 
-  // 1 & 2: Atajos de teclado para Zoom, Navegación de Diapositivas PPT y F11
+  // Atajos de teclado: Zoom (Ctrl + Plus/Minus/0) y F11
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (tag === 'input' || tag === 'textarea') return;
 
-      // 1. Zoom con Ctrl + Plus / Ctrl + Minus / Ctrl + 0
       if (e.ctrlKey || e.metaKey) {
         if (e.key === '+' || e.key === '=' || e.key === 'Add') {
           e.preventDefault();
@@ -184,31 +158,6 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
         }
       }
 
-      // 2. Navegación por Diapositivas PPT con flechas
-      if (isPpt && parsedSlides.length > 0) {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
-          e.preventDefault();
-          setActiveSlide(s => Math.min(parsedSlides.length, s + 1));
-          return;
-        }
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
-          e.preventDefault();
-          setActiveSlide(s => Math.max(1, s - 1));
-          return;
-        }
-        if (e.key === 'Home') {
-          e.preventDefault();
-          setActiveSlide(1);
-          return;
-        }
-        if (e.key === 'End') {
-          e.preventDefault();
-          setActiveSlide(parsedSlides.length);
-          return;
-        }
-      }
-
-      // 3. F11 para Pantalla Completa
       if (e.key === 'F11') {
         e.preventDefault();
         toggleNativeFullscreen();
@@ -217,7 +166,7 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPpt, parsedSlides.length]);
+  }, []);
 
   // Zoom con Ctrl + Rueda del ratón o Gesto Pinch táctil del touchpad
   useEffect(() => {
@@ -258,7 +207,7 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
 
   // Decodificar texto plano
   let decodedText = '';
-  if (detail?.data && (isText || ext === 'csv')) {
+  if (detail?.data && isText) {
     try {
       decodedText = atob(detail.data);
     } catch {
@@ -279,8 +228,7 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
 
   const badgeInfo = getTypeBadge();
   const BadgeIcon = badgeInfo.icon;
-
-  const currentSheet = parsedWorkbook && activeSheetName ? parsedWorkbook.sheets[activeSheetName] : null;
+  const showPdfViewer = isPdf || (isOffice && previewPdfBase64);
 
   return (
     <motion.div
@@ -325,8 +273,8 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
 
           {/* Controles de la barra superior */}
           <div className="doc-preview-actions">
-            {/* Zoom controls para Imagen / Word / Excel / PPT (en escritorio) */}
-            {!isPdf && (
+            {/* Zoom controls para Imagen (el PDF tiene los suyos en CustomPdfViewer) */}
+            {isImage && (
               <div className="doc-preview-zoom-group doc-zoom-desktop">
                 <button
                   type="button"
@@ -345,16 +293,14 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
                 >
                   <ZoomIn size={15} />
                 </button>
-                {isImage && (
-                  <button
-                    type="button"
-                    className="doc-preview-tool-btn"
-                    title="Rotar imagen 90°"
-                    onClick={() => setRotation(r => (r + 90) % 360)}
-                  >
-                    <RotateCw size={15} />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="doc-preview-tool-btn"
+                  title="Rotar imagen 90°"
+                  onClick={() => setRotation(r => (r + 90) % 360)}
+                >
+                  <RotateCw size={15} />
+                </button>
               </div>
             )}
 
@@ -382,7 +328,7 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
         </div>
 
         {/* Barra de herramientas secundaria en móvil para controles de zoom */}
-        {!isPdf && (
+        {isImage && (
           <div className="doc-preview-mobile-tools-bar">
             <div className="doc-preview-zoom-group">
               <button
@@ -402,16 +348,14 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
               >
                 <ZoomIn size={14} />
               </button>
-              {isImage && (
-                <button
-                  type="button"
-                  className="doc-preview-tool-btn"
-                  title="Rotar imagen 90°"
-                  onClick={() => setRotation(r => (r + 90) % 360)}
-                >
-                  <RotateCw size={14} />
-                </button>
-              )}
+              <button
+                type="button"
+                className="doc-preview-tool-btn"
+                title="Rotar imagen 90°"
+                onClick={() => setRotation(r => (r + 90) % 360)}
+              >
+                <RotateCw size={14} />
+              </button>
             </div>
           </div>
         )}
@@ -426,14 +370,14 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
           </div>
         )}
 
-        {parsing && (
+        {converting && !loading && (
           <div className="doc-preview-center-msg">
             <Loader2 size={36} className="dfm-spin" color="var(--p, #4F46E5)" />
-            <p>Procesando estructura interna del archivo <strong>{fileName}</strong>...</p>
+            <p>Convirtiendo <strong>{fileName}</strong> a PDF para la vista previa...</p>
           </div>
         )}
 
-        {error && !loading && (
+        {error && !loading && !converting && (
           <div className="doc-preview-center-msg doc-preview-error">
             <FileText size={42} color="#EF4444" />
             <p>{error}</p>
@@ -443,14 +387,17 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
           </div>
         )}
 
-        {!loading && !error && detail && (
+        {!loading && !converting && !error && detail && (
           <>
-            {/* ── 1. VISOR PROPIO DE PDF (PDF.js Canvas) ── */}
-            {isPdf && (
-              <CustomPdfViewer base64Data={detail.data} fileName={fileName} />
+            {/* ── VISOR DE PDF (PDF.js), también usado para Word/Excel/PowerPoint convertidos ── */}
+            {showPdfViewer && (
+              <CustomPdfViewer
+                base64Data={isPdf ? detail.data : (previewPdfBase64 as string)}
+                fileName={fileName}
+              />
             )}
 
-            {/* ── 2. VISOR DE IMÁGENES ── */}
+            {/* ── VISOR DE IMÁGENES ── */}
             {isImage && (
               <div className="doc-preview-image-wrap">
                 <img
@@ -465,194 +412,8 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
               </div>
             )}
 
-            {/* ── 3. VISOR REAL DE DOCUMENTOS WORD (.docx / .doc) ── */}
-            {isWord && (
-              <div className="doc-preview-word-wrap">
-                <div
-                  className="doc-preview-word-page"
-                  style={{
-                    transform: `scale(${zoom / 100})`,
-                    transformOrigin: 'top center',
-                    transition: 'transform 0.18s ease',
-                  }}
-                >
-                  <div className="doc-word-header">
-                    <div className="doc-word-meta-tag">Documento de Word · Microsoft Word</div>
-                    <span className="doc-word-page-num">{ext.toUpperCase()} · {formatFileSize(detail.size_bytes)}</span>
-                  </div>
-
-                  <h1 className="doc-word-title">{fileName.replace(/\.(docx|doc)$/i, '')}</h1>
-                  <div className="doc-word-divider" />
-
-                  {wordHtml ? (
-                    <div
-                      className="doc-word-rendered-html"
-                      dangerouslySetInnerHTML={{ __html: wordHtml }}
-                    />
-                  ) : (
-                    <div className="doc-word-content">
-                      <p className="doc-word-lead">
-                        Contenido del documento listo para visualización.
-                      </p>
-                      <p>
-                        Para editar tablas complejas o formatos binarios propietarios heredados (.doc antiguos), descargue el archivo con el botón superior.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── 4. VISOR REAL DE EXCEL (.xlsx / .xls / .csv) ── */}
-            {isExcel && (
-              <div className="doc-preview-excel-wrap">
-                {/* Barra de fórmulas */}
-                <div className="doc-excel-formula-bar">
-                  <span className="doc-excel-fx">fx</span>
-                  <span className="doc-excel-formula-text">
-                    {activeSheetName} · {currentSheet?.rows.length || 0} filas detectadas
-                  </span>
-                </div>
-
-                {/* Tabla con datos reales del Excel */}
-                <div className="doc-excel-table-container">
-                  <table
-                    className="doc-excel-table"
-                    style={{
-                      transform: `scale(${zoom / 100})`,
-                      transformOrigin: 'top left',
-                      transition: 'transform 0.18s ease',
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th className="doc-excel-th-corner">#</th>
-                        {Array.from({ length: currentSheet?.maxCols || 6 }, (_, i) => (
-                          <th key={i}>{String.fromCharCode(65 + (i % 26))}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentSheet && currentSheet.rows.length > 0 ? (
-                        currentSheet.rows.map((row, rIdx) => (
-                          <tr key={rIdx} className={rIdx === 0 ? 'doc-excel-header-row' : ''}>
-                            <td className="doc-excel-row-num">{rIdx + 1}</td>
-                            {Array.from({ length: currentSheet.maxCols }, (_, cIdx) => (
-                              <td key={cIdx}>{row[cIdx] !== undefined ? row[cIdx] : ''}</td>
-                            ))}
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: '#94A3B8' }}>
-                            Esta hoja de cálculo no contiene datos en las celdas.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pestañas de Hojas Reales */}
-                {parsedWorkbook && parsedWorkbook.sheetNames.length > 0 && (
-                  <div className="doc-excel-tabs">
-                    {parsedWorkbook.sheetNames.map(name => (
-                      <button
-                        key={name}
-                        type="button"
-                        className={`doc-excel-tab-btn ${activeSheetName === name ? 'is-active' : ''}`}
-                        onClick={() => setActiveSheetName(name)}
-                      >
-                        {name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── 5. VISOR REAL DE POWERPOINT (.pptx) ── */}
-            {isPpt && (
-              <div className="doc-preview-ppt-wrap">
-                {/* Miniaturas de diapositivas reales */}
-                <div className="doc-ppt-sidebar">
-                  {parsedSlides.map((slide, idx) => (
-                    <button
-                      key={slide.slideNumber || idx}
-                      type="button"
-                      className={`doc-ppt-thumb-btn ${activeSlide === slide.slideNumber ? 'is-active' : ''}`}
-                      onClick={() => setActiveSlide(slide.slideNumber)}
-                    >
-                      <span className="doc-ppt-thumb-num">{slide.slideNumber}</span>
-                      <div className="doc-ppt-thumb-preview">
-                        <div className="ppt-mini-title" />
-                        <div className="ppt-mini-line" />
-                        <div className="ppt-mini-line" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Escenario de la diapositiva real */}
-                <div className="doc-ppt-stage">
-                  {(() => {
-                    const slide = parsedSlides.find(s => s.slideNumber === activeSlide) || parsedSlides[0];
-                    if (!slide) return null;
-
-                    return (
-                      <div
-                        className="doc-ppt-slide"
-                        style={{
-                          transform: `scale(${zoom / 100})`,
-                          transition: 'transform 0.18s ease',
-                        }}
-                      >
-                        <div className="doc-ppt-slide-header">
-                          <span className="doc-ppt-tag">Presentación Diapositiva</span>
-                          <span className="doc-ppt-counter">Diapositiva {activeSlide} de {parsedSlides.length} (Usa flechas ⬅️ ➡️)</span>
-                        </div>
-
-                        <div className="doc-ppt-slide-content">
-                          <h2 className="ppt-slide-title">{slide.title}</h2>
-                          {slide.paragraphs.length > 0 && (
-                            <ul className="ppt-slide-bullets">
-                              {slide.paragraphs.map((p, pIdx) => (
-                                <li key={pIdx}>{p}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-
-                        {/* Controles de navegación */}
-                        <div className="doc-ppt-nav-controls">
-                          <button
-                            type="button"
-                            className="doc-ppt-nav-btn"
-                            disabled={activeSlide <= 1}
-                            onClick={() => setActiveSlide(s => Math.max(1, s - 1))}
-                            title="Diapositiva anterior (Flecha Izquierda / Arriba)"
-                          >
-                            <ChevronLeft size={16} /> Anterior
-                          </button>
-                          <button
-                            type="button"
-                            className="doc-ppt-nav-btn"
-                            disabled={activeSlide >= parsedSlides.length}
-                            onClick={() => setActiveSlide(s => Math.min(parsedSlides.length, s + 1))}
-                            title="Diapositiva siguiente (Flecha Derecha / Abajo / Espacio)"
-                          >
-                            Siguiente <ChevronRight size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
-
-            {/* ── 6. VISOR DE CÓDIGO / TEXTO PLANO ── */}
-            {isText && !isPdf && !isWord && !isExcel && !isPpt && (
+            {/* ── VISOR DE CÓDIGO / TEXTO PLANO ── */}
+            {isText && (
               <div className="doc-preview-text-wrap">
                 <div className="doc-text-topbar">
                   <span>Texto Plano / Archivo de Datos ({decodedText.length} caracteres)</span>

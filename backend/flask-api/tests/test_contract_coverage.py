@@ -59,7 +59,11 @@ def test_all_flask_routes_are_documented_in_spec(app, spec):
     spec_routes = _get_spec_routes(spec)
 
     # Rutas alias internas (como /documentos que es alias de /archivos)
-    alias_paths = {"/api/documentos/documentos", "/api/documentos/documentos/{param}"}
+    alias_paths = {
+        "/api/documentos/documentos",
+        "/api/documentos/documentos/{param}",
+        "/api/documentos/documentos/{param}/vista-previa",
+    }
     undocumented = (set(flask_routes.keys()) - set(spec_routes.keys())) - alias_paths
 
     assert len(undocumented) == 0, f"Rutas en Flask no documentadas en OpenAPI: {undocumented}"

@@ -17,16 +17,14 @@
     "firebase": "^12.17.1",
     "framer-motion": "^12.38.0",
     "gsap": "^3.15.0",
-    "jszip": "^3.10.1",
     "lucide-react": "^1.8.0",
-    "mammoth": "^1.12.1",
     "pdfjs-dist": "^5.6.205",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-pageflip": "^2.0.3",
     "react-router-dom": "^7.14.2",
-    "three": "^0.184.0",
-    "xlsx": "^0.18.5"
+    "recharts": "^3.10.1",
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

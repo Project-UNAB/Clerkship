@@ -102,3 +102,15 @@ export function updateDocument(
 export function deleteDocument(id: string): Promise<{ ok: boolean }> {
   return apiFetch(`/api/documentos/documentos/${id}`, { method: 'DELETE' });
 }
+
+export interface DocumentPreview {
+  mime_type: 'application/pdf';
+  data: string;
+  converted: boolean;
+}
+
+/** PDF listo para el visor: el original si ya es PDF, o convertido (Gotenberg)
+ * si es Word/Excel/PowerPoint. */
+export function getDocumentPreview(id: string): Promise<DocumentPreview> {
+  return apiFetch(`/api/documentos/documentos/${id}/vista-previa`);
+}

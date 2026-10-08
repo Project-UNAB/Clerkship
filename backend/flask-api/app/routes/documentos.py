@@ -22,6 +22,7 @@ from flask_jwt_extended import jwt_required
 from sqlalchemy import func
 
 from app import db, get_mongo_db, storage
+from app.services import conversion
 from app.models import DocumentFolder, UserFile
 from app.schemas import (
     CreateFolderRequest,
@@ -399,6 +400,61 @@ def obtener_documento(document_id):
         return jsonify({"document": _document_dict(doc, include_data=True)}), 200
 
     return jsonify({"error": "Documento no encontrado"}), 404
+
+
+def _bytes_y_mime(origen: str, doc) -> tuple[bytes, str, str]:
+    """Devuelve (contenido, mime_type, nombre) del documento, sin importar dónde viva."""
+    if origen == "r2":
+        return storage.descargar_bytes(doc.storage_key), doc.mime_type, doc.nombre
+    contenido = base64.b64decode(doc.get("data") or "")
+    return contenido, doc.get("mime_type"), doc.get("name") or "archivo"
+
+
+@documentos_bp.get("/documentos/<document_id>/vista-previa")
+@documentos_bp.get("/archivos/<document_id>/vista-previa")
+@jwt_required()
+def vista_previa_documento(document_id):
+    """PDF listo para mostrar en el visor: el original si ya es PDF, o la
+    conversión vía Gotenberg si es Word/Excel/PowerPoint. Imágenes y texto
+    plano no necesitan esto — el frontend los muestra directo."""
+    user = get_current_user()
+    origen, doc = _ubicar(document_id)
+    if origen is None:
+        return jsonify({"error": "Documento no encontrado"}), 404
+
+    owner_id = doc.owner_id if origen == "r2" else doc.get("owner_user_id")
+    if str(owner_id) != str(user.id):
+        return jsonify({"error": "Documento no encontrado"}), 404
+
+    contenido, mime_type, nombre = _bytes_y_mime(origen, doc)
+    mime_type = (mime_type or "").lower()
+
+    if mime_type == "application/pdf":
+        return jsonify({
+            "mime_type": "application/pdf",
+            "data": base64.b64encode(contenido).decode("ascii"),
+            "converted": False,
+        }), 200
+
+    if mime_type not in conversion.FORMATOS_CONVERTIBLES:
+        return jsonify({
+            "error": "Unsupported Media Type",
+            "message": "Este tipo de archivo no tiene vista previa en PDF",
+            "status_code": 415,
+        }), 415
+
+    try:
+        pdf_bytes = conversion.convertir_a_pdf(contenido, nombre)
+    except conversion.ConversionNotConfigured as err:
+        return jsonify({"error": "Service Unavailable", "message": str(err), "status_code": 503}), 503
+    except conversion.ConversionError as err:
+        return jsonify({"error": "Bad Gateway", "message": str(err), "status_code": 502}), 502
+
+    return jsonify({
+        "mime_type": "application/pdf",
+        "data": base64.b64encode(pdf_bytes).decode("ascii"),
+        "converted": True,
+    }), 200
 
 
 @documentos_bp.patch("/documentos/<document_id>")
