@@ -11,6 +11,7 @@ import { formatFileSize } from '../../utils/fileUpload';
 
 import CustomPdfViewer from './CustomPdfViewer';
 import ExcelSpreadsheetViewer from './ExcelSpreadsheetViewer';
+import CodeViewer from './CodeViewer';
 
 interface DocumentPreviewViewProps {
   document: DocumentSummary;
@@ -44,7 +45,13 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
   const isPpt = mime.includes('presentation') || mime.includes('powerpoint') || ['ppt', 'pptx'].includes(ext);
   // Excel se muestra con su propia grilla (SheetJS + x-data-spreadsheet), sin pasar por Gotenberg.
   const isOffice = isWord || isPpt;
-  const isText = !isOffice && !isExcel && (mime.includes('text') || ['txt', 'json', 'md', 'js', 'py', 'ts', 'csv'].includes(ext));
+  const CODE_EXTENSIONS = [
+    'txt', 'csv', 'json', 'yaml', 'yml', 'xml', 'md', 'markdown',
+    'js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx', 'vue',
+    'py', 'php', 'java', 'kt', 'kts', 'c', 'h', 'cpp', 'cc', 'hpp', 'cxx', 'cs',
+    'go', 'rs', 'swift', 'sql', 'sh', 'bash', 'html', 'htm', 'css', 'scss',
+  ];
+  const isText = !isOffice && !isExcel && (mime.includes('text') || CODE_EXTENSIONS.includes(ext));
 
   // Sincronizar Pantalla Completa nativa (F11 API)
   useEffect(() => {
@@ -433,11 +440,15 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
                     <span>{copied ? 'Copiado' : 'Copiar texto'}</span>
                   </button>
                 </div>
-                <pre className="doc-text-code-view">
-                  <code style={{ fontSize: `${(zoom / 100) * 0.84}rem` }}>
-                    {decodedText || 'Archivo de texto vacío o sin caracteres imprimibles.'}
-                  </code>
-                </pre>
+                <div className="doc-code-view-wrap">
+                  {decodedText ? (
+                    <CodeViewer code={decodedText} ext={ext} fontSizeRem={(zoom / 100) * 0.84} />
+                  ) : (
+                    <pre className="doc-code-plain">
+                      <code>Archivo de texto vacío o sin caracteres imprimibles.</code>
+                    </pre>
+                  )}
+                </div>
               </div>
             )}
           </>

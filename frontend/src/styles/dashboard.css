@@ -15272,8 +15272,24 @@
   font-weight: 600;
   cursor: pointer;
 }
-.doc-text-code-view {
+.doc-code-view-wrap {
   flex: 1;
+  overflow: auto;
+  background: #0F172A;
+}
+.doc-code-shiki {
+  min-height: 100%;
+}
+.doc-code-shiki pre.shiki {
+  margin: 0;
+  padding: 20px;
+  min-height: 100%;
+  font-family: 'Fira Code', Consolas, Monaco, monospace;
+  font-size: inherit;
+  line-height: 1.6;
+}
+.doc-code-plain {
+  min-height: 100%;
   overflow: auto;
   padding: 20px;
   margin: 0;
@@ -15281,6 +15297,7 @@
   font-size: 0.84rem;
   line-height: 1.6;
   color: #F8FAFC;
+  background: #0F172A;
 }
 
 /* ════════════════════════════════════════════════════════════
