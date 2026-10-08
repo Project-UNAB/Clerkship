@@ -214,11 +214,16 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
     setTimeout(() => setCopied(false), 2000);
   }
 
-  // Decodificar texto plano
+  // Decodificar texto plano. atob() da un string "binario" byte a byte —
+  // si se usa directo, los caracteres UTF-8 multibyte (tildes, ñ) salen mal
+  // codificados (ej. "é" -> "Ã©"). Hay que pasar los bytes por TextDecoder.
   let decodedText = '';
   if (detail?.data && isText) {
     try {
-      decodedText = atob(detail.data);
+      const binary = atob(detail.data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      decodedText = new TextDecoder('utf-8').decode(bytes);
     } catch {
       decodedText = '';
     }
