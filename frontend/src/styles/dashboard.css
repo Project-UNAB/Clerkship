@@ -8597,9 +8597,30 @@
 
 .casos-pillar-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(305px, 1fr));
+  gap: 18px;
   padding-bottom: 24px;
+}
+
+/* Separador entre el bloque de "en progreso" y el de "completados" cuando
+   el filtro activo es "Todos". */
+.casos-group-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0 18px;
+  color: var(--ink3, #64748B);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.casos-group-divider::before,
+.casos-group-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border, #E2E8F0);
 }
 
 .casos-pillar-card {
@@ -8607,9 +8628,9 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 220px;
+  min-height: 240px;
   border-radius: 18px;
-  padding: 16px 18px;
+  padding: 20px 22px;
   cursor: pointer;
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.22s ease,
@@ -8725,66 +8746,10 @@
   display: block;
 }
 
-.casos-pillar-index {
-  font-size: 1.15rem;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  font-family: var(--font, sans-serif);
-}
-
-.casos-pillar-card.in-progress .casos-pillar-index {
-  color: #0284C7 !important;
-}
-
-.casos-pillar-card.completed .casos-pillar-index {
-  color: var(--ink3, #64748B);
-}
-
 .casos-pillar-top-right {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-/* Badge distintivo animado "En curso" con punto pulsante */
-.casos-pillar-live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #E0F2FE;
-  color: #0369A1;
-  border: 1px solid #BAE6FD;
-  border-radius: 999px;
-  padding: 2.5px 7px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.casos-pillar-live-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #0284C7;
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25);
-  animation: casosPulseLive 1.8s infinite;
-}
-
-@keyframes casosPulseLive {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.5);
-  }
-  70% {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 4px rgba(2, 132, 199, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
-  }
 }
 
 .casos-pillar-menu-btn {
