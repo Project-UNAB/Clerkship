@@ -15045,95 +15045,15 @@
   color: #1E40AF;
 }
 
-/* ── 4. EXCEL ── */
-.doc-preview-excel-wrap {
+/* ── 4. EXCEL (grilla real con x-data-spreadsheet) ── */
+.doc-excel-xspreadsheet {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
   background: #FFFFFF;
 }
-.doc-excel-formula-bar {
-  height: 38px;
-  background: #F8FAFC;
-  border-bottom: 1px solid #E2E8F0;
-  display: flex;
-  align-items: center;
-  padding: 0 14px;
-  gap: 10px;
-}
-.doc-excel-fx {
-  font-weight: 800;
-  font-style: italic;
-  color: #10B981;
-  font-size: 0.88rem;
-}
-.doc-excel-formula-text {
-  font-family: monospace;
-  font-size: 0.82rem;
-  color: #475569;
-}
-.doc-excel-table-container {
-  flex: 1;
-  overflow: auto;
-}
-.doc-excel-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-  font-family: var(--font);
-  color: #1E293B;
-}
-.doc-excel-table th,
-.doc-excel-table td {
-  border: 1px solid #E2E8F0;
-  padding: 8px 12px;
-  text-align: left;
-}
-.doc-excel-table th {
-  background: #F1F5F9;
-  font-weight: 700;
-  color: #475569;
-  text-align: center;
-}
-.doc-excel-th-corner { width: 44px; }
-.doc-excel-row-num {
-  background: #F1F5F9;
-  color: #64748B;
-  font-weight: 600;
-  text-align: center;
-  width: 44px;
-}
-.doc-excel-header-row td {
-  background: #ECFDF5;
-  font-weight: 700;
-  color: #065F46;
-}
-.doc-excel-tabs {
-  height: 36px;
-  background: #F1F5F9;
-  border-top: 1px solid #CBD5E1;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  gap: 4px;
-}
-.doc-excel-tab-btn {
-  height: 28px;
-  padding: 0 14px;
-  border: 1px solid #CBD5E1;
-  border-bottom: none;
-  background: #E2E8F0;
-  color: #475569;
-  font-size: 0.76rem;
-  font-weight: 600;
-  border-radius: 6px 6px 0 0;
-  cursor: pointer;
-}
-.doc-excel-tab-btn.is-active {
-  background: #FFFFFF;
-  color: #10B981;
-  font-weight: 700;
+.doc-excel-xspreadsheet .x-spreadsheet {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* ── 5. POWERPOINT ── */

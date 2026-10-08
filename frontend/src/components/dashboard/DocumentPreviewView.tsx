@@ -10,6 +10,7 @@ import { getDocument, getDocumentPreview, type DocumentSummary, type DocumentDet
 import { formatFileSize } from '../../utils/fileUpload';
 
 import CustomPdfViewer from './CustomPdfViewer';
+import ExcelSpreadsheetViewer from './ExcelSpreadsheetViewer';
 
 interface DocumentPreviewViewProps {
   document: DocumentSummary;
@@ -41,8 +42,9 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
   const isWord = mime.includes('word') || mime.includes('officedocument.wordprocessingml') || ['doc', 'docx'].includes(ext);
   const isExcel = mime.includes('excel') || mime.includes('spreadsheetml') || ['xls', 'xlsx'].includes(ext);
   const isPpt = mime.includes('presentation') || mime.includes('powerpoint') || ['ppt', 'pptx'].includes(ext);
-  const isOffice = isWord || isExcel || isPpt;
-  const isText = !isOffice && (mime.includes('text') || ['txt', 'json', 'md', 'js', 'py', 'ts', 'csv'].includes(ext));
+  // Excel se muestra con su propia grilla (SheetJS + x-data-spreadsheet), sin pasar por Gotenberg.
+  const isOffice = isWord || isPpt;
+  const isText = !isOffice && !isExcel && (mime.includes('text') || ['txt', 'json', 'md', 'js', 'py', 'ts', 'csv'].includes(ext));
 
   // Sincronizar Pantalla Completa nativa (F11 API)
   useEffect(() => {
@@ -395,6 +397,11 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
                 base64Data={isPdf ? detail.data : (previewPdfBase64 as string)}
                 fileName={fileName}
               />
+            )}
+
+            {/* ── VISOR DE EXCEL (SheetJS + x-data-spreadsheet, grilla real) ── */}
+            {isExcel && (
+              <ExcelSpreadsheetViewer base64Data={detail.data} />
             )}
 
             {/* ── VISOR DE IMÁGENES ── */}

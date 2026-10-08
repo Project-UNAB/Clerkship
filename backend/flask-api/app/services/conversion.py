@@ -12,12 +12,11 @@ import requests
 
 CONVERT_TIMEOUT_SECONDS = 60
 
-# Formatos que Gotenberg ya sabe convertir a PDF via LibreOffice.
+# Formatos que pasan por Gotenberg. Excel no está acá: se muestra en el
+# frontend como grilla real (SheetJS + x-data-spreadsheet), no como PDF.
 FORMATOS_CONVERTIBLES = {
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "application/vnd.ms-powerpoint",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 }
