@@ -34,6 +34,9 @@ function PdfThumbnailCard({ pageNum, pdfDoc, isActive, onClick }: PdfThumbnailCa
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [rendered, setRendered] = useState(false);
+  // Relación de aspecto real de la página (ancho/alto) — por defecto A4 vertical
+  // hasta que se conozca, para que las páginas horizontales no queden recortadas.
+  const [aspectRatio, setAspectRatio] = useState(1 / 1.414);
   const renderTaskRef = useRef<any>(null);
 
   // Lazy loading: solo se activa cuando entra en el viewport del scroll lateral
@@ -71,6 +74,7 @@ function PdfThumbnailCard({ pageNum, pdfDoc, isActive, onClick }: PdfThumbnailCa
 
         // Renderizado nítido de alta definición (240px de ancho) para que el texto y gráficos sean legibles
         const unscaledViewport = page.getViewport({ scale: 1.0 });
+        setAspectRatio(unscaledViewport.width / unscaledViewport.height);
         const targetWidth = 240;
         const scale = targetWidth / unscaledViewport.width;
         const viewport = page.getViewport({ scale });
@@ -122,7 +126,7 @@ function PdfThumbnailCard({ pageNum, pdfDoc, isActive, onClick }: PdfThumbnailCa
       onClick={onClick}
       title={`Ir a la página ${pageNum}`}
     >
-      <div className="cpv-thumb-box">
+      <div className="cpv-thumb-box" style={{ aspectRatio: String(aspectRatio) }}>
         <canvas ref={canvasRef} className={`cpv-thumb-canvas ${rendered ? 'is-ready' : ''}`} />
         {!rendered && (
           <div className="cpv-thumb-skeleton">
