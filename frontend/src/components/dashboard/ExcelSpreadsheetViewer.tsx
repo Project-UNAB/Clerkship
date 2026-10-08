@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import Spreadsheet from 'x-data-spreadsheet';
-import 'x-data-spreadsheet/dist/xspreadsheet.css';
 import { workbookToXSpreadsheetData } from '../../utils/sheetToXSpreadsheet';
 
 interface ExcelSpreadsheetViewerProps {
