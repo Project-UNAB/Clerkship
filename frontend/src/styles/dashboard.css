@@ -46,8 +46,8 @@
 }
 
 .sb-logo-btn {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -135,6 +135,11 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 6px 12px 16px;
+}
+
+.sb.is-collapsed .sb-body {
+  padding: 6px 0 16px;
 }
 
 .sb-body::-webkit-scrollbar {
@@ -145,40 +150,144 @@
   border-radius: 4px;
 }
 
-.sb-collapsed-nav {
+/* ── Tree Navigation ── */
+.sb-tree-nav {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
-  padding: 10px 0;
 }
 
-.sb-expanded-body {
-  padding: 10px 12px 24px;
-}
-
-/* ── Icon Button (Modo colapsado) ── */
-.sb-icon-btn {
+.sb-tree-parent {
+  display: flex;
+  flex-direction: column;
   position: relative;
-  width: 42px;
+}
+
+/* Fila del padre - Modo colapsado: icono centrado */
+.sb.is-collapsed .sb-tree-parent-btn {
+  width: 44px;
   height: 42px;
+  margin: 0 auto;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   cursor: pointer;
-  color: var(--ink3, #64748B);
-  transition: background 0.15s, color 0.15s;
+  color: #64748B;
+  transition: all 0.15s ease;
+  position: relative;
 }
-.sb-icon-btn:hover {
+
+.sb.is-collapsed .sb-tree-parent-btn:hover {
   background: rgba(226, 232, 240, 0.8);
-  color: var(--ink, #0F172A);
+  color: #0F172A;
 }
-.sb-icon-btn-on {
+
+.sb.is-collapsed .sb-tree-parent-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.sb.is-collapsed .sb-tree-parent-label,
+.sb.is-collapsed .sb-tree-chevron {
+  display: none !important;
+}
+
+/* 🌟 Distintivo activo en modo colapsado */
+.sb.is-collapsed .sb-tree-parent-btn-active {
   background: rgba(2, 132, 199, 0.14) !important;
   color: #0284C7 !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.16);
+  border: 1px solid rgba(2, 132, 199, 0.28);
+}
+.sb.is-collapsed .sb-tree-parent-btn-active .sb-tree-parent-icon {
+  color: #0284C7 !important;
+}
+
+[data-theme="dark"] .sb.is-collapsed .sb-tree-parent-btn-active {
+  background: rgba(56, 189, 248, 0.18) !important;
+  color: #38BDF8 !important;
+  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.32);
+}
+[data-theme="dark"] .sb.is-collapsed .sb-tree-parent-btn-active .sb-tree-parent-icon {
+  color: #38BDF8 !important;
+}
+
+/* Fila del padre - Modo extendido */
+.sb.is-expanded .sb-tree-parent-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sb.is-expanded .sb-tree-parent-btn:hover {
+  background: rgba(241, 245, 249, 0.85);
+}
+
+.sb.is-expanded .sb-tree-parent-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sb.is-expanded .sb-tree-parent-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #334155;
+  transition: color 0.15s ease;
+}
+
+.sb.is-expanded .sb-tree-parent-label {
+  font-size: 0.90rem;
+  font-weight: 600;
+  color: #1E293B;
+  letter-spacing: -0.01em;
+}
+
+.sb.is-expanded .sb-tree-parent-btn-active {
+  background: rgba(2, 132, 199, 0.08);
+}
+.sb.is-expanded .sb-tree-parent-btn-active .sb-tree-parent-icon,
+.sb.is-expanded .sb-tree-parent-btn-active .sb-tree-parent-label {
+  color: #0284C7;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .sb.is-expanded .sb-tree-parent-btn-active {
+  background: rgba(56, 189, 248, 0.1);
+}
+[data-theme="dark"] .sb.is-expanded .sb-tree-parent-btn-active .sb-tree-parent-icon,
+[data-theme="dark"] .sb.is-expanded .sb-tree-parent-btn-active .sb-tree-parent-label {
+  color: #38BDF8;
+}
+
+.sb.is-expanded .sb-tree-chevron {
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sb.is-expanded .sb-tree-chevron:hover {
+  background: rgba(226, 232, 240, 0.6);
 }
 
 /* Profile avatar button & Settings popover */
@@ -9232,6 +9341,21 @@
   line-height: 1.25;
   margin: 0;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* theme.css tiene [data-theme="light"] h2/p/label en #0F172A/#475569 con
+   !important, y gana por especificidad (atributo+etiqueta > una sola clase)
+   aunque se cargue antes — por eso el texto de esta card se veía oscuro en
+   modo claro. Estas reglas, con la misma especificidad [atributo]+[clase],
+   le ganan y devuelven el blanco. */
+[data-theme="light"] .casos-hero-title {
+  color: #FFFFFF !important;
+}
+[data-theme="light"] .casos-hero-desc {
+  color: rgba(255, 255, 255, 0.96) !important;
+}
+[data-theme="light"] .casos-hero-label {
+  color: rgba(255, 255, 255, 0.96) !important;
 }
 
 .casos-hero-desc {
