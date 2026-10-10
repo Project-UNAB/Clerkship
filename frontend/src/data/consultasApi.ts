@@ -99,7 +99,23 @@ export interface Course {
   teacher_id: string;
   /** Solo viene cuando lo pide un estudiante (GET /api/cursos/mios). */
   teacher_name?: string | null;
+  /** Cómo entra un estudiante por su cuenta. El código nunca viene acá. */
+  enrollment_mode?: EnrollmentMode;
+  /** Miniatura de la portada (400x200) para la card; null si no tiene. Es una
+   *  URL firmada que vence: no guardarla, pedir el curso de nuevo. */
+  cover_url?: string | null;
+  /** Portada completa (1200x600). */
+  cover_full_url?: string | null;
+  /** Con fecha: el curso está en la papelera del docente. */
+  deleted_at?: string | null;
+  /** Solo para el estudiante (GET /api/cursos/mios): tareas abiertas que no ha entregado. */
+  pending_assignments?: number;
+  /** Solo para el estudiante: el cierre más cercano entre sus tareas pendientes (UTC). */
+  next_due_at?: string | null;
+  next_due_title?: string | null;
 }
+
+export type EnrollmentMode = 'OPEN' | 'CODE' | 'APPROVAL';
 
 export function listMyCourses(): Promise<Course[]> {
   return apiFetch('/api/cursos/mios');
@@ -109,8 +125,18 @@ export function listAllCourses(): Promise<Course[]> {
   return apiFetch('/api/cursos');
 }
 
-export function enrollInCourse(courseId: string): Promise<{ message: string }> {
-  return apiFetch(`/api/cursos/${courseId}/matricular`, { method: 'POST' });
+/** ENROLLED: ya quedó matriculado. PENDING: el curso pide aprobación del
+ *  docente y lo que quedó fue una solicitud. */
+export interface EnrollResult {
+  message: string;
+  status: 'ENROLLED' | 'PENDING';
+}
+
+export function enrollInCourse(courseId: string, code?: string): Promise<EnrollResult> {
+  return apiFetch(`/api/cursos/${courseId}/matricular`, {
+    method: 'POST',
+    body: JSON.stringify(code ? { code } : {}),
+  });
 }
 
 /* ── Consultas (simulación clínica) ────────────────────────────────── */
@@ -434,16 +460,20 @@ export const GASTRO_SUBTEMAS = [
 ] as const;
 
 /** crear_consulta exige un course_id en el que el estudiante esté matriculado:
- *  busca uno de Gastroenterología (o el primero) y matricula si hace falta. */
+ *  busca uno de Gastroenterología (o el primero) entre los suyos. Si no
+ *  tiene ninguno, solo se matricula solo en un curso de matrícula abierta:
+ *  a los de código o aprobación se entra desde "Mis cursos". */
 export async function ensureCourseId(): Promise<string> {
   const mine = await listMyCourses();
   const mineMatch = mine.find(c => c.name.toLowerCase().includes('gastro')) || mine[0];
   if (mineMatch) return mineMatch.id;
 
-  const all = await listAllCourses();
-  const candidate = all.find(c => c.name.toLowerCase().includes('gastro')) || all[0];
+  const abiertos = (await listAllCourses()).filter(c => c.enrollment_mode === 'OPEN');
+  const candidate = abiertos.find(c => c.name.toLowerCase().includes('gastro')) || abiertos[0];
   if (!candidate) {
-    throw new Error('No hay ningún curso creado todavía — pedile a un docente que cree uno.');
+    throw new Error(
+      'Todavía no estás matriculado en ningún curso. Entra a "Mis cursos" y únete con el código que te dio tu docente.'
+    );
   }
   await enrollInCourse(candidate.id);
   return candidate.id;

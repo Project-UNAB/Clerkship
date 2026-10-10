@@ -17,11 +17,19 @@ class CourseBlock(db.Model):
     title = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text)
     position = db.Column(db.Integer, nullable=False, default=0)
-    created_at = db.Column(db.DateTime, server_default=func.now())
-    updated_at = db.Column(db.DateTime, server_default=func.now())
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        db.Index("ix_course_blocks_course_id_position", "course_id", "position"),
+    )
 
     def to_dict(self):
-        created = self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None
+        created = (
+            (self.created_at.astimezone(timezone.utc) if self.created_at.tzinfo else self.created_at.replace(tzinfo=timezone.utc)).isoformat()
+            if self.created_at
+            else None
+        )
         return {
             "id": str(self.id),
             "course_id": str(self.course_id),

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { actualizarCurso } from '../../data/cursosApi';
+import { actualizarCurso, quitarPortadaCurso, type PortadaNueva } from '../../data/cursosApi';
 import type { Course } from '../../data/consultasApi';
 import RichTextEditor from './RichTextEditor';
+import PortadaPicker from './PortadaPicker';
 
 interface Props {
   curso: Course;
@@ -16,6 +17,9 @@ export default function EditarCursoModal({ curso, onClose, onSaved }: Props) {
   const [description, setDescription] = useState(curso.description || '<p></p>');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [portada, setPortada] = useState<PortadaNueva | null>(null);
+  // La portada guardada puede quitarse sin cerrar el modal.
+  const [urlPortada, setUrlPortada] = useState(curso.cover_full_url || curso.cover_url || null);
 
   async function handleGuardar() {
     if (!name.trim()) {
@@ -29,11 +33,26 @@ export default function EditarCursoModal({ curso, onClose, onSaved }: Props) {
         name: name.trim(),
         description,
         academic_period: periodo.trim(),
-      });
+      }, portada);
       onSaved(actualizado);
       onClose();
     } catch (err: any) {
       setError(err?.message || 'No se pudo guardar el curso.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleQuitarPortada() {
+    if (!window.confirm('¿Quitar la portada de este curso?')) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const actualizado = await quitarPortadaCurso(curso.id);
+      setUrlPortada(null);
+      onSaved(actualizado);
+    } catch (err: any) {
+      setError(err?.message || 'No se pudo quitar la portada.');
     } finally {
       setSaving(false);
     }
@@ -59,6 +78,19 @@ export default function EditarCursoModal({ curso, onClose, onSaved }: Props) {
               Período académico
               <input type="text" value={periodo} onChange={e => setPeriodo(e.target.value)} placeholder="2026-2" maxLength={20} />
             </label>
+          </div>
+
+          <div className="ccv-form-label">
+            Imagen de portada
+            <PortadaPicker
+              courseId={curso.id}
+              courseName={name}
+              urlActual={urlPortada}
+              value={portada}
+              onChange={setPortada}
+              onQuitarActual={handleQuitarPortada}
+              disabled={saving}
+            />
           </div>
 
           <label className="ccv-form-label">

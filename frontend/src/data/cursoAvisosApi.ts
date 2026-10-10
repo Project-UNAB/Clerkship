@@ -3,7 +3,7 @@
  * arriba), cualquier matriculado puede comentarlos. Equivalente al foro
  * "Avisos" que Moodle crea por defecto en todo curso.
  */
-import { apiFetch } from './apiClient';
+import { apiFetch, todasLasPaginas, type Paginacion } from './apiClient';
 
 export interface CourseAnnouncement {
   id: string;
@@ -27,8 +27,16 @@ export interface AnnouncementComment {
   created_at: string | null;
 }
 
-export function listarAvisos(courseId: string): Promise<{ avisos: CourseAnnouncement[] }> {
-  return apiFetch(`/api/cursos/${courseId}/avisos`);
+export type AvisosPagina = { avisos: CourseAnnouncement[] } & Paginacion;
+
+/** Una página de avisos (fijados primero, luego los más recientes). */
+export function listarAvisosPagina(courseId: string, page = 1, perPage = 20): Promise<AvisosPagina> {
+  return apiFetch(`/api/cursos/${courseId}/avisos?page=${page}&per_page=${perPage}`);
+}
+
+/** Todos los avisos del curso (recorre las páginas). */
+export function listarAvisos(courseId: string): Promise<AvisosPagina> {
+  return todasLasPaginas((page, perPage) => listarAvisosPagina(courseId, page, perPage), 'avisos');
 }
 
 export function crearAviso(

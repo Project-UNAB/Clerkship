@@ -39,6 +39,15 @@ class User(db.Model):
     # Cuenta desactivada por un administrador — no puede iniciar sesión.
     activo = db.Column(db.Boolean, nullable=False, server_default=db.text("true"))
 
+    # Corte de sesiones: los JWT emitidos antes de este momento ya no valen.
+    # Se mueve al cambiar el rol o la contraseña, o al cerrar todas las
+    # sesiones (ver app/services/sesiones.py). NULL = nunca se cortó.
+    tokens_valid_after = db.Column(db.DateTime(timezone=True))
+
+    # Recibir las notificaciones también por correo (las de dentro de la
+    # plataforma llegan siempre). Apagado hasta que el usuario lo active.
+    email_notifications = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("false"))
+
     def to_dict(self):
         return {
             "id": str(self.id),
@@ -51,4 +60,5 @@ class User(db.Model):
             "avatar_svg": self.avatar_svg,
             "mailbox_created": self.mailbox_created,
             "activo": self.activo,
+            "email_notifications": bool(self.email_notifications),
         }

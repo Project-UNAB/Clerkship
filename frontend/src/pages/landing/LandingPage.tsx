@@ -27,7 +27,7 @@ const DEVS = [
       { label: 'Fine-Tuning', icon: <Sparkles size={13} /> },
     ]
   },
-  { initials: 'SA', name: 'Santiago Steven Arias Estupiñan', seed: 'Aneka', color: '#10B981',
+  { initials: 'SA', name: 'Santiago Steven Arias Estupiñán', seed: 'Aneka', color: '#10B981',
     focus: 'Frontend · React · UI/UX · Conexión del Sistema',
     desc: 'Líder de desarrollo Frontend. Diseña y construye la interfaz interactiva en React 19 y la conexión integral con el motor clínico.',
     skills: [
@@ -36,7 +36,7 @@ const DEVS = [
       { label: 'UI/UX', icon: <Sparkles size={13} /> },
     ]
   },
-  { initials: 'CB', name: 'Camilo Andres Bueno Rey', seed: 'Jasper', color: '#8B5CF6',
+  { initials: 'CB', name: 'Camilo Andrés Bueno Rey', seed: 'Jasper', color: '#8B5CF6',
     focus: 'Backend · Node.js · API REST · Conexión del Sistema',
     desc: 'Líder de arquitectura Backend. Construye el servidor API REST en Node.js, la gestión de datos y la infraestructura de conexión entre sistemas.',
     skills: [
@@ -428,7 +428,7 @@ export default function LandingPage() {
         {/* Header row */}
         <div className="lp-tec-header-img">
           <h2 className="lp-tec-main-title-img">
-            Explora nuestra arquitectura<br />& únete a la experiencia
+            Explora nuestra arquitectura<br />y únete a la experiencia
           </h2>
           <p className="lp-tec-main-desc-img">
             CLERKSHIP COMBINA LLM, RAG Y CHAIN-OF-THOUGHT PARA PRODUCIR
@@ -443,7 +443,7 @@ export default function LandingPage() {
           <motion.div className="lp-tec-col-1" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} viewport={{ once: true }}>
             <div className="lp-tec-img-card lp-tec-tall-card">
                <div className="lp-tec-card-bottom">
-                 <button className="lp-tec-pill-btn">Learn More</button>
+                 <button className="lp-tec-pill-btn">Conocer más</button>
                  <button className="lp-tec-circle-btn">
                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
                  </button>
@@ -454,14 +454,14 @@ export default function LandingPage() {
           {/* Col 2 */}
           <motion.div className="lp-tec-col-2" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} viewport={{ once: true }}>
             <div className="lp-tec-col-top">
-               <span className="lp-tec-blog-label">BLOG/ARTICLE</span>
+               <span className="lp-tec-blog-label">DOCUMENTACIÓN</span>
                <button className="lp-tec-outline-btn">
                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
                </button>
             </div>
             <div className="lp-tec-img-card lp-tec-short-card">
                <div className="lp-tec-card-bottom">
-                 <button className="lp-tec-pill-btn">Learn More</button>
+                 <button className="lp-tec-pill-btn">Conocer más</button>
                  <button className="lp-tec-circle-btn">
                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
                  </button>
@@ -472,14 +472,14 @@ export default function LandingPage() {
           {/* Col 3 */}
           <motion.div className="lp-tec-col-3" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }} viewport={{ once: true }}>
             <div className="lp-tec-col-top">
-               <span className="lp-tec-blog-label">BLOG/ARTICLE</span>
+               <span className="lp-tec-blog-label">DOCUMENTACIÓN</span>
                <button className="lp-tec-outline-btn">
                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
                </button>
             </div>
             <div className="lp-tec-img-card lp-tec-short-card">
                <div className="lp-tec-card-bottom">
-                 <button className="lp-tec-pill-btn">Learn More</button>
+                 <button className="lp-tec-pill-btn">Conocer más</button>
                  <button className="lp-tec-circle-btn">
                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
                  </button>

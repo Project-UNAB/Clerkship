@@ -1180,7 +1180,7 @@ function Interview({
 
       {consultaTerminada ? (
         <div className="sim-chat-ended-notice">
-          <Info size={15} /> El paciente se despidió — cerrá la consulta con tu diagnóstico.
+          <Info size={15} /> El paciente se despidió — cierra la consulta con tu diagnóstico.
         </div>
       ) : (
         <div className="sim-input-area">
@@ -1256,7 +1256,7 @@ function Interview({
             <textarea
               ref={textareaRef}
               className="sim-input-field"
-              placeholder="Hacé una pregunta al paciente..."
+              placeholder="Haz una pregunta al paciente..."
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}

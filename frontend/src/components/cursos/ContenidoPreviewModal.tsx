@@ -84,13 +84,6 @@ export default function ContenidoPreviewModal({ courseId, item, onClose }: Props
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.text_content || '', SANITIZE_OPTS) }}
             />
           )}
-
-          {item.type === 'ASSIGNMENT' && (
-            <div className="ccv-center">
-              <FileText size={36} />
-              <p>La entrega de tareas desde la plataforma todavía se está construyendo.</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ validación de opciones correctas, ventana de disponibilidad, límite de
 intentos y calificación automática. No toca la base real — todo con
 monkeypatch."""
 import uuid
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -18,6 +19,28 @@ def _token(app, role, identity="11111111-1111-1111-1111-111111111111"):
 
 def _headers(app, role, identity="11111111-1111-1111-1111-111111111111"):
     return {"Authorization": f"Bearer {_token(app, role, identity)}"}
+
+
+@pytest.fixture(autouse=True)
+def _bloque_del_curso(app, monkeypatch):
+    """Por defecto el bloque de la URL sí pertenece al curso. Los tests que
+    prueban el cruce bloque-curso vuelven a parchear CourseBlock.query."""
+    with app.app_context():
+        monkeypatch.setattr(
+            cq_routes.CourseBlock,
+            "query",
+            SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: SimpleNamespace(id=kw.get("id")))),
+        )
+
+
+def _q(first=None, todos=None):
+    """Query falsa: filter_by / order_by / with_for_update devuelven lo mismo."""
+    q = SimpleNamespace(first=lambda: first, all=lambda: todos or [])
+    q.filter_by = lambda **kw: q
+    q.order_by = lambda *a: q
+    q.with_for_update = lambda **kw: q
+    q.populate_existing = lambda: q
+    return q
 
 
 def _mock_preguntas_con_opciones(monkeypatch, preguntas_y_opciones):
@@ -139,7 +162,7 @@ def test_iniciar_intento_rechaza_no_matriculado(app, client, monkeypatch):
     with app.app_context():
         monkeypatch.setattr(cq_routes, "get_current_user", lambda: SimpleNamespace(id=uuid.uuid4(), role="STUDENT"))
         monkeypatch.setattr(cq_routes.Course, "query", SimpleNamespace(get=lambda _id: curso))
-        monkeypatch.setattr(cq_routes.StudentCourse, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: None)))
+        monkeypatch.setattr(cq_routes.StudentCourse, "query", _q(first=None))
     headers = _headers(app, "STUDENT")
     res = client.post(
         f"/api/cursos/{curso.id}/bloques/11111111-1111-1111-1111-111111111111"
@@ -156,9 +179,9 @@ def test_iniciar_intento_sin_preguntas_da_400(app, client, monkeypatch):
     with app.app_context():
         monkeypatch.setattr(cq_routes, "get_current_user", lambda: SimpleNamespace(id=estudiante_id, role="STUDENT"))
         monkeypatch.setattr(cq_routes.Course, "query", SimpleNamespace(get=lambda _id: curso))
-        monkeypatch.setattr(cq_routes.StudentCourse, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: object())))
+        monkeypatch.setattr(cq_routes.StudentCourse, "query", _q(first=object()))
         monkeypatch.setattr(cq_routes.CourseContentItem, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: item)))
-        monkeypatch.setattr(cq_routes.QuizAttempt, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(count=lambda: 0)))
+        monkeypatch.setattr(cq_routes.QuizAttempt, "query", _q(todos=[]))
         _mock_preguntas_con_opciones(monkeypatch, [])
 
     headers = _headers(app, "STUDENT", identity=str(estudiante_id))
@@ -176,9 +199,11 @@ def test_iniciar_intento_excede_max_intentos_da_400(app, client, monkeypatch):
     with app.app_context():
         monkeypatch.setattr(cq_routes, "get_current_user", lambda: SimpleNamespace(id=estudiante_id, role="STUDENT"))
         monkeypatch.setattr(cq_routes.Course, "query", SimpleNamespace(get=lambda _id: curso))
-        monkeypatch.setattr(cq_routes.StudentCourse, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: object())))
+        monkeypatch.setattr(cq_routes.StudentCourse, "query", _q(first=object()))
         monkeypatch.setattr(cq_routes.CourseContentItem, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: item)))
-        monkeypatch.setattr(cq_routes.QuizAttempt, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(count=lambda: 1)))
+        usado = SimpleNamespace(submitted_at=datetime.now(timezone.utc), attempt_number=1)
+        monkeypatch.setattr(cq_routes.QuizAttempt, "query", _q(todos=[usado]))
+        _mock_preguntas_con_opciones(monkeypatch, [])
 
     headers = _headers(app, "STUDENT", identity=str(estudiante_id))
     res = client.post(
@@ -200,9 +225,9 @@ def test_iniciar_intento_exitoso_no_expone_respuesta_correcta(app, client, monke
     with app.app_context():
         monkeypatch.setattr(cq_routes, "get_current_user", lambda: SimpleNamespace(id=estudiante_id, role="STUDENT"))
         monkeypatch.setattr(cq_routes.Course, "query", SimpleNamespace(get=lambda _id: curso))
-        monkeypatch.setattr(cq_routes.StudentCourse, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: object())))
+        monkeypatch.setattr(cq_routes.StudentCourse, "query", _q(first=object()))
         monkeypatch.setattr(cq_routes.CourseContentItem, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: item)))
-        monkeypatch.setattr(cq_routes.QuizAttempt, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(count=lambda: 0)))
+        monkeypatch.setattr(cq_routes.QuizAttempt, "query", _q(todos=[]))
         monkeypatch.setattr(cq_routes.db.session, "add", lambda *a: None)
         monkeypatch.setattr(cq_routes.db.session, "commit", lambda: None)
         _mock_preguntas_con_opciones(monkeypatch, [(pregunta, [opcion_correcta, opcion_incorrecta])])
@@ -219,7 +244,7 @@ def test_iniciar_intento_exitoso_no_expone_respuesta_correcta(app, client, monke
     assert "is_correct" not in body["preguntas"][0]["choices"][0]
 
 
-def test_responder_intento_ya_entregado_da_400(app, client, monkeypatch):
+def test_responder_intento_ya_entregado_da_409(app, client, monkeypatch):
     estudiante_id = uuid.uuid4()
     curso = SimpleNamespace(id=uuid.uuid4(), teacher_id=uuid.uuid4())
     item = SimpleNamespace(id=uuid.uuid4(), block_id=uuid.uuid4(), type="QUIZ")
@@ -227,9 +252,9 @@ def test_responder_intento_ya_entregado_da_400(app, client, monkeypatch):
     with app.app_context():
         monkeypatch.setattr(cq_routes, "get_current_user", lambda: SimpleNamespace(id=estudiante_id, role="STUDENT"))
         monkeypatch.setattr(cq_routes.Course, "query", SimpleNamespace(get=lambda _id: curso))
-        monkeypatch.setattr(cq_routes.StudentCourse, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: object())))
+        monkeypatch.setattr(cq_routes.StudentCourse, "query", _q(first=object()))
         monkeypatch.setattr(cq_routes.CourseContentItem, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: item)))
-        monkeypatch.setattr(cq_routes.QuizAttempt, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: intento)))
+        monkeypatch.setattr(cq_routes.QuizAttempt, "query", _q(first=intento))
 
     headers = _headers(app, "STUDENT", identity=str(estudiante_id))
     res = client.post(
@@ -237,7 +262,7 @@ def test_responder_intento_ya_entregado_da_400(app, client, monkeypatch):
         json={"answers": []},
         headers=headers,
     )
-    assert res.status_code == 400
+    assert res.status_code == 409
 
 
 def test_responder_intento_califica_automaticamente(app, client, monkeypatch):
@@ -258,9 +283,10 @@ def test_responder_intento_califica_automaticamente(app, client, monkeypatch):
     with app.app_context():
         monkeypatch.setattr(cq_routes, "get_current_user", lambda: SimpleNamespace(id=estudiante_id, role="STUDENT"))
         monkeypatch.setattr(cq_routes.Course, "query", SimpleNamespace(get=lambda _id: curso))
-        monkeypatch.setattr(cq_routes.StudentCourse, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: object())))
+        monkeypatch.setattr(cq_routes.StudentCourse, "query", _q(first=object()))
         monkeypatch.setattr(cq_routes.CourseContentItem, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: item)))
-        monkeypatch.setattr(cq_routes.QuizAttempt, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: intento)))
+        monkeypatch.setattr(cq_routes.QuizAttempt, "query", _q(first=intento))
+        monkeypatch.setattr(cq_routes.QuizAnswer, "query", _q(todos=[]))
         monkeypatch.setattr(cq_routes.db.session, "add", lambda *a: None)
         monkeypatch.setattr(cq_routes.db.session, "commit", lambda: None)
         _mock_preguntas_con_opciones(monkeypatch, [

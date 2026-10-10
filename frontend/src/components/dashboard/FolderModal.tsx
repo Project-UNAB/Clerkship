@@ -26,7 +26,7 @@ export default function FolderModal({ folder, onClose, onSave }: FolderModalProp
 
   async function handleSave() {
     if (!name.trim()) {
-      setError('Ponele un nombre a la carpeta.');
+      setError('Asigna un nombre a la carpeta.');
       return;
     }
     setSaving(true);

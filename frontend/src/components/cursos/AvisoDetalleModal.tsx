@@ -6,6 +6,7 @@ import {
   type CourseAnnouncement, type AnnouncementComment,
 } from '../../data/cursoAvisosApi';
 import { getStoredUser } from '../../data/mainAuth';
+import { formatFechaHora } from '../../utils/fechas';
 
 const SANITIZE_OPTS = {
   ALLOWED_TAGS: [
@@ -24,7 +25,7 @@ interface Props {
 
 function formatFecha(iso: string | null) {
   if (!iso) return '';
-  return new Date(iso).toLocaleString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return formatFechaHora(iso);
 }
 
 export default function AvisoDetalleModal({ courseId, aviso, onClose }: Props) {

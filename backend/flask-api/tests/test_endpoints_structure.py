@@ -145,16 +145,27 @@ def test_consultas_creation_rbac_and_validation(client, teacher_headers, student
     assert "details" in data
 
 
-def test_email_notificar_validation(client, student_headers):
-    """POST /api/email/notificar: fails with 400 when to, subject or text are missing."""
+def test_email_notificar_validation(app, client, student_headers):
+    """POST /api/email/notificar: solo ADMIN; con datos incompletos responde 400."""
+    from flask_jwt_extended import create_access_token
+
+    with app.app_context():
+        admin = create_access_token(identity="33333333-3333-3333-3333-333333333333", additional_claims={"role": "ADMIN"})
     res_bad = client.post(
         "/api/email/notificar",
-        headers=student_headers,
+        headers={"Authorization": f"Bearer {admin}"},
         json={"to": "not-an-email"},
     )
     assert res_bad.status_code == 400
     data = res_bad.get_json()
     assert "details" in data
+
+    # Un estudiante (o un docente) no puede mandar correos desde la plataforma.
+    res_estudiante = client.post(
+        "/api/email/notificar", headers=student_headers,
+        json={"to": "alguien@example.com", "subject": "Hola", "text": "Texto"},
+    )
+    assert res_estudiante.status_code == 403
 
 
 def test_public_endpoints_accessible_without_auth(client):

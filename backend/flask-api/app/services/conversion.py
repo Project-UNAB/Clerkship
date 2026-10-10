@@ -6,6 +6,7 @@ Word/Excel/PowerPoint: le manda el archivo original a Gotenberg y recibe
 un PDF, que el frontend muestra con el mismo visor de PDF.js que ya usa
 para todo lo demás.
 """
+import logging
 import os
 
 import requests
@@ -22,6 +23,9 @@ FORMATOS_CONVERTIBLES = {
 }
 
 
+logger = logging.getLogger(__name__)
+
+
 class ConversionNotConfigured(RuntimeError):
     pass
 
@@ -33,7 +37,8 @@ class ConversionError(RuntimeError):
 def _gotenberg_url() -> str:
     url = os.environ.get("GOTENBERG_URL")
     if not url:
-        raise ConversionNotConfigured("GOTENBERG_URL no está configurado")
+        logger.error("Conversión a PDF sin configurar: falta GOTENBERG_URL")
+        raise ConversionNotConfigured("La vista previa de este tipo de archivo no está disponible en este momento.")
     return url.rstrip("/")
 
 
@@ -51,9 +56,12 @@ def convertir_a_pdf(contenido: bytes, nombre_archivo: str) -> bytes:
             timeout=CONVERT_TIMEOUT_SECONDS,
         )
     except requests.RequestException as err:
-        raise ConversionError(f"No se pudo contactar a Gotenberg: {err}") from err
+        # El detalle (host interno, error de red) va al log, no a la respuesta.
+        logger.error("No se pudo contactar al servicio de conversión", exc_info=True)
+        raise ConversionError("No se pudo generar la vista previa del archivo.") from err
 
     if resp.status_code != 200:
-        raise ConversionError(f"Gotenberg respondió {resp.status_code}: {resp.text[:300]}")
+        logger.error("El servicio de conversión respondió %s: %s", resp.status_code, resp.text[:300])
+        raise ConversionError("No se pudo generar la vista previa del archivo.")
 
     return resp.content

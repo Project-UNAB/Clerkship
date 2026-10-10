@@ -19,6 +19,23 @@ def _headers(app, role, identity="11111111-1111-1111-1111-111111111111"):
     return {"Authorization": f"Bearer {_token(app, role, identity)}"}
 
 
+PDF_BASE64 = "JVBERi0xLjQKJSVFT0YK"  # "%PDF-1.4\n%%EOF\n"
+
+
+@pytest.fixture(autouse=True)
+def _bloque_del_curso(app, monkeypatch):
+    """Por defecto el bloque de la URL sí pertenece al curso. Los tests que
+    prueban el cruce bloque-curso vuelven a parchear CourseBlock.query."""
+    with app.app_context():
+        monkeypatch.setattr(
+            cc_routes.CourseBlock,
+            "query",
+            SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: SimpleNamespace(id=kw.get("id")))),
+        )
+        # Sin archivos de entregas guardados, salvo que el test diga otra cosa.
+        monkeypatch.setattr(cc_routes, "_archivos_de_entregas", lambda ids: {})
+
+
 @pytest.mark.parametrize("method,path", [
     ("get", "/api/cursos/11111111-1111-1111-1111-111111111111/bloques"),
     ("post", "/api/cursos/11111111-1111-1111-1111-111111111111/bloques"),
@@ -284,7 +301,7 @@ def test_entregar_tarea_requiere_sesion(client):
     res = client.post(
         "/api/cursos/11111111-1111-1111-1111-111111111111/bloques/22222222-2222-2222-2222-222222222222"
         "/contenido/33333333-3333-3333-3333-333333333333/entregas",
-        json={"name": "x.pdf", "file_base64": "aGVsbG8="},
+        json={"name": "x.pdf", "file_base64": PDF_BASE64},
     )
     assert res.status_code == 401
 
@@ -300,20 +317,20 @@ def test_entregar_tarea_rechaza_no_matriculado(app, client, monkeypatch):
     res = client.post(
         f"/api/cursos/{curso.id}/bloques/11111111-1111-1111-1111-111111111111"
         "/contenido/33333333-3333-3333-3333-333333333333/entregas",
-        json={"name": "x.pdf", "file_base64": "aGVsbG8="},
+        json={"name": "x.pdf", "file_base64": PDF_BASE64},
         headers=headers,
     )
     assert res.status_code == 403
 
 
 def test_entregar_tarea_antes_de_abrir_da_400(app, client, monkeypatch):
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     estudiante_id = uuid.uuid4()
     curso = SimpleNamespace(id=uuid.uuid4(), teacher_id=uuid.uuid4())
     item = SimpleNamespace(
         id=uuid.uuid4(), block_id=uuid.uuid4(), type="ASSIGNMENT",
-        open_at=datetime.utcnow() + timedelta(days=5), due_at=None, allow_late=False,
+        open_at=datetime.now(timezone.utc) + timedelta(days=5), due_at=None, allow_late=False,
     )
     with app.app_context():
         monkeypatch.setattr(cc_routes, "get_current_user", lambda: SimpleNamespace(id=estudiante_id, role="STUDENT"))
@@ -324,20 +341,20 @@ def test_entregar_tarea_antes_de_abrir_da_400(app, client, monkeypatch):
     headers = _headers(app, "STUDENT", identity=str(estudiante_id))
     res = client.post(
         f"/api/cursos/{curso.id}/bloques/{item.block_id}/contenido/{item.id}/entregas",
-        json={"name": "x.pdf", "file_base64": "aGVsbG8="},
+        json={"name": "x.pdf", "file_base64": PDF_BASE64},
         headers=headers,
     )
     assert res.status_code == 400
 
 
 def test_entregar_tarea_despues_de_cerrar_sin_tardias_da_400(app, client, monkeypatch):
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     estudiante_id = uuid.uuid4()
     curso = SimpleNamespace(id=uuid.uuid4(), teacher_id=uuid.uuid4())
     item = SimpleNamespace(
         id=uuid.uuid4(), block_id=uuid.uuid4(), type="ASSIGNMENT",
-        open_at=None, due_at=datetime.utcnow() - timedelta(days=1), allow_late=False,
+        open_at=None, due_at=datetime.now(timezone.utc) - timedelta(days=1), allow_late=False,
     )
     with app.app_context():
         monkeypatch.setattr(cc_routes, "get_current_user", lambda: SimpleNamespace(id=estudiante_id, role="STUDENT"))
@@ -348,7 +365,7 @@ def test_entregar_tarea_despues_de_cerrar_sin_tardias_da_400(app, client, monkey
     headers = _headers(app, "STUDENT", identity=str(estudiante_id))
     res = client.post(
         f"/api/cursos/{curso.id}/bloques/{item.block_id}/contenido/{item.id}/entregas",
-        json={"name": "x.pdf", "file_base64": "aGVsbG8="},
+        json={"name": "x.pdf", "file_base64": PDF_BASE64},
         headers=headers,
     )
     assert res.status_code == 400
@@ -371,12 +388,17 @@ def test_entregar_tarea_exitosa_primera_vez(app, client, monkeypatch):
         monkeypatch.setattr(cc_routes.db.session, "add", lambda *a: None)
         monkeypatch.setattr(cc_routes.db.session, "flush", lambda: None)
         monkeypatch.setattr(cc_routes.db.session, "commit", lambda: None)
-        monkeypatch.setattr(cc_routes.AssignmentSubmission, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: None)))
+        monkeypatch.setattr(
+            cc_routes, "_entrega_bloqueada",
+            lambda item_id, student_id, ahora, es_tardia: cc_routes.AssignmentSubmission(
+                id=uuid.uuid4(), item_id=item_id, student_id=student_id, current_version=0, submitted_at=ahora, is_late=es_tardia,
+            ),
+        )
 
     headers = _headers(app, "STUDENT", identity=str(estudiante_id))
     res = client.post(
         f"/api/cursos/{curso.id}/bloques/{item.block_id}/contenido/{item.id}/entregas",
-        json={"name": "entrega.pdf", "mime_type": "application/pdf", "file_base64": "aGVsbG8="},
+        json={"name": "entrega.pdf", "mime_type": "application/pdf", "file_base64": PDF_BASE64},
         headers=headers,
     )
     assert res.status_code == 201
@@ -441,6 +463,8 @@ def test_calificar_entrega_exitosa(app, client, monkeypatch):
     body = res.get_json()
     assert body["score"] == 8.0
     assert body["feedback"] == "Buen avance"
+    assert entrega.graded_at.tzinfo is not None
+    assert body["graded_at"].endswith("+00:00")
 
 
 def test_obtener_archivo_entrega_rechaza_estudiante_ajeno(app, client, monkeypatch):
@@ -452,6 +476,7 @@ def test_obtener_archivo_entrega_rechaza_estudiante_ajeno(app, client, monkeypat
         monkeypatch.setattr(cc_routes.Course, "query", SimpleNamespace(get=lambda _id: curso))
         monkeypatch.setattr(cc_routes.CourseContentItem, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: item)))
         monkeypatch.setattr(cc_routes.AssignmentSubmission, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: entrega)))
+        monkeypatch.setattr(cc_routes.StudentCourse, "query", SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(first=lambda: object())))
 
     headers = _headers(app, "STUDENT")
     res = client.get(

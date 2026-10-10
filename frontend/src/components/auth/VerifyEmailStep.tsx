@@ -72,9 +72,9 @@ export default function VerifyEmailStep({ email, onVerified }: VerifyEmailStepPr
       </div>
 
       <div className="auth-card-head">
-        <h1 className="auth-title">Confirmá tu correo</h1>
+        <h1 className="auth-title">Confirma tu correo</h1>
         <p className="auth-subtitle">
-          Te mandamos un código de 6 dígitos a <strong>{email}</strong>. Vence en 10 minutos.
+          Te enviamos un código de 6 dígitos a <strong>{email}</strong>. Vence en 10 minutos.
         </p>
       </div>
 

@@ -8,6 +8,7 @@ import pytest
 from flask_jwt_extended import create_access_token
 
 import app.routes.curso_avisos as ca_routes
+from tests.fakes import ConsultaFalsa
 
 
 def _token(app, role, identity="11111111-1111-1111-1111-111111111111"):
@@ -57,12 +58,12 @@ def test_listar_avisos_permite_estudiante_matriculado(app, client, monkeypatch):
         monkeypatch.setattr(
             ca_routes.CourseAnnouncement,
             "query",
-            SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(order_by=lambda *a: SimpleNamespace(all=lambda: []))),
+            ConsultaFalsa(todos=[]),
         )
     headers = _headers(app, "STUDENT")
     res = client.get(f"/api/cursos/{curso.id}/avisos", headers=headers)
     assert res.status_code == 200
-    assert res.get_json() == {"avisos": []}
+    assert res.get_json() == {"avisos": [], "total": 0, "page": 1, "per_page": 20, "pages": 0}
 
 
 def test_crear_aviso_rechaza_estudiante(app, client):

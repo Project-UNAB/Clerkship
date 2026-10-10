@@ -69,7 +69,7 @@ export default function AvatarPickerStep({ defaultSeed, onDone }: AvatarPickerSt
     setError(null);
     try {
       const res = await fetch(previewUrl);
-      if (!res.ok) throw new Error('No se pudo generar el avatar. Intentá de nuevo.');
+      if (!res.ok) throw new Error('No se pudo generar el avatar. Intenta nuevamente.');
       const svg = await res.text();
       await saveAvatarSvg(svg);
       onDone();
@@ -83,8 +83,8 @@ export default function AvatarPickerStep({ defaultSeed, onDone }: AvatarPickerSt
   return (
     <>
       <div className="auth-card-head">
-        <h1 className="auth-title">Elegí tu avatar</h1>
-        <p className="auth-subtitle">Personalizalo como quieras — se guarda de una vez, ya listo.</p>
+        <h1 className="auth-title">Elige tu avatar</h1>
+        <p className="auth-subtitle">Personalízalo como prefieras — quedará guardado de inmediato.</p>
       </div>
 
       <div className="auth-avatar-preview-wrap">

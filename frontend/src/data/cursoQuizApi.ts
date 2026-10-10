@@ -4,6 +4,7 @@
  * automática (todo o nada por pregunta).
  */
 import { apiFetch } from './apiClient';
+import type { GradePolicy } from './cursoContenidoApi';
 
 export type QuestionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE';
 
@@ -45,7 +46,20 @@ export interface QuizAttempt {
   score: number | null;
   max_score: number | null;
   time_limit_minutes?: number | null;
+  /** Hasta cuándo se puede responder (tiempo límite y/o cierre del cuestionario). */
+  deadline_at?: string | null;
+  /** Segundos que quedan según el reloj del servidor, al momento de la respuesta. */
+  segundos_restantes?: number | null;
+  /** true: se cerró por tiempo, no por un envío a tiempo. */
+  expired?: boolean;
+  /** Al iniciar: true si se retomó un intento que ya estaba abierto. */
+  reanudado?: boolean;
+  /** Al entregar: true si llegó fuera de tiempo y solo contó lo guardado. */
+  vencido?: boolean;
   preguntas?: (QuizQuestion & { tu_respuesta: QuizAttemptAnswer | null })[];
+  /** false: el estudiante todavía puede volver a responder, así que las
+   *  opciones vienen sin is_correct. */
+  respuestas_reveladas?: boolean;
 }
 
 function base(courseId: string, blockId: string, itemId: string) {
@@ -92,8 +106,27 @@ export function iniciarIntento(courseId: string, blockId: string, itemId: string
   return apiFetch(`${base(courseId, blockId, itemId)}/intentos`, { method: 'POST' });
 }
 
-export function listarIntentos(courseId: string, blockId: string, itemId: string): Promise<{ intentos: QuizAttempt[] }> {
+export interface IntentosResponse {
+  intentos: QuizAttempt[];
+  grade_policy?: GradePolicy;
+  /** Solo para el estudiante: la nota que le queda según grade_policy. */
+  nota?: number | null;
+}
+
+export function listarIntentos(courseId: string, blockId: string, itemId: string): Promise<IntentosResponse> {
   return apiFetch(`${base(courseId, blockId, itemId)}/intentos`);
+}
+
+type RespuestasPayload = { question_id: string; selected_choice_ids: string[] }[];
+
+/** Guarda el avance sin entregar: es lo que se califica si se acaba el tiempo. */
+export function guardarRespuestas(
+  courseId: string, blockId: string, itemId: string, attemptId: string, answers: RespuestasPayload,
+): Promise<{ ok: boolean; deadline_at: string | null; segundos_restantes: number | null }> {
+  return apiFetch(`${base(courseId, blockId, itemId)}/intentos/${attemptId}/respuestas`, {
+    method: 'PUT',
+    body: JSON.stringify({ answers }),
+  });
 }
 
 export function obtenerIntento(courseId: string, blockId: string, itemId: string, attemptId: string): Promise<QuizAttempt> {

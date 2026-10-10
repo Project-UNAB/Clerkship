@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { X, FileText, Video, Link as LinkIcon, Type, Loader2, Upload, HelpCircle } from 'lucide-react';
-import { crearContenido, type ContentType } from '../../data/cursoContenidoApi';
+import { X, FileText, Video, Link as LinkIcon, Type, Loader2, Upload, HelpCircle, ClipboardList } from 'lucide-react';
+import { crearContenido, GRADE_POLICY_LABELS, type ContentType, type GradePolicy } from '../../data/cursoContenidoApi';
 import { readFileAsBase64, base64ByteLength, formatFileSize } from '../../utils/fileUpload';
 import RichTextEditor from './RichTextEditor';
+import TareaFormFields, {
+  TAREA_FORM_VACIO, localDatetimeToIso, rubricaParaEnviar, validarTareaForm, type TareaFormValue,
+} from './TareaFormFields';
 
 interface Props {
   courseId: string;
@@ -16,17 +19,9 @@ const TIPOS: { type: ContentType; label: string; Icon: typeof FileText }[] = [
   { type: 'VIDEO', label: 'Video', Icon: Video },
   { type: 'LINK', label: 'Enlace', Icon: LinkIcon },
   { type: 'TEXT', label: 'Nota', Icon: Type },
+  { type: 'ASSIGNMENT', label: 'Tarea', Icon: ClipboardList },
   { type: 'QUIZ', label: 'Cuestionario', Icon: HelpCircle },
 ];
-
-/** <input type="datetime-local"> da "2026-10-20T23:59" (sin segundos ni
- * zona) — Date lo interpreta en hora local del navegador, toISOString() lo
- * manda en UTC, que es lo que espera el backend. */
-function localDatetimeToIso(value: string): string | undefined {
-  if (!value) return undefined;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
-}
 
 const MAX_FILE_BASE64_CHARS = 15 * 1024 * 1024;
 
@@ -42,6 +37,8 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
   const [dueAt, setDueAt] = useState('');
   const [timeLimit, setTimeLimit] = useState('');
   const [maxAttempts, setMaxAttempts] = useState('');
+  const [gradePolicy, setGradePolicy] = useState<GradePolicy>('BEST');
+  const [tarea, setTarea] = useState<TareaFormValue>(TAREA_FORM_VACIO);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +63,13 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
     if (tipo === 'TEXT' && !textoPlano) {
       setError('Escribe el contenido de la nota.');
       return;
+    }
+    if (tipo === 'ASSIGNMENT') {
+      const problema = validarTareaForm(tarea);
+      if (problema) {
+        setError(problema);
+        return;
+      }
     }
 
     setSaving(true);
@@ -105,6 +109,21 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
           description: description.trim() || undefined,
           text_content: textContent,
         });
+      } else if (tipo === 'ASSIGNMENT') {
+        await crearContenido(courseId, blockId, {
+          type: 'ASSIGNMENT',
+          title: title.trim(),
+          description: description.trim() || undefined,
+          open_at: localDatetimeToIso(tarea.openAt),
+          due_at: localDatetimeToIso(tarea.dueAt),
+          allow_late: tarea.allowLate,
+          late_until: tarea.allowLate ? localDatetimeToIso(tarea.lateUntil) : undefined,
+          allowed_extensions: tarea.extensions,
+          max_file_size_mb: tarea.maxFileSizeMb ? Number(tarea.maxFileSizeMb) : undefined,
+          max_files: tarea.maxFiles ? Number(tarea.maxFiles) : 1,
+          max_score: tarea.maxScore ? Number(tarea.maxScore) : undefined,
+          rubric: tarea.rubric.length > 0 ? rubricaParaEnviar(tarea.rubric) : undefined,
+        });
       } else {
         await crearContenido(courseId, blockId, {
           type: 'QUIZ',
@@ -114,6 +133,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
           due_at: localDatetimeToIso(dueAt),
           time_limit_minutes: timeLimit ? Number(timeLimit) : undefined,
           max_attempts: maxAttempts ? Number(maxAttempts) : undefined,
+          grade_policy: gradePolicy,
         });
       }
       onCreated();
@@ -127,7 +147,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
 
   return (
     <div className="ccv-modal-backdrop" onClick={onClose}>
-      <div className={`ccv-modal ccv-modal-form ${tipo === 'TEXT' || tipo === 'QUIZ' ? 'ccv-modal-form-wide' : ''}`} onClick={e => e.stopPropagation()}>
+      <div className={`ccv-modal ccv-modal-form ${tipo === 'TEXT' || tipo === 'QUIZ' || tipo === 'ASSIGNMENT' ? 'ccv-modal-form-wide' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="ccv-modal-header">
           <h3>Agregar contenido</h3>
           <button type="button" className="ccv-modal-close" onClick={onClose} aria-label="Cerrar">
@@ -189,6 +209,8 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
             </label>
           )}
 
+          {tipo === 'ASSIGNMENT' && <TareaFormFields value={tarea} onChange={setTarea} />}
+
           {tipo === 'QUIZ' && (
             <>
               <p className="ccv-form-hint">Las preguntas se agregan después de crear el cuestionario.</p>
@@ -212,6 +234,14 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
                   <input type="number" min={1} value={maxAttempts} onChange={e => setMaxAttempts(e.target.value)} placeholder="Sin límite" />
                 </label>
               </div>
+              <label className="ccv-form-label">
+                Nota que cuenta si hay varios intentos
+                <select value={gradePolicy} onChange={e => setGradePolicy(e.target.value as GradePolicy)}>
+                  {(Object.keys(GRADE_POLICY_LABELS) as GradePolicy[]).map(p => (
+                    <option key={p} value={p}>{GRADE_POLICY_LABELS[p]}</option>
+                  ))}
+                </select>
+              </label>
             </>
           )}
 

@@ -97,3 +97,56 @@ def password_reset_email_html(first_name: str, code: str) -> str:
         footer_note="Si no pediste cambiar tu contraseña, ignorá este correo: tu cuenta sigue igual de segura. "
                     "Nunca te pediremos este código por teléfono ni por otro medio.",
     )
+
+
+def notification_email_html(title: str, body: str) -> str:
+    """Correo de una notificación (nueva tarea, aviso, nota, cierre próximo).
+    El título y el texto traen nombres de cursos y tareas escritos por
+    usuarios: se escapan. `%recipient.nombre%` lo reemplaza Mailgun por el
+    nombre de cada destinatario en el envío por lotes."""
+    from html import escape
+
+    return f"""\
+<!DOCTYPE html>
+<html lang="es">
+<body style="margin:0;padding:0;background:#F1F5F9;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:36px 16px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="480" cellpadding="0" cellspacing="0"
+        style="width:480px;max-width:100%;background:#FFFFFF;border-radius:20px;overflow:hidden;font-family:'Segoe UI',Helvetica,Arial,sans-serif;box-shadow:0 4px 24px rgba(2,132,199,0.10);">
+
+        <tr>
+          <td style="padding:36px 40px 24px;text-align:center;">
+            <span style="display:block;text-align:center;font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;font-weight:800;letter-spacing:0.5px;color:#0369A1;">Clerkship</span>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="height:4px;line-height:4px;font-size:0;background-color:#0369A1;background-image:linear-gradient(90deg,#0284C7,#0369A1);">&nbsp;</td>
+        </tr>
+
+        <tr>
+          <td style="padding:32px 40px 30px;text-align:center;">
+            <p style="margin:0 0 6px;color:#64748B;font-size:13.5px;">Hola %recipient.nombre%,</p>
+            <h1 style="margin:0 0 14px;color:#0F172A;font-size:20px;font-weight:800;">{escape(title)}</h1>
+            <p style="margin:0;color:#475569;font-size:14px;line-height:1.65;">
+              {escape(body)}
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="background:#F8FAFC;border-top:1px solid #E2E8F0;padding:18px 40px;text-align:center;">
+            <p style="margin:0;color:#94A3B8;font-size:11px;">Puedes desactivar estos correos en Configuración → Notificaciones.</p>
+            <p style="margin:6px 0 0;color:#94A3B8;font-size:11px;">© Clerkship · Plataforma de educación médica</p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+"""

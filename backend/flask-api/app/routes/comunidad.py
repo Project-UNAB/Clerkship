@@ -78,10 +78,13 @@ def eliminar_post(post_id):
 @jwt_required()
 def listar_comentarios(post_id):
     comments = CommunityComment.query.filter_by(post_id=post_id).order_by(CommunityComment.created_at.asc()).all()
+    # Los autores, en una sola consulta (antes era una por comentario).
+    autor_ids = {c.author_id for c in comments}
+    autores = {str(u.id): u for u in User.query.filter(User.id.in_(autor_ids)).all()} if autor_ids else {}
     res = []
     for c in comments:
         cd = c.to_dict()
-        author = User.query.get(c.author_id)
+        author = autores.get(str(c.author_id))
         cd["author_name"] = f"{author.first_name} {author.last_name}" if author else "Usuario"
         res.append(cd)
     return jsonify(res), 200

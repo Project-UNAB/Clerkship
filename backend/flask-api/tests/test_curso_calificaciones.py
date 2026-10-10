@@ -8,6 +8,7 @@ import pytest
 from flask_jwt_extended import create_access_token
 
 import app.routes.curso_calificaciones as cal_routes
+from tests.fakes import ConsultaFalsa
 
 
 def _token(app, role, identity="11111111-1111-1111-1111-111111111111"):
@@ -88,15 +89,7 @@ def test_calificaciones_junta_tarea_y_quiz_con_promedio(app, client, monkeypatch
                         group_by=lambda *a2: SimpleNamespace(all=lambda: [(quiz.id, 10)])
                     )
                 )
-            return SimpleNamespace(
-                join=lambda *a: SimpleNamespace(
-                    join=lambda *a2: SimpleNamespace(
-                        filter=lambda *a3: SimpleNamespace(
-                            order_by=lambda *a4: SimpleNamespace(all=lambda: [(matricula, student, user_row)])
-                        )
-                    )
-                )
-            )
+            return ConsultaFalsa(todos=[(matricula, student, user_row)])
         monkeypatch.setattr(cal_routes.db.session, "query", fake_query)
 
     headers = _headers(app, "TEACHER", identity=str(docente_id))

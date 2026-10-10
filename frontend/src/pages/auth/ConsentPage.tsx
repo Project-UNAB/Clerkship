@@ -263,7 +263,7 @@ export default function ConsentPage() {
                       transition={{ duration: 0.2 }}
                     >
                       <AlertCircle size={12} />
-                      Debes aceptar los términos para continuar.
+                      Debe aceptar los términos para continuar.
                     </motion.p>
                   )}
                 </AnimatePresence>

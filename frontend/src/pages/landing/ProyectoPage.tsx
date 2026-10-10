@@ -23,7 +23,7 @@ const DEVS = [
       { label: 'Fine-Tuning', icon: Sparkles },
     ]
   },
-  { initials: 'SA', name: 'Santiago Steven Arias Estupiñan', seed: 'Aneka', color: '#10B981',
+  { initials: 'SA', name: 'Santiago Steven Arias Estupiñán', seed: 'Aneka', color: '#10B981',
     focus: 'Frontend · React · UI/UX · Conexión del Sistema',
     desc: 'Líder de desarrollo Frontend. Diseña y construye la interfaz interactiva en React 19 y la conexión integral con el motor clínico.',
     skills: [
@@ -32,7 +32,7 @@ const DEVS = [
       { label: 'UI/UX', icon: Sparkles },
     ]
   },
-  { initials: 'CB', name: 'Camilo Andres Bueno Rey', seed: 'Jasper', color: '#8B5CF6',
+  { initials: 'CB', name: 'Camilo Andrés Bueno Rey', seed: 'Jasper', color: '#8B5CF6',
     focus: 'Backend · Node.js · API REST · Conexión del Sistema',
     desc: 'Líder de arquitectura Backend. Construye el servidor API REST en Node.js, la gestión de datos y la infraestructura de conexión entre sistemas.',
     skills: [

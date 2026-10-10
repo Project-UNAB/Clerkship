@@ -30,10 +30,12 @@ from app.schemas.usuarios import (
 )
 from app.schemas.cursos import (
     ActualizarCursoRequest,
+    ActualizarMatriculaRequest,
     AgregarEstudianteRequest,
     CourseResponse,
     CreateCourseRequest,
     EnrollmentResponse,
+    MatricularRequest,
 )
 from app.schemas.curso_contenido import (
     ActualizarBloqueRequest,
@@ -42,6 +44,7 @@ from app.schemas.curso_contenido import (
     CrearBloqueRequest,
     CrearContenidoRequest,
     EntregarTareaRequest,
+    PreferenciasNotificacionRequest,
 )
 from app.schemas.avisos import (
     ActualizarAvisoRequest,
@@ -141,6 +144,8 @@ __all__ = [
     "CourseResponse",
     "EnrollmentResponse",
     "AgregarEstudianteRequest",
+    "MatricularRequest",
+    "ActualizarMatriculaRequest",
     # Contenido de cursos (bloques y material)
     "CrearBloqueRequest",
     "ActualizarBloqueRequest",
@@ -153,6 +158,7 @@ __all__ = [
     "CrearPreguntaRequest",
     "ActualizarPreguntaRequest",
     "ResponderIntentoRequest",
+    "PreferenciasNotificacionRequest",
     "CalificarEntregaRequest",
     # Articulos
     "CreateArticleRequest",

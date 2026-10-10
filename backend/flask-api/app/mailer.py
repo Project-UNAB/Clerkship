@@ -9,12 +9,13 @@ el envío FALLA en voz alta (MailNotConfiguredError): nunca se deja un código
 de recuperación en los logs de producción, porque quien tenga acceso a esos
 logs podría recuperar cualquier cuenta.
 """
+import json
 import logging
 
 import requests
 from flask import current_app
 
-from app.email_templates import password_reset_email_html, verification_email_html
+from app.email_templates import notification_email_html, password_reset_email_html, verification_email_html
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,43 @@ def _send(to_email: str, subject: str, text: str, html: str, code_for_dev_log: s
         timeout=10,
     )
     response.raise_for_status()
+
+
+def send_notification_emails(destinatarios, subject: str, text: str) -> None:
+    """Un correo de notificación para cada (email, nombre) de `destinatarios`,
+    en UN solo pedido a Mailgun (envío por lotes: con `recipient-variables`
+    cada persona recibe su propia copia y no ve a los demás).
+
+    Sin Mailgun configurado no falla en ningún entorno: una notificación por
+    correo es un extra, no un código que el usuario esté esperando. En el log
+    queda cuántos correos NO salieron, nunca su contenido ni las direcciones."""
+    destinatarios = [(email, nombre) for email, nombre in destinatarios if email]
+    if not destinatarios:
+        return
+
+    api_key = current_app.config.get("MAILGUN_API_KEY")
+    domain = current_app.config.get("MAILGUN_DOMAIN")
+    if not api_key or not domain:
+        logger.warning("Mailgun no configurado: no se enviaron %d correos de notificación", len(destinatarios))
+        return
+
+    # Mailgun acepta hasta 1000 destinatarios por pedido.
+    for inicio in range(0, len(destinatarios), 1000):
+        lote = destinatarios[inicio:inicio + 1000]
+        response = requests.post(
+            f"https://api.mailgun.net/v3/{domain}/messages",
+            auth=("api", api_key),
+            data={
+                "from": current_app.config.get("MAILGUN_FROM"),
+                "to": [email for email, _nombre in lote],
+                "subject": subject,
+                "text": f"Hola %recipient.nombre%,\n\n{text}\n\nPuedes desactivar estos correos en Configuración → Notificaciones.",
+                "html": notification_email_html(subject, text),
+                "recipient-variables": json.dumps({email: {"nombre": nombre or ""} for email, nombre in lote}),
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
 
 
 def send_verification_email(to_email: str, first_name: str, code: str) -> None:

@@ -993,8 +993,9 @@ html.theme-animating .crono-gantt-card {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
 }
 
+[data-theme="light"] .sb,
 [data-theme="light"] .sb-rail {
-  background: #FFFFFF !important;
+  background: #FAFAFA !important;
   border-right-color: #E2E8F0 !important;
 }
 
@@ -1110,6 +1111,7 @@ html.theme-animating .crono-gantt-card {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
+[data-theme="dark"] .sb,
 [data-theme="dark"] .sb-rail {
   background: #0F172A !important;
   border-right-color: rgba(255, 255, 255, 0.08) !important;
@@ -1832,11 +1834,19 @@ html.theme-animating .crono-gantt-card {
   color: var(--p) !important;
 }
 [data-theme="dark"] .sim-sheet-body {
-  background: #0F172A !important;
+  background: #0B1120 !important;
 }
 [data-theme="dark"] .sim-sheet-card {
   background: #1E293B !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+[data-theme="dark"] .sim-sheet-card-head {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .sim-sheet-card-head svg {
+  background: rgba(0, 179, 248, 0.15) !important;
+  color: #38BDF8 !important;
 }
 [data-theme="dark"] .sim-sheet-card-head h4,
 [data-theme="dark"] .sim-sheet-note-text,
@@ -1847,18 +1857,85 @@ html.theme-animating .crono-gantt-card {
   background: #141E33 !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
+[data-theme="dark"] .sim-sheet-note-item:hover {
+  background: #19243C !important;
+  border-color: rgba(0, 179, 248, 0.35) !important;
+}
+[data-theme="dark"] .sim-sheet-note-time {
+  background: rgba(0, 179, 248, 0.12) !important;
+  border-color: rgba(0, 179, 248, 0.3) !important;
+  color: #38BDF8 !important;
+}
+[data-theme="dark"] .sim-sheet-section-banner {
+  background: #1E293B !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .sim-sheet-section-banner h4 {
+  color: #F8FAFC !important;
+}
 [data-theme="dark"] .sim-sheet-cat-box {
   background: #1E293B !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
+[data-theme="dark"] .sim-sheet-cat-title {
+  color: #CBD5E1 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
 [data-theme="dark"] .sim-sheet-exam-btn {
   background: #141E33 !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
   color: #E2E8F0 !important;
+}
+[data-theme="dark"] .sim-sheet-exam-btn:hover:not(:disabled) {
+  background: #1E293B !important;
+  border-color: #38BDF8 !important;
+  color: #38BDF8 !important;
+}
+[data-theme="dark"] .sim-sheet-results-panel {
+  background: #1E293B !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 [data-theme="dark"] .sim-sheet-result-card {
   background: #141E33 !important;
-  border-color: rgba(16, 185, 129, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .sim-sheet-result-card:hover {
+  background: #19243C !important;
+  border-color: rgba(0, 179, 248, 0.35) !important;
+}
+[data-theme="dark"] .sim-src-tecnica {
+  background: rgba(0, 179, 248, 0.12) !important;
+  color: #38BDF8 !important;
+}
+[data-theme="dark"] .sim-src-meta {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .ehr-patient-section {
+  background: #1E293B !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .ehr-section-kicker {
+  color: #F8FAFC !important;
+}
+[data-theme="dark"] .ehr-form-cell {
+  background: #141E33 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .ehr-cell-val {
+  color: #F8FAFC !important;
+}
+[data-theme="dark"] .sim-lab-sheet {
+  background: #1E293B !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .sim-lab-sheet-header {
+  background: #141E33 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .sim-lab-sheet-title {
+  background: #1E293B !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  color: #38BDF8 !important;
 }
 
 [data-theme="dark"] .sim-exam-btn-done,

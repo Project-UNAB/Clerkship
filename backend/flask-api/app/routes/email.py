@@ -1,11 +1,14 @@
 import logging
+from html import escape
+
 import requests
 from flask import Blueprint, current_app, jsonify, request
-from flask_jwt_extended import jwt_required
 
+from app import limiter
 from app.config import Config
 from app.schemas import EmailNotificationResponse, EmailStatusResponse, SendNotificationRequest, validate_body
-from app.utils import get_current_user
+from app.services import limites
+from app.utils import get_current_user, role_required
 
 logger = logging.getLogger(__name__)
 email_bp = Blueprint("email", __name__)
@@ -25,10 +28,15 @@ def email_status():
 
 
 @email_bp.route("/notificar", methods=["POST"])
-@jwt_required()
+@role_required("ADMIN")
+@limiter.limit("20 per hour", key_func=limites.usuario_o_ip)
 @validate_body(SendNotificationRequest)
 def enviar_notificacion(validated_body: SendNotificationRequest):
-    """Enviar notificación por correo a un destinatario."""
+    """Enviar un correo a un destinatario cualquiera, con asunto y texto
+    libres, desde el dominio de la plataforma. Solo administradores: abierto
+    a cualquier usuario sería una vía para mandar spam o suplantar a
+    Clerkship. Las notificaciones a estudiantes no pasan por acá (ver
+    app/services/notificaciones.py)."""
     current_user = get_current_user()
 
     to_email = validated_body.to
@@ -39,10 +47,8 @@ def enviar_notificacion(validated_body: SendNotificationRequest):
     domain = current_app.config.get("MAILGUN_DOMAIN")
 
     if not api_key or not domain:
-        logger.warning(
-            "[MODO SIMULADO] Correo para %s - Asunto: %s - Contenido: %s",
-            to_email, subject, text_content
-        )
+        # Ni el destinatario ni el contenido van al log.
+        logger.warning("[MODO SIMULADO] Mailgun no configurado: no se envió el correo de prueba")
         return jsonify({
             "success": True,
             "mode": "simulated",
@@ -59,7 +65,7 @@ def enviar_notificacion(validated_body: SendNotificationRequest):
                 "to": [to_email],
                 "subject": subject,
                 "text": text_content,
-                "html": f"<p>{text_content}</p><br><small>Enviado por {current_user.email} vía Clerkship</small>",
+                "html": f"<p>{escape(text_content)}</p><br><small>Enviado por {escape(current_user.email)} vía Clerkship</small>",
             },
             timeout=10,
         )
@@ -69,8 +75,10 @@ def enviar_notificacion(validated_body: SendNotificationRequest):
             "recipient": to_email,
             "message": "Correo enviado con éxito"
         }), 200
-    except Exception as e:
+    except Exception:
+        # El error del proveedor trae URL y dominio de la cuenta: va al log.
+        current_app.logger.error("No se pudo enviar el correo", exc_info=True)
         return jsonify({
             "success": False,
-            "error": f"Error al enviar correo: {str(e)}"
+            "error": "No se pudo enviar el correo. Intenta de nuevo más tarde."
         }), 500

@@ -5,6 +5,7 @@ import {
   listarPreguntas, crearPregunta, actualizarPregunta, borrarPregunta, listarIntentos,
   type QuizQuestion, type QuizAttempt, type QuestionType,
 } from '../../data/cursoQuizApi';
+import { formatFechaHoraCorta } from '../../utils/fechas';
 
 interface Props {
   courseId: string;
@@ -21,7 +22,7 @@ const TIPOS_PREGUNTA: { value: QuestionType; label: string }[] = [
 
 function formatFecha(iso: string | null) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return formatFechaHoraCorta(iso);
 }
 
 export default function GestionarQuizModal({ courseId, blockId, item, onClose }: Props) {

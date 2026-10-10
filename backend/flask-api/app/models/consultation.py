@@ -11,7 +11,9 @@ class Consultation(db.Model):
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, server_default=db.text("uuid_generate_v4()"))
     student_id = db.Column(UUID(as_uuid=True), db.ForeignKey("students.user_id", ondelete="CASCADE"), nullable=False)
-    course_id = db.Column(UUID(as_uuid=True), db.ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+    # RESTRICT a propósito: un curso con simulaciones clínicas no se puede
+    # borrar definitivamente (las sesiones son historial del estudiante).
+    course_id = db.Column(UUID(as_uuid=True), db.ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     specialty = db.Column(db.String(100), nullable=False)
     difficulty = db.Column(db.String(20), nullable=False)  # EASY, MEDIUM, HARD
@@ -23,7 +25,10 @@ class Consultation(db.Model):
 
     # Relaciones
     student = db.relationship("Student", backref=db.backref("consultations", lazy=True))
-    course = db.relationship("Course", backref=db.backref("consultations", lazy=True))
+    # passive_deletes="all": al borrar un curso el ORM no intenta dejar estas
+    # filas sin curso (course_id es NOT NULL); decide la llave foránea de la
+    # base, que es RESTRICT.
+    course = db.relationship("Course", backref=db.backref("consultations", lazy=True, passive_deletes="all"))
 
     def to_dict(self):
         # Columnas naive pero siempre en UTC (server_default=func.now()) —

@@ -15,14 +15,34 @@ class QuizAttempt(db.Model):
     item_id = db.Column(UUID(as_uuid=True), db.ForeignKey("course_content_items.id", ondelete="CASCADE"), nullable=False)
     student_id = db.Column(UUID(as_uuid=True), db.ForeignKey("students.user_id", ondelete="CASCADE"), nullable=False)
     attempt_number = db.Column(db.Integer, nullable=False, default=1)
-    started_at = db.Column(db.DateTime, server_default=func.now())
-    submitted_at = db.Column(db.DateTime)
+    started_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    submitted_at = db.Column(db.DateTime(timezone=True))
     score = db.Column(db.Numeric(6, 2))
     max_score = db.Column(db.Numeric(6, 2))
+    # Hasta cuándo se puede responder: se fija al iniciar (tiempo límite y/o
+    # cierre del cuestionario) para que no cambie si el docente edita el quiz
+    # con el intento en curso. NULL = sin límite.
+    deadline_at = db.Column(db.DateTime(timezone=True))
+    # True si se cerró por tiempo y no por un envío a tiempo del estudiante.
+    expired = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("false"))
+
+    __table_args__ = (
+        db.UniqueConstraint("item_id", "student_id", "attempt_number", name="uq_quiz_attempts_item_student_number"),
+        # Un solo intento abierto por estudiante por cuestionario.
+        db.Index(
+            "uq_quiz_attempts_un_abierto",
+            "item_id",
+            "student_id",
+            unique=True,
+            postgresql_where=db.text("submitted_at IS NULL"),
+        ),
+    )
 
     def to_dict(self, student=None):
         def _dt(value):
-            return value.replace(tzinfo=timezone.utc).isoformat() if value else None
+            if not value:
+                return None
+            return (value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)).isoformat()
 
         return {
             "id": str(self.id),
@@ -32,7 +52,9 @@ class QuizAttempt(db.Model):
             "attempt_number": self.attempt_number,
             "started_at": _dt(self.started_at),
             "submitted_at": _dt(self.submitted_at),
+            "deadline_at": _dt(self.deadline_at),
             "completed": self.submitted_at is not None,
+            "expired": bool(self.expired),
             "score": float(self.score) if self.score is not None else None,
             "max_score": float(self.max_score) if self.max_score is not None else None,
         }

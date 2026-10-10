@@ -443,7 +443,8 @@ def test_email_and_documentation_endpoints(client, student_auth):
         headers=student_auth["headers"],
         json={"to": "sarias202@unab.edu.co", "subject": "Simulación Completada", "text": "Su puntaje fue 88.5"},
     )
-    assert res_notif.status_code == 200
+    # Enviar correos arbitrarios es solo para administradores.
+    assert res_notif.status_code == 403
 
     # OpenAPI JSON specification
     res_spec = client.get("/api/openapi.json")

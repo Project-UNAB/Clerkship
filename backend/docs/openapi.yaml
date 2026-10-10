@@ -297,6 +297,45 @@ paths:
                     example: eyJhbGciOiJIUzI1NiIsInR5cCI6...
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/auth/logout:
+    post:
+      tags:
+      - Autenticación
+      summary: Cerrar sesión — revoca el access token de la petición y, si se envía, el refresh token
+      description: >-
+        El access token queda en la lista de revocación y deja de servir de inmediato (401 en cualquier
+        ruta). Enviar `refresh_token` en el cuerpo lo revoca también, para que no se pueda pedir otro
+        access token con él. Solo se revoca un refresh token del mismo usuario.
+      operationId: logout
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token: {type: string}
+      responses:
+        '200':
+          description: Sesión cerrada
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/auth/logout-all:
+    post:
+      tags:
+      - Autenticación
+      summary: Cerrar la sesión en todos los dispositivos
+      description: Ningún token emitido hasta ese momento (access o refresh) vuelve a servir.
+      operationId: logoutAll
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Se cerraron todas las sesiones
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/auth/me:
     get:
       tags:
@@ -485,6 +524,9 @@ paths:
       operationId: listCourses
       security:
       - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PerPage'
       responses:
         '200':
           content:
@@ -498,7 +540,9 @@ paths:
       tags:
       - Cursos
       summary: Crear un nuevo curso
-      description: Rol requerido TEACHER. Crea una nueva asignatura en el sistema.
+      description: >-
+        Rol requerido TEACHER. Crea una nueva asignatura en el sistema. Acepta JSON, o
+        multipart/form-data con los mismos campos y la imagen de portada en `cover`.
       operationId: createCourse
       security:
       - BearerAuth: []
@@ -508,6 +552,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateCourseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CursoConPortada'
       responses:
         '201':
           description: Curso creado con éxito
@@ -515,8 +562,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CourseResponse'
+        '400':
+          description: Datos inválidos, o imagen con dimensiones fuera de rango (COVER_TOO_SMALL, COVER_DIMENSIONS)
+        '413':
+          description: La imagen de portada pesa más de 2 MB (COVER_TOO_LARGE)
+        '415':
+          description: La portada no es JPG/PNG/WebP (COVER_FORMAT) o su contenido real no es una imagen (COVER_NOT_AN_IMAGE)
+        '503':
+          description: El almacenamiento no está configurado
         '403':
           $ref: '#/components/responses/ForbiddenError'
+  /api/cursos/mis-fechas:
+    get:
+      tags:
+      - Cursos
+      summary: Entregas y evaluaciones con fecha límite del usuario
+      description: Retorna todas las Tareas (ASSIGNMENT) y Cuestionarios (QUIZ) con
+        due_at de los cursos del usuario. Estudiante → sus matrículas. Docente →
+        sus cursos propios.
+      operationId: getMisFechas
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de fechas obtenida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fechas:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        item_id:
+                          type: string
+                          format: uuid
+                        course_id:
+                          type: string
+                          format: uuid
+                        course_name:
+                          type: string
+                        title:
+                          type: string
+                        type:
+                          type: string
+                          enum: [ASSIGNMENT, QUIZ]
+                        due_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        open_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/cursos/mios:
     get:
       tags:
@@ -527,20 +629,39 @@ paths:
       operationId: getMyCourses
       security:
       - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PerPage'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CourseResponse'
-          description: Cursos del usuario obtenidos con éxito
+                oneOf:
+                - type: array
+                  description: Sin page ni per_page — forma anterior, limitada a 100 cursos
+                  items:
+                    $ref: '#/components/schemas/CourseResponse'
+                - allOf:
+                  - $ref: '#/components/schemas/Paginacion'
+                  - type: object
+                    description: Con page o per_page
+                    properties:
+                      cursos:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CourseResponse'
+          description: >-
+            Cursos del usuario (los que están en la papelera no aparecen). Con page o per_page responde
+            {cursos, total, page, per_page, pages}; sin ellos, un arreglo de hasta 100 cursos.
   /api/cursos/{id}:
     patch:
       tags:
       - Cursos
-      summary: Edita nombre, descripción (HTML) o período de un curso propio (solo el docente dueño)
+      summary: Edita nombre, descripción (HTML), período o portada de un curso propio (solo el docente dueño)
+      description: >-
+        Acepta JSON, o multipart/form-data con los mismos campos y la imagen de portada en `cover`.
+        Al reemplazar la portada, la anterior (y su miniatura) se borra de R2.
       operationId: actualizarCurso
       security:
       - BearerAuth: []
@@ -559,9 +680,24 @@ paths:
                 name: {type: string}
                 description: {type: string}
                 academic_period: {type: string}
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CursoConPortada'
       responses:
         '200':
           description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+        '400':
+          description: Datos inválidos, o imagen con dimensiones fuera de rango (COVER_TOO_SMALL, COVER_DIMENSIONS)
+        '413':
+          description: La imagen de portada pesa más de 2 MB (COVER_TOO_LARGE)
+        '415':
+          description: La portada no es JPG/PNG/WebP (COVER_FORMAT) o su contenido real no es una imagen (COVER_NOT_AN_IMAGE)
+        '503':
+          description: El almacenamiento no está configurado
         '403':
           $ref: '#/components/responses/ForbiddenError'
         '404':
@@ -571,7 +707,11 @@ paths:
     delete:
       tags:
       - Cursos
-      summary: Borra un curso propio (falla si ya tiene sesiones creadas)
+      summary: Manda un curso propio a la papelera (borrado suave, se puede restaurar)
+      description: >-
+        El curso deja de existir para estudiantes y listados (responde 404 como cualquier id
+        desconocido), pero no se borra nada: ni filas ni archivos. Se restaura con POST
+        /api/cursos/{id}/restaurar o se borra para siempre con DELETE /api/cursos/{id}/permanente.
       operationId: borrarCurso
       security:
       - BearerAuth: []
@@ -582,13 +722,19 @@ paths:
         schema: {type: string, format: uuid}
       responses:
         '200':
-          description: Correcto
+          description: En la papelera
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean}
+                  deleted_at: {type: string, format: date-time}
+                  restorable: {type: boolean}
         '403':
           $ref: '#/components/responses/ForbiddenError'
         '404':
           description: No encontrado
-        '409':
-          description: Ya tiene sesiones de simulación
         '401':
           $ref: '#/components/responses/UnauthorizedError'
     get:
@@ -614,12 +760,109 @@ paths:
           description: Detalle del curso obtenido con éxito
         '404':
           $ref: '#/components/responses/NotFoundError'
+  /api/cursos/papelera:
+    get:
+      tags:
+      - Cursos
+      summary: Cursos que el docente mandó a la papelera
+      operationId: listarPapeleraCursos
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Paginacion'
+                - type: object
+                  properties:
+                    cursos:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/CourseResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/restaurar:
+    post:
+      tags:
+      - Cursos
+      summary: Saca un curso de la papelera (solo el docente dueño)
+      operationId: restaurarCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Curso restaurado, con sus estudiantes, material, entregas y notas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Ese curso no está en la papelera
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/permanente:
+    delete:
+      tags:
+      - Cursos
+      summary: Borra para siempre un curso que está en la papelera (solo el docente dueño)
+      description: >-
+        Borra el curso con todo lo que cuelga de él (bloques, contenido, entregas, intentos, preguntas,
+        avisos y matrículas, por ON DELETE CASCADE). Bloqueado si el curso tiene simulaciones clínicas.
+        Los archivos en R2 (material, entregas, portada) se anotan como pendientes en la misma
+        transacción y se borran después del commit; lo que R2 no deje borrar queda en cola y se reintenta.
+      operationId: borrarCursoDefinitivamente
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Borrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean}
+                  files_deleted: {type: integer, description: Archivos ya borrados de R2}
+                  files_pending: {type: integer, description: Archivos que quedaron en cola para reintentar}
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Ese curso no está en la papelera (un curso vigente primero se manda a la papelera)
+        '409':
+          description: El curso tiene simulaciones clínicas de estudiantes
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/cursos/{id}/matricular:
     post:
       tags:
       - Cursos
       summary: Matricular estudiante en curso
-      description: Rol requerido STUDENT. Inscribe al estudiante en la asignatura.
+      description: >-
+        Rol requerido STUDENT. El resultado depende del `enrollment_mode` del curso:
+        OPEN matricula directo; CODE exige el código del curso en `code` (403 con el
+        mismo mensaje si falta, es incorrecto o el docente lo desactivó); APPROVAL no
+        matricula, deja una solicitud pendiente (202) que resuelve el docente.
+        Limitado a 10 intentos por minuto.
       operationId: enrollCourse
       security:
       - BearerAuth: []
@@ -630,11 +873,35 @@ paths:
         schema:
           type: string
           format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatricularRequest'
       responses:
-        '200':
-          description: Matrícula exitosa
+        '201':
+          description: Matrícula registrada (modo OPEN, o CODE con el código correcto)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatriculaResultado'
+        '202':
+          description: Solicitud de matrícula pendiente de aprobación del docente (modo APPROVAL)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatriculaResultado'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: El estudiante ya está matriculado en el curso
+        '429':
+          description: Demasiados intentos de matrícula; espera un minuto
     delete:
       tags:
       - Cursos
@@ -1875,6 +2142,248 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+  /api/notificaciones:
+    get:
+      tags:
+      - Notificaciones
+      summary: Notificaciones del usuario dentro de la plataforma, de la más reciente a la más vieja
+      description: >-
+        Tipos: ASSIGNMENT_PUBLISHED (nueva tarea), ANNOUNCEMENT (nuevo aviso), ASSIGNMENT_GRADED
+        (tarea calificada) y DUE_SOON (la tarea cierra en menos de 24 h y no se ha entregado).
+        `event_at` es una fecha en UTC (p. ej. el cierre) que la interfaz muestra en la zona horaria
+        del usuario.
+      operationId: listarNotificaciones
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PerPage'
+      - {name: solo_no_leidas, in: query, required: false, schema: {type: string, enum: ['1']}}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Paginacion'
+                - type: object
+                  properties:
+                    no_leidas: {type: integer}
+                    notificaciones:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Notificacion'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/notificaciones/no-leidas:
+    get:
+      tags:
+      - Notificaciones
+      summary: Cuántas notificaciones tiene sin leer el usuario
+      operationId: contarNotificacionesNoLeidas
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  no_leidas: {type: integer}
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/notificaciones/{notification_id}/leer:
+    post:
+      tags:
+      - Notificaciones
+      summary: Marca una notificación propia como leída
+      operationId: marcarNotificacionLeida
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: notification_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notificacion'
+        '404':
+          description: No encontrada (también si es de otro usuario)
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/notificaciones/leer-todas:
+    post:
+      tags:
+      - Notificaciones
+      summary: Marca como leídas todas las notificaciones del usuario
+      operationId: marcarTodasLasNotificacionesLeidas
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/notificaciones/preferencias:
+    get:
+      tags:
+      - Notificaciones
+      summary: Si el usuario recibe las notificaciones también por correo
+      operationId: obtenerPreferenciasNotificacion
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email: {type: boolean}
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    patch:
+      tags:
+      - Notificaciones
+      summary: Activa o desactiva recibir las notificaciones por correo (las de la plataforma llegan siempre)
+      operationId: actualizarPreferenciasNotificacion
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: {type: boolean}
+      responses:
+        '200':
+          description: Correcto
+        '400':
+          description: Datos inválidos
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/notificaciones/recordatorios:
+    post:
+      tags:
+      - Notificaciones
+      summary: Dispara los recordatorios de fecha límite (para un programador de tareas, no para usuarios)
+      description: >-
+        Avisa a los estudiantes que no han entregado una tarea que cierra en menos de 24 h. Pensado
+        para correr cada hora; cada estudiante recibe el aviso una sola vez por tarea. No usa sesión:
+        exige la cabecera `X-Cron-Secret` igual a la variable CRON_SECRET del servidor. Sin esa
+        variable configurada, o con un secreto distinto, responde 404.
+      operationId: dispararRecordatorios
+      security: []
+      parameters:
+      - {name: X-Cron-Secret, in: header, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Resumen de lo enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tareas: {type: integer}
+                  notificaciones: {type: integer}
+        '404':
+          description: Secreto ausente o incorrecto, o la función no está configurada
+  /api/cursos/{course_id}/calificaciones/exportar:
+    get:
+      tags:
+      - Cursos
+      summary: Descarga el libro de calificaciones completo en CSV o XLSX (solo el docente dueño)
+      description: >-
+        Una fila por estudiante y una columna por tarea o cuestionario, más el promedio. Incluye a
+        todos los estudiantes del curso (no se pagina). La descarga queda en el registro de auditoría.
+      operationId: exportarCalificaciones
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - {name: formato, in: query, required: false, schema: {type: string, enum: [csv, xlsx], default: xlsx}}
+      responses:
+        '200':
+          description: El archivo, como adjunto
+          content:
+            text/csv:
+              schema: {type: string, format: binary}
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: {type: string, format: binary}
+        '400':
+          description: formato inválido
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/admin/auditoria:
+    get:
+      tags:
+      - Admin
+      summary: Registro de auditoría (solo administradores), del más reciente al más viejo
+      description: >-
+        Acciones registradas: GRADE_CHANGE, SUBMISSION_DELETE, SUBMISSION_RESTORE, STUDENT_ENROLL,
+        STUDENT_REMOVE, ENROLLMENT_REQUEST_REJECT, COURSE_DELETE, COURSE_RESTORE, COURSE_PURGE,
+        ENROLLMENT_CODE_CHANGE, ENROLLMENT_MODE_CHANGE, GRADE_POLICY_CHANGE, USER_ROLE_CHANGE,
+        USER_ACTIVE_CHANGE. El registro solo se puede leer: no hay rutas para editarlo ni borrarlo.
+      operationId: listarAuditoria
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PerPage'
+      - {name: action, in: query, required: false, schema: {type: string}}
+      - {name: entity_type, in: query, required: false, schema: {type: string}}
+      - {name: entity_id, in: query, required: false, schema: {type: string}}
+      - {name: user_id, in: query, required: false, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Paginacion'
+                - type: object
+                  properties:
+                    registros:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id: {type: string, format: uuid}
+                          user_id: {type: string, format: uuid, nullable: true}
+                          user_name: {type: string, nullable: true}
+                          action: {type: string}
+                          entity_type: {type: string}
+                          entity_id: {type: string, nullable: true}
+                          old_value: {type: object, nullable: true}
+                          new_value: {type: object, nullable: true}
+                          ip: {type: string, nullable: true}
+                          created_at: {type: string, format: date-time}
+        '400':
+          description: user_id inválido
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/admin/validacion/{pestana}:
     get:
       tags:
@@ -1921,6 +2430,8 @@ paths:
       security:
       - BearerAuth: []
       parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PerPage'
       - name: course_id
         in: path
         required: true
@@ -2132,7 +2643,7 @@ paths:
               type: object
               required: [type, title]
               properties:
-                type: {type: string, enum: [DOCUMENT, VIDEO, LINK, TEXT]}
+                type: {type: string, enum: [DOCUMENT, VIDEO, LINK, TEXT, ASSIGNMENT, QUIZ]}
                 title: {type: string}
                 description: {type: string}
                 name: {type: string}
@@ -2141,11 +2652,39 @@ paths:
                 video_url: {type: string}
                 link_url: {type: string}
                 text_content: {type: string}
+                open_at: {type: string, format: date-time, description: ASSIGNMENT y QUIZ}
+                due_at: {type: string, format: date-time, description: ASSIGNMENT y QUIZ}
+                max_score: {type: number, description: Solo ASSIGNMENT}
+                allow_late: {type: boolean, description: Solo ASSIGNMENT — aceptar entregas después de due_at (quedan marcadas is_late)}
+                late_until: {type: string, format: date-time, description: Solo ASSIGNMENT — hasta cuándo se aceptan tardías (vacío = sin tope). Requiere allow_late y due_at}
+                allowed_extensions:
+                  type: array
+                  items: {type: string}
+                  example: [pdf, docx, zip, png]
+                  description: >-
+                    Solo ASSIGNMENT — extensiones que acepta la tarea. Vacío = las del servidor por defecto.
+                    Las de la lista negra (exe, bat, sh, js, php, html, svg...) nunca se pueden habilitar.
+                max_file_size_mb: {type: integer, minimum: 1, description: Solo ASSIGNMENT — tamaño máximo por archivo (hasta ASSIGNMENT_MAX_FILE_MB)}
+                max_files: {type: integer, minimum: 1, default: 1, description: Solo ASSIGNMENT — archivos por entrega (hasta ASSIGNMENT_MAX_FILES)}
+                rubric:
+                  type: array
+                  description: Solo ASSIGNMENT — rúbrica opcional. Con ella max_score pasa a ser la suma de los puntos de los criterios.
+                  items:
+                    $ref: '#/components/schemas/CriterioRubrica'
+                time_limit_minutes: {type: integer, minimum: 1, description: Solo QUIZ — duración máxima del intento}
+                max_attempts: {type: integer, minimum: 1, description: Solo QUIZ — vacío = sin límite}
+                grade_policy:
+                  type: string
+                  enum: [BEST, LAST, AVERAGE, FIRST]
+                  default: BEST
+                  description: Solo QUIZ — qué nota queda cuando hay varios intentos entregados
       responses:
         '201':
           description: Creado
         '400':
           description: Petición inválida
+        '415':
+          description: Tipo de archivo no permitido, o el contenido real no corresponde a la extensión (se valida por magic bytes)
         '403':
           $ref: '#/components/responses/ForbiddenError'
         '404':
@@ -2157,6 +2696,53 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}:
+    get:
+      tags:
+      - Cursos
+      summary: Detalle de un elemento de contenido — para una tarea incluye sus reglas y, al estudiante, su entrega
+      description: >-
+        Docente dueño o estudiante matriculado. En una tarea (ASSIGNMENT) la respuesta trae `reglas`:
+        extensiones permitidas, tamaño máximo, cantidad de archivos, fechas (UTC), estado de la ventana
+        y segundos restantes según el reloj del servidor. Al estudiante se le agrega `mi_entrega`.
+      operationId: obtenerContenidoBloque
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: {type: string, format: uuid}
+                  type: {type: string}
+                  title: {type: string}
+                  reglas:
+                    $ref: '#/components/schemas/ReglasTarea'
+                  mi_entrega:
+                    allOf:
+                    - $ref: '#/components/schemas/EntregaTarea'
+                    nullable: true
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
     patch:
       tags:
       - Cursos
@@ -2190,6 +2776,23 @@ paths:
                 video_url: {type: string}
                 link_url: {type: string}
                 text_content: {type: string}
+                open_at: {type: string, format: date-time}
+                due_at: {type: string, format: date-time}
+                max_score: {type: number}
+                allow_late: {type: boolean}
+                late_until: {type: string, format: date-time, nullable: true, description: null quita el tope de tardías}
+                allowed_extensions: {type: array, items: {type: string}, description: '[] vuelve a las extensiones por defecto'}
+                max_file_size_mb: {type: integer, minimum: 1, nullable: true, description: null vuelve al tope del servidor}
+                max_files: {type: integer, minimum: 1}
+                rubric:
+                  type: array
+                  nullable: true
+                  description: '[] o null quita la rúbrica'
+                  items:
+                    $ref: '#/components/schemas/CriterioRubrica'
+                time_limit_minutes: {type: integer, minimum: 1}
+                max_attempts: {type: integer, minimum: 1}
+                grade_policy: {type: string, enum: [BEST, LAST, AVERAGE, FIRST]}
       responses:
         '200':
           description: Correcto
@@ -2298,7 +2901,13 @@ paths:
     post:
       tags:
       - Cursos
-      summary: El estudiante entrega (o vuelve a entregar) un archivo para una tarea
+      summary: El estudiante entrega los archivos de una tarea, o reemplaza su entrega (versión nueva; las anteriores quedan de historial)
+      description: >-
+        Se valida contra las reglas de la tarea, en este orden: ventana de tiempo (reloj del servidor),
+        cantidad de archivos, tamaño, extensión permitida y contenido real (magic bytes). Si un archivo
+        no cumple no se guarda ninguno. Los errores traen `code` (NOT_OPEN, CLOSED, LATE_CLOSED, NO_FILES,
+        TOO_MANY_FILES, FILE_TOO_LARGE, TOTAL_TOO_LARGE, EXTENSION_NOT_ALLOWED, DANGEROUS_EXTENSION,
+        CONTENT_MISMATCH, EMPTY_FILE, INVALID_BASE64) y las `reglas` vigentes.
       operationId: entregarTarea
       security:
       - BearerAuth: []
@@ -2321,22 +2930,48 @@ paths:
           application/json:
             schema:
               type: object
-              required: [name, file_base64]
+              description: '`files` con uno o varios archivos, o `name` + `file_base64` para uno solo.'
               properties:
+                files:
+                  type: array
+                  items:
+                    type: object
+                    required: [name, file_base64]
+                    properties:
+                      name: {type: string, description: Nombre con extensión}
+                      file_base64: {type: string}
                 name: {type: string}
-                mime_type: {type: string}
+                mime_type: {type: string, description: Se ignora — el tipo sale del contenido real}
                 file_base64: {type: string}
       responses:
         '201':
-          description: Creado
+          description: Entrega guardada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntregaTarea'
         '400':
-          description: Fuera de la ventana de entrega o datos inválidos
+          description: Fuera de la ventana de entrega (NOT_OPEN, CLOSED, LATE_CLOSED), sin archivos o más archivos que max_files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEntrega'
+        '415':
+          description: Extensión no permitida en esta tarea, extensión de la lista negra, o contenido real que no corresponde a la extensión
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEntrega'
         '403':
           $ref: '#/components/responses/ForbiddenError'
         '404':
           description: No encontrado
         '413':
-          description: Archivo demasiado pesado
+          description: Un archivo supera max_file_size_mb, o la entrega completa supera el total permitido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEntrega'
         '503':
           description: Almacenamiento no configurado
         '401':
@@ -2349,6 +2984,13 @@ paths:
       security:
       - BearerAuth: []
       parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PerPage'
+      - name: eliminadas
+        in: query
+        required: false
+        description: Con 1 lista las entregas que están en la papelera, en vez de las vigentes
+        schema: {type: string, enum: ['1']}
       - name: course_id
         in: path
         required: true
@@ -2374,7 +3016,7 @@ paths:
     get:
       tags:
       - Cursos
-      summary: El estudiante consulta el estado de su propia entrega (o null si no ha entregado)
+      summary: El estudiante consulta su propia entrega (null si no ha entregado), con historial de versiones y las reglas de la tarea
       operationId: miEntregaTarea
       security:
       - BearerAuth: []
@@ -2431,10 +3073,21 @@ paths:
           application/json:
             schema:
               type: object
-              required: [score]
+              description: >-
+                Tarea de nota única: `score`. Tarea con rúbrica: `criteria`, con los puntos de CADA
+                criterio; la nota es la suma. `feedback` es el comentario general en ambos casos.
               properties:
-                score: {type: number}
+                score: {type: number, minimum: 0}
                 feedback: {type: string}
+                criteria:
+                  type: array
+                  items:
+                    type: object
+                    required: [criterion_id, points]
+                    properties:
+                      criterion_id: {type: string}
+                      points: {type: number, minimum: 0}
+                      comment: {type: string}
       responses:
         '200':
           description: Correcto
@@ -2444,6 +3097,80 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
         '404':
           description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags:
+      - Cursos
+      summary: El docente dueño manda una entrega a la papelera (borrado suave, se puede restaurar)
+      description: >-
+        La entrega deja de contar en listados y calificaciones, pero conserva archivos, versiones y
+        nota. Si el estudiante vuelve a entregar, sale sola de la papelera con una versión nueva.
+      operationId: eliminarEntrega
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: submission_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: En la papelera
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrada (o ya estaba en la papelera)
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/entregas/{submission_id}/restaurar:
+    post:
+      tags:
+      - Cursos
+      summary: El docente dueño saca una entrega de la papelera
+      operationId: restaurarEntrega
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: submission_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Entrega restaurada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntregaTarea'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Esa entrega no está en la papelera
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/entregas/{submission_id}/archivo:
@@ -2480,6 +3207,399 @@ paths:
           description: No encontrado
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/descarga:
+    get:
+      tags:
+      - Cursos
+      summary: Enlace firmado (10 min) para descargar el documento del material — docente dueño o estudiante matriculado
+      operationId: descargarContenidoCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DescargaFirmada'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado (también si el bloque no pertenece al curso de la URL)
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '503':
+          description: El almacenamiento no está configurado
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/entregas/{submission_id}/descarga:
+    get:
+      tags:
+      - Cursos
+      summary: Enlace firmado (10 min) para descargar una entrega — solo el docente dueño o el estudiante que la hizo
+      operationId: descargarEntrega
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: submission_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DescargaFirmada'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '503':
+          description: El almacenamiento no está configurado
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/entregas/{submission_id}/archivos/{file_id}/descarga:
+    get:
+      tags:
+      - Cursos
+      summary: Enlace firmado (10 min) para descargar UN archivo de una entrega, de la versión vigente o del historial — solo el docente dueño o el estudiante que la hizo
+      operationId: descargarArchivoEntrega
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: submission_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: file_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DescargaFirmada'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado (también si el archivo no es de esa entrega)
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '503':
+          description: El almacenamiento no está configurado
+  /api/cursos/{course_id}/cover:
+    delete:
+      tags:
+      - Cursos
+      summary: Quita la portada del curso y la borra de R2 (solo el docente dueño)
+      operationId: quitarPortadaCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Curso sin portada (`cover_url` null). También si ya no tenía.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/opciones-tarea:
+    get:
+      tags:
+      - Cursos
+      summary: Opciones para configurar una tarea — extensiones soportadas, las de por defecto y los topes del servidor
+      operationId: opcionesTarea
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  supported_extensions: {type: array, items: {type: string}}
+                  default_extensions: {type: array, items: {type: string}}
+                  max_file_size_mb: {type: integer, example: 10}
+                  max_files: {type: integer, example: 5}
+                  max_total_mb: {type: integer, example: 20}
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/mis-solicitudes:
+    get:
+      tags:
+      - Cursos
+      summary: Solicitudes de matrícula del estudiante que siguen pendientes o fueron rechazadas
+      operationId: listarMisSolicitudesMatricula
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudesMatricula'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/matricula:
+    get:
+      tags:
+      - Cursos
+      summary: Modo de matrícula y código del curso (solo el docente dueño)
+      operationId: obtenerMatriculaCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatriculaConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    patch:
+      tags:
+      - Cursos
+      summary: Cambia el modo de matrícula (OPEN, CODE o APPROVAL); al pasar a CODE sin código vigente genera uno
+      operationId: actualizarMatriculaCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarMatriculaRequest'
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatriculaConfig'
+        '400':
+          description: Modo de matrícula inválido
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/matricula/codigo:
+    post:
+      tags:
+      - Cursos
+      summary: Regenera el código de matrícula; el anterior deja de servir de inmediato (solo el docente dueño)
+      operationId: regenerarCodigoMatricula
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatriculaConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags:
+      - Cursos
+      summary: Desactiva el código de matrícula; en modo CODE nadie se matricula por su cuenta hasta generar otro
+      operationId: desactivarCodigoMatricula
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatriculaConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/solicitudes:
+    get:
+      tags:
+      - Cursos
+      summary: Solicitudes de matrícula del curso (solo el docente dueño); pendientes por defecto
+      operationId: listarSolicitudesMatricula
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: status
+        in: query
+        required: false
+        description: ALL para incluir las ya resueltas
+        schema: {type: string, enum: [PENDING, ALL]}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudesMatricula'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/solicitudes/{request_id}/aprobar:
+    post:
+      tags:
+      - Cursos
+      summary: Aprueba una solicitud pendiente y matricula al estudiante (solo el docente dueño)
+      operationId: aprobarSolicitudMatricula
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: request_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudMatricula'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Solicitud no encontrada en este curso
+        '409':
+          description: La solicitud ya fue resuelta
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/solicitudes/{request_id}/rechazar:
+    post:
+      tags:
+      - Cursos
+      summary: Rechaza una solicitud pendiente (solo el docente dueño)
+      operationId: rechazarSolicitudMatricula
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: request_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudMatricula'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Solicitud no encontrada en este curso
+        '409':
+          description: La solicitud ya fue resuelta
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/cursos/{course_id}/avisos:
     get:
       tags:
@@ -2489,6 +3609,8 @@ paths:
       security:
       - BearerAuth: []
       parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PerPage'
       - name: course_id
         in: path
         required: true
@@ -2855,7 +3977,11 @@ paths:
     post:
       tags:
       - Cursos
-      summary: El estudiante inicia un intento nuevo (devuelve las preguntas sin marcar cuál es la correcta)
+      summary: El estudiante inicia un intento nuevo o retoma el que tenía abierto (devuelve las preguntas sin marcar cuál es la correcta)
+      description: >-
+        Se atiende con la fila de matrícula del estudiante bloqueada (SELECT ... FOR UPDATE): contar los
+        intentos y crear el nuevo es una sola operación, así que max_attempts se respeta aunque lleguen
+        varias peticiones a la vez. Guarda started_at y deadline_at (tiempo límite y/o cierre del cuestionario).
       operationId: iniciarIntentoQuiz
       security:
       - BearerAuth: []
@@ -2873,10 +3999,14 @@ paths:
         required: true
         schema: {type: string, format: uuid}
       responses:
+        '200':
+          description: 'Ya había un intento abierto y vigente — se devuelve ese (`reanudado: true`) con lo que llevaba guardado'
         '201':
-          description: Creado
+          description: 'Intento creado (`reanudado: false`)'
         '400':
           description: Fuera de ventana, sin intentos disponibles, o sin preguntas
+        '409':
+          description: Otra petición simultánea ya estaba creando el intento
         '403':
           $ref: '#/components/responses/ForbiddenError'
         '404':
@@ -2886,7 +4016,7 @@ paths:
     get:
       tags:
       - Cursos
-      summary: Lista intentos — el docente dueño ve los de todos los estudiantes, el estudiante solo los suyos
+      summary: Lista intentos — el docente dueño ve los de todos los estudiantes, el estudiante solo los suyos (con `nota` según el grade_policy del cuestionario)
       operationId: listarIntentosQuiz
       security:
       - BearerAuth: []
@@ -2916,7 +4046,7 @@ paths:
     get:
       tags:
       - Cursos
-      summary: Revisión de un intento (con respuestas correctas) — dueño del intento o docente dueño del curso
+      summary: Un intento — entregado (revisión) o en curso (preguntas sin la clave y lo guardado) — dueño del intento o docente dueño del curso
       operationId: obtenerIntentoQuiz
       security:
       - BearerAuth: []
@@ -2990,13 +4120,85 @@ paths:
                         items: {type: string, format: uuid}
       responses:
         '200':
-          description: Correcto
+          description: >-
+            Intento calificado y finalizado. Con `vencido: true` el envío llegó fuera de tiempo
+            (límite + QUIZ_GRACE_SECONDS) y solo se calificó lo que estaba guardado (QUIZ_LATE_POLICY=GRADE_SAVED).
         '400':
-          description: Ya entregado, o selected_choice_ids inválido
+          description: selected_choice_ids inválido
         '403':
           $ref: '#/components/responses/ForbiddenError'
         '404':
           description: No encontrado
+        '409':
+          description: >-
+            El intento ya estaba finalizado (no se puede volver a enviar ni modificar), o el envío llegó
+            fuera de tiempo con QUIZ_LATE_POLICY=REJECT (el intento queda cerrado en cero).
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/intentos/{attempt_id}/respuestas:
+    put:
+      tags:
+      - Cursos
+      summary: El estudiante guarda el avance de un intento en curso, sin entregarlo ni calificarlo
+      description: >-
+        Lo guardado es lo que se califica si el tiempo se agota antes de entregar. Reemplaza las
+        respuestas de las preguntas enviadas; las demás quedan como estaban.
+      operationId: guardarRespuestasIntentoQuiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: block_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: item_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: attempt_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answers:
+                  type: array
+                  items:
+                    type: object
+                    required: [question_id]
+                    properties:
+                      question_id: {type: string, format: uuid}
+                      selected_choice_ids:
+                        type: array
+                        items: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Guardado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean}
+                  deadline_at: {type: string, format: date-time, nullable: true}
+                  segundos_restantes: {type: integer, nullable: true}
+        '400':
+          description: selected_choice_ids inválido
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '409':
+          description: El intento ya fue entregado o se le agotó el tiempo
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   /api/cursos/{course_id}/calificaciones:
@@ -3008,6 +4210,8 @@ paths:
       security:
       - BearerAuth: []
       parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PerPage'
       - name: course_id
         in: path
         required: true
@@ -3026,6 +4230,9 @@ paths:
       tags:
       - Cursos
       summary: Las calificaciones propias del estudiante matriculado en este curso
+      description: >-
+        La nota de cada cuestionario sale de sus intentos entregados según el grade_policy del
+        cuestionario: BEST (el más alto, por defecto), LAST, FIRST o AVERAGE.
       operationId: misCalificaciones
       security:
       - BearerAuth: []
@@ -3394,7 +4601,10 @@ paths:
     post:
       tags:
       - Correo y Notificaciones
-      summary: Despacho de notificación asistida por correo
+      summary: Despacho de notificación asistida por correo (solo ADMIN, 20 por hora)
+      description: >-
+        Envía un correo con asunto y texto libres a cualquier dirección desde el dominio de la
+        plataforma. Solo administradores. Las notificaciones a estudiantes no pasan por acá.
       operationId: sendEmailNotification
       security:
       - BearerAuth: []
@@ -3515,6 +4725,19 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Página (desde 1). Valores inválidos vuelven a 1.
+      schema: {type: integer, minimum: 1, default: 1}
+    PerPage:
+      name: per_page
+      in: query
+      required: false
+      description: Filas por página. Por defecto 20; nunca más de 100 aunque se pida más.
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
   securitySchemes:
     BearerAuth:
       type: http
@@ -3785,6 +5008,266 @@ components:
         academic_period:
           type: string
           example: 2026-1
+        enrollment_mode:
+          type: string
+          enum: [OPEN, CODE, APPROVAL]
+          description: Cómo entra un estudiante por su cuenta. El código de matrícula nunca viaja en esta respuesta.
+        cover_url:
+          type: string
+          nullable: true
+          description: Miniatura de la portada (400x200, WebP) para la card. URL firmada de vida corta; null si el curso no tiene portada.
+        cover_full_url:
+          type: string
+          nullable: true
+          description: Portada completa (1200x600, WebP). null si el curso no tiene portada.
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Con fecha, el curso está en la papelera del docente.
+        teacher_name:
+          type: string
+          nullable: true
+          description: Solo en /mios para el estudiante.
+        pending_assignments:
+          type: integer
+          description: Solo en /mios para el estudiante — tareas abiertas que todavía no ha entregado.
+        next_due_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Solo en /mios para el estudiante — el cierre más cercano entre sus tareas pendientes (UTC).
+        next_due_title:
+          type: string
+          nullable: true
+    CursoConPortada:
+      type: object
+      properties:
+        name: {type: string}
+        description: {type: string}
+        academic_period: {type: string}
+        cover:
+          type: string
+          format: binary
+          description: >-
+            Imagen JPG, PNG o WebP de hasta 2 MB, entre 400x200 y 8000 px por lado. Se verifica por
+            contenido real, se recorta a 2:1 y se recomprime (1200x600 + miniatura 400x200).
+        focus_x: {type: number, minimum: 0, maximum: 1, default: 0.5, description: 'Encuadre horizontal del recorte (0 izquierda, 1 derecha)'}
+        focus_y: {type: number, minimum: 0, maximum: 1, default: 0.5, description: 'Encuadre vertical del recorte (0 arriba, 1 abajo)'}
+    MatricularRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 32
+          nullable: true
+          description: Código de matrícula del curso (obligatorio si el curso está en modo CODE)
+          example: K7MQ2XWP
+    MatriculaResultado:
+      type: object
+      properties:
+        message:
+          type: string
+        status:
+          type: string
+          enum: [ENROLLED, PENDING]
+        course_id:
+          type: string
+          format: uuid
+        student_id:
+          type: string
+          format: uuid
+    ActualizarMatriculaRequest:
+      type: object
+      required:
+      - enrollment_mode
+      properties:
+        enrollment_mode:
+          type: string
+          enum: [OPEN, CODE, APPROVAL]
+    MatriculaConfig:
+      type: object
+      description: Configuración de matrícula del curso. Solo la recibe el docente dueño.
+      properties:
+        course_id:
+          type: string
+          format: uuid
+        enrollment_mode:
+          type: string
+          enum: [OPEN, CODE, APPROVAL]
+        enrollment_code:
+          type: string
+          nullable: true
+          description: Código vigente, o null si está desactivado
+        pending_requests:
+          type: integer
+    SolicitudMatricula:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_id:
+          type: string
+          format: uuid
+        student_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        student_name:
+          type: string
+        student_email:
+          type: string
+        course_name:
+          type: string
+    SolicitudesMatricula:
+      type: object
+      properties:
+        solicitudes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SolicitudMatricula'
+    Notificacion:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        type: {type: string, enum: [ASSIGNMENT_PUBLISHED, ANNOUNCEMENT, ASSIGNMENT_GRADED, DUE_SOON]}
+        title: {type: string}
+        body: {type: string, nullable: true}
+        course_id: {type: string, format: uuid, nullable: true}
+        entity_type: {type: string, nullable: true, description: assignment o announcement}
+        entity_id: {type: string, format: uuid, nullable: true}
+        event_at: {type: string, format: date-time, nullable: true}
+        read: {type: boolean}
+        read_at: {type: string, format: date-time, nullable: true}
+        created_at: {type: string, format: date-time}
+    CriterioRubrica:
+      type: object
+      required: [title, max_points]
+      properties:
+        id: {type: string, description: Lo asigna el servidor; al editar se envía para conservar el criterio}
+        title: {type: string}
+        description: {type: string, nullable: true}
+        max_points: {type: number, minimum: 0, exclusiveMinimum: true}
+    Paginacion:
+      type: object
+      description: Acompaña a toda lista paginada, junto a la lista misma
+      properties:
+        total: {type: integer, description: Filas en total (todas las páginas)}
+        page: {type: integer}
+        per_page: {type: integer}
+        pages: {type: integer, description: Cantidad de páginas (0 si no hay filas)}
+    ReglasTarea:
+      type: object
+      description: Reglas que de verdad se aplican al entregar (valores por defecto y topes del servidor ya incluidos)
+      properties:
+        allowed_extensions: {type: array, items: {type: string}, example: [docx, pdf]}
+        max_file_size_mb: {type: integer, example: 5}
+        max_files: {type: integer, example: 1}
+        max_total_mb: {type: integer, example: 20}
+        open_at: {type: string, format: date-time, nullable: true}
+        due_at: {type: string, format: date-time, nullable: true}
+        allow_late: {type: boolean}
+        late_until: {type: string, format: date-time, nullable: true}
+        status: {type: string, enum: [NOT_OPEN, OPEN, LATE, CLOSED]}
+        accepts_submissions: {type: boolean}
+        seconds_until_open: {type: integer, nullable: true}
+        seconds_until_due: {type: integer, nullable: true}
+        seconds_until_late_close: {type: integer, nullable: true}
+        server_now: {type: string, format: date-time}
+    ArchivoEntregado:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        version: {type: integer}
+        position: {type: integer}
+        nombre: {type: string}
+        mime_type: {type: string}
+        size_bytes: {type: integer}
+        is_late: {type: boolean}
+        uploaded_at: {type: string, format: date-time}
+    EntregaTarea:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        item_id: {type: string, format: uuid}
+        student_id: {type: string, format: uuid}
+        student_name: {type: string, nullable: true}
+        version: {type: integer, description: Versión vigente; sube en 1 cada vez que el estudiante reemplaza la entrega}
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchivoEntregado'
+        history:
+          type: array
+          description: Versiones anteriores, de la más reciente a la más vieja
+          items:
+            type: object
+            properties:
+              version: {type: integer}
+              uploaded_at: {type: string, format: date-time}
+              is_late: {type: boolean}
+              files:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArchivoEntregado'
+        submitted_at: {type: string, format: date-time}
+        is_late: {type: boolean}
+        score: {type: number, nullable: true}
+        feedback: {type: string, nullable: true}
+        rubric_scores:
+          type: array
+          nullable: true
+          description: Nota por criterio cuando la tarea tiene rúbrica
+          items:
+            type: object
+            properties:
+              criterion_id: {type: string}
+              title: {type: string}
+              max_points: {type: number}
+              points: {type: number}
+              comment: {type: string, nullable: true}
+        graded_at: {type: string, format: date-time, nullable: true}
+        reglas:
+          $ref: '#/components/schemas/ReglasTarea'
+    ErrorEntrega:
+      type: object
+      properties:
+        error: {type: string}
+        message: {type: string}
+        status_code: {type: integer}
+        code:
+          type: string
+          enum: [NOT_OPEN, CLOSED, LATE_CLOSED, NO_FILES, TOO_MANY_FILES, FILE_TOO_LARGE, TOTAL_TOO_LARGE,
+                 EXTENSION_NOT_ALLOWED, DANGEROUS_EXTENSION, CONTENT_MISMATCH, EMPTY_FILE, INVALID_BASE64]
+        file: {type: string, description: Nombre del archivo que no cumplió}
+        reglas:
+          $ref: '#/components/schemas/ReglasTarea'
+    DescargaFirmada:
+      type: object
+      properties:
+        url:
+          type: string
+          description: URL firmada de R2; vence a los `expires_in` segundos y descarga como adjunto
+        name:
+          type: string
+        mime_type:
+          type: string
+        size_bytes:
+          type: integer
+        expires_in:
+          type: integer
+          example: 600
     CreateArticleRequest:
       type: object
       required:

@@ -17,7 +17,7 @@ class QuizQuestion(db.Model):
     prompt = db.Column(db.Text, nullable=False)
     points = db.Column(db.Numeric(6, 2), nullable=False, default=1)
     position = db.Column(db.Integer, nullable=False, default=0)
-    created_at = db.Column(db.DateTime, server_default=func.now())
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     def to_dict(self, choices=None, incluir_respuesta_correcta=False):
         d = {

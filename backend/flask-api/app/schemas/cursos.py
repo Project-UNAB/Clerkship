@@ -2,7 +2,7 @@
 Course management Request and Response schemas for Clerkship API.
 """
 
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import EmailStr, Field
 from app.schemas.base import BaseSchema
 
@@ -31,6 +31,22 @@ class CourseResponse(BaseSchema):
     name: str
     description: Optional[str] = None
     academic_period: Optional[str] = None
+    enrollment_mode: Optional[str] = None
+    cover_url: Optional[str] = None
+    cover_full_url: Optional[str] = None
+
+
+class MatricularRequest(BaseSchema):
+    """Cuerpo (opcional) con el que el estudiante se matricula. `code` solo
+    hace falta cuando el curso está en modo CODE."""
+
+    code: Optional[str] = Field(None, max_length=32, description="Código de matrícula del curso")
+
+
+class ActualizarMatriculaRequest(BaseSchema):
+    """El docente dueño cambia cómo se matriculan los estudiantes por su cuenta."""
+
+    enrollment_mode: Literal["OPEN", "CODE", "APPROVAL"]
 
 
 class EnrollmentResponse(BaseSchema):

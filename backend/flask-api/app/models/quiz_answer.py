@@ -16,6 +16,11 @@ class QuizAnswer(db.Model):
     selected_choice_ids = db.Column(ARRAY(UUID(as_uuid=True)), nullable=False, default=list)
     is_correct = db.Column(db.Boolean)
 
+    __table_args__ = (
+        # Nombre que Postgres le dio al UNIQUE sin nombre de 2026-10-08d.
+        db.UniqueConstraint("attempt_id", "question_id", name="quiz_answers_attempt_id_question_id_key"),
+    )
+
     def to_dict(self):
         return {
             "id": str(self.id),

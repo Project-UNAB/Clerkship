@@ -926,7 +926,7 @@ export default function DashboardPage() {
           >
             <div className="gdrive-drop-card">
               <UploadCloud size={54} className="gdrive-drop-icon" />
-              <h3>Soltá tus archivos aquí</h3>
+              <h3>Suelta tus archivos aquí</h3>
               <p>Se subirán automáticamente a {openFolder ? `la carpeta "${openFolder.name}"` : 'tu Unidad'}</p>
             </div>
           </motion.div>
@@ -1198,7 +1198,7 @@ export default function DashboardPage() {
                   !openFolder && cleanSearch ? null : (
                     <div className="gdrive-empty-folder-box">
                       <FolderPlus size={24} />
-                      <p>{openFolder ? 'No hay subcarpetas creadas.' : 'No tenés carpetas todavía — creá una con "+ Nuevo".'}</p>
+                      <p>{openFolder ? 'No hay subcarpetas creadas.' : 'Aún no tienes carpetas creadas — crea una con "+ Nuevo".'}</p>
                     </div>
                   )
                 ) : (
@@ -1233,7 +1233,7 @@ export default function DashboardPage() {
                     <p>
                       {cleanSearch || selectedFilter !== 'ALL'
                         ? 'No se encontraron archivos que coincidan con la búsqueda o filtro.'
-                        : 'No hay documentos en esta ubicación — arrastrá archivos aquí o hacé clic en "+ Nuevo".'}
+                        : 'No hay documentos en esta ubicación — arrastra archivos aquí o haz clic en "+ Nuevo".'}
                     </p>
                   </div>
                 ) : viewMode === 'grid' ? (
@@ -1308,9 +1308,9 @@ export default function DashboardPage() {
                 <button type="button" className="dfm-close-btn" onClick={() => setConfirmDeleteFolder(null)}><ArrowLeft size={16} /></button>
               </div>
               <p className="dfm-confirm-text">
-                ¿Eliminar <strong>{confirmDeleteFolder.name}</strong>? Tiene {confirmDeleteFolder.file_count} archivo
-                {confirmDeleteFolder.file_count === 1 ? '' : 's'} adentro: los que ya están en la nube quedan sin
-                carpeta (no se borran), y los documentos viejos sí se eliminan. La carpeta no se puede deshacer.
+                ¿Deseas eliminar la carpeta <strong>{confirmDeleteFolder.name}</strong>? Contiene {confirmDeleteFolder.file_count} archivo
+                {confirmDeleteFolder.file_count === 1 ? '' : 's'}: los archivos sincronizados en la nube permanecerán sin
+                carpeta (no se eliminarán). Esta acción no se puede deshacer.
               </p>
               <button
                 type="button"

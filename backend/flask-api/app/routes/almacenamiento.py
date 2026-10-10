@@ -12,7 +12,8 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from pydantic import Field
 from sqlalchemy import func
 
-from app import db
+from app import db, limiter
+from app.services import limites
 from app.models import Article, DocumentFolder, UserFile
 from app.schemas import BaseSchema, validate_body
 from app import storage
@@ -83,6 +84,7 @@ def listar_archivos():
 
 @almacenamiento_bp.post("/subidas")
 @jwt_required()
+@limiter.limit(limites.SUBIDA_MATERIAL, key_func=limites.usuario_o_ip)
 @validate_body(SubidaRequest)
 def iniciar_subida(validated_body: SubidaRequest):
     if validated_body.mime_type not in storage.TIPOS_PERMITIDOS:

@@ -41,6 +41,29 @@ def app():
     return application
 
 
+@pytest.fixture(autouse=True)
+def _tokens_vigentes(monkeypatch):
+    """Cada petición autenticada consulta en la base si el token sigue vigente
+    (usuario activo, rol actual, lista de revocación). Los tests arman tokens
+    para usuarios que no existen en ninguna base, así que por defecto esa
+    comprobación se da por pasada; test_fase6_seguridad.py prueba la real."""
+    from app.services import sesiones
+
+    monkeypatch.setattr(sesiones, "token_revocado", lambda payload: False)
+
+
+@pytest.fixture(autouse=True)
+def _sin_notificaciones(monkeypatch):
+    """Publicar una tarea o un aviso, o calificar, avisa a los estudiantes:
+    eso consulta matrículas y escribe en notifications. Los tests de esas
+    rutas no tienen base, así que por defecto los avisos no hacen nada;
+    test_fase7_funcionalidades.py prueba los reales."""
+    from app.services import notificaciones
+
+    for evento in ("tarea_publicada", "aviso_publicado", "tarea_calificada"):
+        monkeypatch.setattr(notificaciones, evento, lambda *a, **kw: 0)
+
+
 @pytest.fixture(scope="session")
 def client(app):
     """Cliente de pruebas HTTP de Flask."""

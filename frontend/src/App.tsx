@@ -105,7 +105,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 /** Rutas cuyas páginas ya traen su propio <Sidebar/> con toggle de tema en
  *  el riel — ahí el botón flotante global queda de más. */
-const SIDEBAR_ROUTE_PREFIXES = ['/dashboard', '/biblioteca', '/casos', '/historial', '/desarrollo'];
+const SIDEBAR_ROUTE_PREFIXES = ['/dashboard', '/biblioteca', '/casos', '/historial', '/desarrollo', '/mis-cursos'];
 
 function GlobalThemeToggle() {
   const { pathname } = useLocation();

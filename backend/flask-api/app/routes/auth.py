@@ -7,6 +7,8 @@ from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
+    decode_token,
+    get_jwt,
     get_jwt_identity,
     jwt_required,
 )
@@ -26,6 +28,8 @@ from app.schemas import (
     VerifyEmailRequest,
     validate_body,
 )
+
+from app.services import limites, sesiones
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -272,7 +276,8 @@ def guardar_avatar(validated_body: UpdateAvatarRequest):
 
 
 @auth_bp.post("/login")
-@limiter.limit("10 per minute")
+@limiter.limit(limites.LOGIN_POR_IP)
+@limiter.limit(limites.LOGIN_POR_CUENTA, key_func=limites.cuenta_del_login)
 @validate_body(LoginRequest)
 def login(validated_body: LoginRequest):
     email = validated_body.email.strip().lower()
@@ -302,15 +307,57 @@ def login(validated_body: LoginRequest):
 
 @auth_bp.post("/refresh")
 @jwt_required(refresh=True)
+@limiter.limit(limites.REFRESH, key_func=limites.usuario_o_ip)
 def refresh():
+    """Cambia un refresh token vigente por un access token nuevo. El refresh
+    token ya pasó por la lista de revocación (logout, cambio de rol o de
+    contraseña, cuenta desactivada); el access token sale con el rol que el
+    usuario tiene AHORA en la base."""
     identity = get_jwt_identity()
     user = User.query.get(identity)
-    if user is None:
-        return jsonify({"error": "Not Found", "message": "Usuario no encontrado", "status_code": 404}), 404
+    if user is None or not user.activo:
+        return jsonify({"error": "Unauthorized", "message": "La sesión ya no es válida. Inicia sesión de nuevo.", "status_code": 401}), 401
 
     return jsonify({
         "access_token": create_access_token(identity=identity, additional_claims={"role": user.role}),
     }), 200
+
+
+@auth_bp.post("/logout")
+@jwt_required()
+def logout():
+    """Cierra la sesión: el access token de esta petición queda revocado y,
+    si se manda en el cuerpo, también el refresh token (para que no se pueda
+    pedir otro access token con él)."""
+    actual = get_jwt()
+    sesiones.revocar_token(actual, "logout")
+
+    refresh_token = (request.get_json(silent=True) or {}).get("refresh_token")
+    if refresh_token:
+        try:
+            datos = decode_token(str(refresh_token))
+        except Exception:  # noqa: BLE001 — vencido o inválido: no hay nada que revocar
+            datos = None
+        # Solo se revoca si es un refresh token del mismo usuario.
+        if datos and datos.get("type") == "refresh" and datos.get("sub") == actual.get("sub"):
+            sesiones.revocar_token(datos, "logout")
+
+    db.session.commit()
+    return jsonify({"message": "Sesión cerrada"}), 200
+
+
+@auth_bp.post("/logout-all")
+@jwt_required()
+def logout_all():
+    """Cierra la sesión en todos los dispositivos: ningún token emitido hasta
+    ahora (access o refresh) vuelve a servir."""
+    user = User.query.get(get_jwt_identity())
+    if user is None:
+        return jsonify({"error": "Not Found", "message": "Usuario no encontrado", "status_code": 404}), 404
+    sesiones.invalidar_sesiones_de(user)
+    sesiones.revocar_token(get_jwt(), "logout_all")
+    db.session.commit()
+    return jsonify({"message": "Se cerraron todas las sesiones"}), 200
 
 
 @auth_bp.get("/me")
@@ -334,6 +381,7 @@ def change_password(validated_body: ChangePasswordRequest):
         return jsonify({"error": "Unauthorized", "message": "Contraseña actual incorrecta", "status_code": 401}), 401
 
     user.password_hash = generate_password_hash(new_password)
+    sesiones.invalidar_sesiones_de(user)
     db.session.commit()
     _invalidar_sesiones(user)
 
@@ -417,6 +465,7 @@ def reset_password(validated_body: ResetPasswordRequest):
     user.reset_code = None
     user.reset_code_expires_at = None
     user.reset_attempts = 0
+    sesiones.invalidar_sesiones_de(user)
     db.session.commit()
     _invalidar_sesiones(user)
 

@@ -10,12 +10,13 @@ from flask import Blueprint, jsonify, request
 
 from app import db
 from app.models import (
-    AgenteUsoTokens, Article, CommunityComment, CommunityLike, CommunityPost, Consultation, Course,
+    AgenteUsoTokens, Article, AuditLog, CommunityComment, CommunityLike, CommunityPost, Consultation, Course,
     FeedbackBiblioteca, FeedbackCasos, FeedbackHistorial,
     FeedbackInicio, Student, Teacher, User, UserFile,
     ValidacionBiblioteca, ValidacionCasos, ValidacionHistorial, ValidacionInicio,
 )
 from app.schemas import ActualizarUsuarioRequest, validate_body
+from app.services import auditoria, paginacion, sesiones
 from app.utils import get_current_user, role_required
 
 admin_bp = Blueprint("admin", __name__)
@@ -130,6 +131,13 @@ def actualizar_usuario(user_id, validated_body: ActualizarUsuarioRequest):
     if validated_body.activo is not None:
         if es_uno_mismo and not validated_body.activo:
             return _error(400, "No puedes desactivar tu propia cuenta.")
+        if bool(usuario.activo) != bool(validated_body.activo):
+            auditoria.registrar(
+                auditoria.USER_ACTIVE_CHANGE, "user", usuario.id,
+                old={"activo": bool(usuario.activo)}, new={"activo": bool(validated_body.activo)},
+            )
+            # Desactivar (o reactivar) corta todas las sesiones que tuviera abiertas.
+            sesiones.invalidar_sesiones_de(usuario)
         usuario.activo = validated_body.activo
 
     if validated_body.role is not None:
@@ -149,6 +157,11 @@ def actualizar_usuario(user_id, validated_body: ActualizarUsuarioRequest):
             elif nuevo_rol == "TEACHER" and Teacher.query.get(usuario.id) is None:
                 db.session.add(Teacher(user_id=usuario.id))
             usuario.role = nuevo_rol
+            auditoria.registrar(
+                auditoria.USER_ROLE_CHANGE, "user", usuario.id, old={"role": rol_anterior}, new={"role": nuevo_rol},
+            )
+            # Los tokens que tenía llevan el rol anterior: dejan de servir ya.
+            sesiones.invalidar_sesiones_de(usuario)
 
     db.session.commit()
     return jsonify({"usuario": usuario.to_dict()}), 200
@@ -158,12 +171,29 @@ def actualizar_usuario(user_id, validated_body: ActualizarUsuarioRequest):
 @role_required("ADMIN")
 def listar_posts_admin():
     posts = CommunityPost.query.order_by(CommunityPost.created_at.desc()).limit(200).all()
+    # Autores, likes y comentarios de todos los posts en tres consultas
+    # agrupadas (antes eran tres consultas por post: hasta 600).
+    post_ids = [p.id for p in posts]
+    autores, likes, comentarios = {}, {}, {}
+    if posts:
+        autores = {str(u.id): u for u in User.query.filter(User.id.in_({p.author_id for p in posts})).all()}
+        likes = {
+            str(post_id): total for post_id, total in
+            db.session.query(CommunityLike.post_id, db.func.count()).filter(CommunityLike.post_id.in_(post_ids))
+            .group_by(CommunityLike.post_id).all()
+        }
+        comentarios = {
+            str(post_id): total for post_id, total in
+            db.session.query(CommunityComment.post_id, db.func.count()).filter(CommunityComment.post_id.in_(post_ids))
+            .group_by(CommunityComment.post_id).all()
+        }
+
     resultado = []
     for p in posts:
-        autor = User.query.get(p.author_id)
+        autor = autores.get(str(p.author_id))
         d = p.to_dict(
-            like_count=CommunityLike.query.filter_by(post_id=p.id).count(),
-            comment_count=CommunityComment.query.filter_by(post_id=p.id).count(),
+            like_count=likes.get(str(p.id), 0),
+            comment_count=comentarios.get(str(p.id), 0),
         )
         d["author_name"] = f"{autor.first_name} {autor.last_name}" if autor else "Usuario"
         d["author_email"] = autor.email if autor else None
@@ -219,6 +249,33 @@ def listar_feedback_admin(pestana):
         return _error(404, "Pestaña no válida.")
     filas = modelo.query.order_by(modelo.created_at.desc()).limit(200).all()
     return jsonify({"respuestas": [_fila_a_dict(f) for f in filas]}), 200
+
+
+@admin_bp.get("/auditoria")
+@role_required("ADMIN")
+def listar_auditoria():
+    """Registro de auditoría, del más reciente al más viejo. Filtros
+    opcionales: action, entity_type, entity_id, user_id."""
+    query = AuditLog.query
+    for campo in ("action", "entity_type", "entity_id"):
+        valor = (request.args.get(campo) or "").strip()
+        if valor:
+            query = query.filter(getattr(AuditLog, campo) == valor)
+    user_id = (request.args.get("user_id") or "").strip()
+    if user_id:
+        try:
+            query = query.filter(AuditLog.user_id == uuid.UUID(user_id))
+        except ValueError:
+            return _error(400, "user_id inválido.")
+
+    page, per_page = paginacion.parametros()
+    filas, total = paginacion.paginar(query.order_by(AuditLog.created_at.desc(), AuditLog.id.asc()), page, per_page)
+    autor_ids = {f.user_id for f in filas if f.user_id}
+    autores = {str(u.id): u for u in User.query.filter(User.id.in_(autor_ids)).all()} if autor_ids else {}
+    return jsonify({
+        "registros": [f.to_dict(usuario=autores.get(str(f.user_id))) for f in filas],
+        **paginacion.meta(total, page, per_page),
+    }), 200
 
 
 @admin_bp.get("/validacion/<pestana>")

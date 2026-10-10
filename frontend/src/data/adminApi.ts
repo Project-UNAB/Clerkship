@@ -10,6 +10,8 @@ export interface AdminUsuario {
   role: string;
   email_verified: boolean;
   activo: boolean;
+  avatar_svg?: string | null;
+  mailbox_created?: boolean;
 }
 
 export interface Estadisticas {

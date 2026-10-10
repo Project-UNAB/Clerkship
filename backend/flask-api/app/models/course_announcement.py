@@ -19,11 +19,15 @@ class CourseAnnouncement(db.Model):
     title = db.Column(db.String(200), nullable=False)
     body = db.Column(db.Text, nullable=False)
     pinned = db.Column(db.Boolean, nullable=False, default=False)
-    created_at = db.Column(db.DateTime, server_default=func.now())
-    updated_at = db.Column(db.DateTime, server_default=func.now())
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     def to_dict(self, author=None, comment_count=0):
-        created = self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None
+        created = (
+            (self.created_at.astimezone(timezone.utc) if self.created_at.tzinfo else self.created_at.replace(tzinfo=timezone.utc)).isoformat()
+            if self.created_at
+            else None
+        )
         return {
             "id": str(self.id),
             "course_id": str(self.course_id),

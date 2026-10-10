@@ -45,17 +45,22 @@ class HealthResponse(BaseSchema):
     databases: DatabaseStatus
 
 
-def validate_body(schema_cls: type[BaseModel]):
+def validate_body(schema_cls: type[BaseModel], multipart: bool = False):
     """
     Flask route decorator to validate request JSON body against a Pydantic schema.
     If validation passes, injects `validated_body` as a keyword argument into the route handler.
     If validation fails, returns a standardized 400 Bad Request JSON response.
+
+    Con `multipart=True` la ruta también acepta multipart/form-data: los campos
+    de texto del formulario se validan contra el mismo schema y los archivos
+    quedan en `request.files` para que la ruta los procese.
     """
 
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            if request.content_length and request.content_length > 0 and not request.is_json:
+            es_formulario = multipart and request.mimetype == "multipart/form-data"
+            if not es_formulario and request.content_length and request.content_length > 0 and not request.is_json:
                 return (
                     jsonify(
                         {
@@ -67,8 +72,8 @@ def validate_body(schema_cls: type[BaseModel]):
                     400,
                 )
 
-            data = request.get_json(silent=True)
-            if data is None and request.data and len(request.data.strip()) > 0:
+            data = request.form.to_dict() if es_formulario else request.get_json(silent=True)
+            if not es_formulario and data is None and request.data and len(request.data.strip()) > 0:
                 return (
                     jsonify(
                         {

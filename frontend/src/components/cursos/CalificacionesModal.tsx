@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { X, Loader2, ClipboardList, HelpCircle } from 'lucide-react';
+import { X, Loader2, ClipboardList, HelpCircle, Download } from 'lucide-react';
 import {
-  obtenerCalificaciones, obtenerMisCalificaciones,
+  exportarCalificaciones, obtenerCalificaciones, obtenerMisCalificaciones,
   type LibroCalificaciones, type MisCalificaciones,
 } from '../../data/cursoCalificacionesApi';
 
@@ -23,6 +23,19 @@ export default function CalificacionesModal({ courseId, esDocente, onClose }: Pr
   const [mias, setMias] = useState<MisCalificaciones | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exportando, setExportando] = useState<'csv' | 'xlsx' | null>(null);
+
+  async function handleExportar(formato: 'csv' | 'xlsx') {
+    setExportando(formato);
+    setError(null);
+    try {
+      await exportarCalificaciones(courseId, formato);
+    } catch (err: any) {
+      setError(err?.message || 'No se pudo exportar el libro de calificaciones.');
+    } finally {
+      setExportando(null);
+    }
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -46,6 +59,21 @@ export default function CalificacionesModal({ courseId, esDocente, onClose }: Pr
         <div className="ccv-modal-body" style={{ padding: '14px 18px' }}>
           {loading && <Loader2 size={20} className="dfm-spin" />}
           {error && <p className="ccv-form-error">{error}</p>}
+
+          {!loading && esDocente && libro && libro.items.length > 0 && (
+            <div className="ccv-exportar">
+              <span>Descargar el libro completo:</span>
+              {(['xlsx', 'csv'] as const).map(formato => (
+                <button
+                  key={formato} type="button" className="ccv-btn-secondary"
+                  onClick={() => handleExportar(formato)} disabled={exportando !== null}
+                >
+                  {exportando === formato ? <Loader2 size={14} className="dfm-spin" /> : <Download size={14} />}
+                  {formato === 'xlsx' ? 'Excel (.xlsx)' : 'CSV'}
+                </button>
+              ))}
+            </div>
+          )}
 
           {!loading && esDocente && libro && (
             libro.items.length === 0 ? (

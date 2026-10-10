@@ -125,9 +125,9 @@ export function getAccessToken(): string | null {
 }
 
 /**
- * El access_token dura poco (60 min por defecto, ver JWT_ACCESS_TOKEN_EXPIRES_MINUTES
+ * El access_token dura poco (15 min por defecto, ver JWT_ACCESS_TOKEN_EXPIRES_MINUTES
  * en el .env de flask-api) — es a propósito, por seguridad. Esta función lo renueva
- * usando el refresh_token (dura mucho más, 30 días por defecto), sin pedirle
+ * usando el refresh_token (dura más, 7 días por defecto), sin pedirle
  * contraseña de nuevo al usuario. La llama apiClient.ts automáticamente cuando
  * un pedido responde 401.
  */
@@ -170,6 +170,44 @@ export function clearMainAuthSession() {
   localStorage.removeItem('clerkship_auth');
   localStorage.removeItem('clerkship_user_email');
   window.dispatchEvent(new Event(MAIN_AUTH_CHANGED_EVENT));
+}
+
+/**
+ * Cierra la sesión también en el servidor: revoca el access token y el
+ * refresh token para que no sirvan aunque alguien los haya copiado. Se
+ * toman los tokens ANTES de limpiar el navegador y la revocación corre en
+ * segundo plano: salir nunca espera a la red.
+ */
+export function logoutMainSession() {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.accessToken);
+  const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken);
+  clearMainAuthSession();
+  if (!accessToken && !refreshToken) return;
+
+  const revocar = (access: string) => fetch(`${API_BASE_URL}/api/auth/logout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${access}` },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+    keepalive: true,
+  });
+
+  (async () => {
+    try {
+      const res = accessToken ? await revocar(accessToken) : null;
+      if ((res === null || res.status === 401) && refreshToken) {
+        // El access token ya había vencido: se pide uno nuevo solo para poder
+        // revocar el refresh token, que es el que dura días.
+        const renovado = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${refreshToken}` },
+        });
+        const data = await renovado.json().catch(() => null);
+        if (renovado.ok && data?.access_token) await revocar(data.access_token);
+      }
+    } catch {
+      // Sin red: los tokens vencen solos (el de acceso, en minutos).
+    }
+  })();
 }
 
 function authedHeaders(): HeadersInit {

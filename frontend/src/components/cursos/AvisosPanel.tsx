@@ -3,6 +3,7 @@ import { Megaphone, Pin, Plus, Pencil, Trash2, MessageCircle, Loader2 } from 'lu
 import { listarAvisos, borrarAviso, type CourseAnnouncement } from '../../data/cursoAvisosApi';
 import CrearAvisoModal from './CrearAvisoModal';
 import AvisoDetalleModal from './AvisoDetalleModal';
+import { formatFecha as formatFechaColombia } from '../../utils/fechas';
 
 interface Props {
   courseId: string;
@@ -11,7 +12,7 @@ interface Props {
 
 function formatFecha(iso: string | null) {
   if (!iso) return '';
-  return new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+  return formatFechaColombia(iso);
 }
 
 export default function AvisosPanel({ courseId, esDocente }: Props) {

@@ -1,6 +1,7 @@
 import os
+import uuid
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
@@ -8,6 +9,7 @@ from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from pymongo import MongoClient
 from sqlalchemy import text
+from werkzeug.exceptions import HTTPException
 
 from app.config import Config
 
@@ -36,7 +38,7 @@ def create_app():
             raise RuntimeError("En producción JWT_SECRET_KEY debe existir y tener al menos 32 caracteres.")
         if not app.config.get("MAILGUN_API_KEY") or not app.config.get("MAILGUN_DOMAIN"):
             raise RuntimeError("En producción MAILGUN_API_KEY y MAILGUN_DOMAIN son obligatorios.")
-        if not os.environ.get("CORS_ORIGINS"):
+        if not os.environ.get("CORS_ORIGINS") or not app.config["CORS_ORIGINS"]:
             raise RuntimeError("En producción CORS_ORIGINS debe listar explícitamente los orígenes del frontend.")
 
     # Detrás de un proxy (hosting), la IP real del cliente viene en X-Forwarded-For.
@@ -50,14 +52,77 @@ def create_app():
 
     @jwt.token_in_blocklist_loader
     def _sesion_invalidada(_header, payload):
-        """Un cambio/recuperación de contraseña invalida los tokens emitidos antes.
-        La marca vive en Mongo (colección user_security), sin cambiar el esquema SQL."""
+        """Corre en CADA petición autenticada. El token se rechaza si fue
+        revocado (logout), si es anterior al corte de sesiones del usuario
+        (cambio de rol o de contraseña), si la cuenta está desactivada o si
+        el rol del token ya no es el de la base. Ver app/services/sesiones.py."""
+        from app.services import sesiones
+
+        if sesiones.token_revocado(payload):
+            return True
+        # Marca anterior, en Mongo (colección user_security): se sigue
+        # respetando para los cortes hechos antes de users.tokens_valid_after.
         if mongo_client is None:
             return False
         doc = mongo_client[Config.MONGODB_DB_NAME]["user_security"].find_one({"user_id": payload.get("sub")})
         return bool(doc) and payload.get("iat", 0) < doc.get("sessions_valid_after", 0)
+
+    def _no_autorizado(mensaje):
+        return jsonify({"error": "Unauthorized", "message": mensaje, "status_code": 401}), 401
+
+    # Respuestas de sesión inválida: siempre el mismo formato y sin decir por
+    # qué falló la firma ni qué había dentro del token.
+    @jwt.revoked_token_loader
+    def _token_revocado(_header, _payload):
+        return _no_autorizado("La sesión ya no es válida. Inicia sesión de nuevo.")
+
+    @jwt.expired_token_loader
+    def _token_vencido(_header, _payload):
+        return _no_autorizado("La sesión venció. Inicia sesión de nuevo.")
+
+    @jwt.invalid_token_loader
+    def _token_invalido(_motivo):
+        return _no_autorizado("Token inválido.")
+
+    @jwt.unauthorized_loader
+    def _sin_token(_motivo):
+        return _no_autorizado("Falta el token de autenticación.")
+
     limiter.init_app(app)
-    CORS(app, origins=app.config["CORS_ORIGINS"], supports_credentials=True)
+    if app.config["FLASK_ENV"] == "testing":
+        limiter.enabled = False
+    # CORS solo para la API, solo desde los orígenes del frontend y solo con
+    # lo que el frontend usa. La sesión viaja en la cabecera Authorization
+    # (no en cookies), así que no hacen falta credenciales entre orígenes.
+    CORS(
+        app,
+        resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}},
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+        # Content-Disposition: para que el frontend lea el nombre del archivo al exportar calificaciones.
+        expose_headers=[
+            "Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset", "Content-Disposition",
+        ],
+        supports_credentials=False,
+        max_age=600,
+    )
+
+    @app.after_request
+    def _cabeceras_de_seguridad(response):
+        """Cabeceras defensivas en todas las respuestas."""
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        if request.path.startswith("/api/") and not request.path.startswith("/api/docs"):
+            # La API solo devuelve datos: nada de ahí se ejecuta ni se enmarca,
+            # y ningún intermediario debe guardar respuestas con datos de usuarios.
+            response.headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+            response.headers.setdefault("Cache-Control", "no-store")
+        if app.config["FLASK_ENV"] == "production":
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        return response
 
     if mongo_client is None and app.config["MONGODB_URI"]:
         mongo_client = MongoClient(app.config["MONGODB_URI"])
@@ -70,19 +135,23 @@ def create_app():
 
         # Verificar conexión con PostgreSQL
         if app.config.get("SQLALCHEMY_DATABASE_URI"):
+            # El detalle del fallo va al log: este endpoint es público y el
+            # mensaje del driver trae host, usuario y nombre de la base.
             try:
                 db.session.execute(text("SELECT 1"))
                 db_status = "connected"
-            except Exception as e:
-                db_status = f"error: {str(e)[:80]}"
+            except Exception:
+                app.logger.error("health: PostgreSQL no responde", exc_info=True)
+                db_status = "error"
 
         # Verificar conexión con MongoDB
         if mongo_client:
             try:
                 mongo_client.admin.command("ping")
                 mongo_status = "connected"
-            except Exception as e:
-                mongo_status = f"error: {str(e)[:80]}"
+            except Exception:
+                app.logger.error("health: MongoDB no responde", exc_info=True)
+                mongo_status = "error"
 
         is_healthy = db_status in ("connected", "unconfigured") and mongo_status in ("connected", "unconfigured")
 
@@ -122,13 +191,47 @@ def create_app():
             "status_code": 405
         }), 405
 
-    @app.errorhandler(500)
-    def internal_server_error(error):
+    @app.errorhandler(429)
+    def too_many_requests(error):
+        """Límite de peticiones superado (Flask-Limiter). Retry-After lo agrega el limitador."""
+        return jsonify({
+            "error": "Too Many Requests",
+            "message": "Demasiados intentos. Espera un momento antes de volver a intentarlo.",
+            "status_code": 429
+        }), 429
+
+    @app.errorhandler(HTTPException)
+    def error_http(error):
+        """Cualquier otro error HTTP (401, 403, 413, 415...): mismo formato JSON,
+        con el nombre estándar del error y sin el HTML por defecto de Werkzeug."""
+        codigo = error.code or 500
+        if codigo >= 500:
+            return _error_interno(error)
+        return jsonify({
+            "error": error.name,
+            "message": "No se pudo procesar la solicitud.",
+            "status_code": codigo
+        }), codigo
+
+    def _error_interno(error):
+        """El detalle (traza, SQL, rutas del servidor) va al log con un
+        identificador; al cliente solo le llega ese identificador."""
+        error_id = uuid.uuid4().hex[:12]
+        app.logger.error("Error interno %s en %s %s", error_id, request.method, request.path, exc_info=error)
         return jsonify({
             "error": "Internal Server Error",
             "message": "Ocurrió un error interno en el servidor.",
-            "status_code": 500
+            "status_code": 500,
+            "error_id": error_id
         }), 500
+
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        return _error_interno(getattr(error, "original_exception", None) or error)
+
+    @app.errorhandler(Exception)
+    def error_no_controlado(error):
+        return _error_interno(error)
 
     from app.routes.auth import auth_bp
     from app.routes.usuarios import usuarios_bp
@@ -148,6 +251,7 @@ def create_app():
     from app.routes.almacenamiento import almacenamiento_bp
     from app.routes.validacion import validacion_bp
     from app.routes.admin import admin_bp
+    from app.routes.notificaciones import notificaciones_bp
     from app.routes.docs import docs_bp, swagger_ui
     from app.routes.simulador import simulador_bp
 
@@ -169,6 +273,7 @@ def create_app():
     app.register_blueprint(almacenamiento_bp, url_prefix="/api/almacenamiento")
     app.register_blueprint(validacion_bp, url_prefix="/api/validacion")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(notificaciones_bp, url_prefix="/api/notificaciones")
     if app.config["FLASK_ENV"] != "production":
         app.register_blueprint(docs_bp, url_prefix="/api")
     # Consola de desarrollo del simulador: nunca en producción.
@@ -178,6 +283,31 @@ def create_app():
     # Acceso directo en /docs también
     if app.config["FLASK_ENV"] != "production":
         app.add_url_rule("/docs", endpoint="root_docs", view_func=swagger_ui)
+
+    @app.cli.command("notificar-vencimientos")
+    def notificar_vencimientos():
+        """Recordatorio de "cierra en 24 h" a quienes no han entregado. Para
+        correr cada hora (cron); no repite el aviso a quien ya lo recibió."""
+        from app.services import notificaciones
+
+        resumen = notificaciones.recordar_vencimientos()
+        print(f"Tareas por cerrar: {resumen['tareas']} · recordatorios enviados: {resumen['notificaciones']}")
+
+    @app.cli.command("limpiar-tokens")
+    def limpiar_tokens():
+        """Borra de la lista de revocación los tokens que ya vencieron solos."""
+        from app.services import sesiones
+
+        print(f"Tokens revocados ya vencidos que se borraron: {sesiones.limpiar_vencidos()}")
+
+    @app.cli.command("limpiar-archivos")
+    def limpiar_archivos():
+        """Reintenta borrar de R2 los archivos que quedaron pendientes
+        (pending_file_deletions). Para correr a mano o desde un cron."""
+        from app.services import limpieza_r2
+
+        resumen = limpieza_r2.procesar(limite=1000)
+        print(f"Borrados: {resumen['borrados']} · siguen pendientes: {resumen['fallidos']}")
 
     @app.cli.command("seed-mock")
     def run_seed_mock():

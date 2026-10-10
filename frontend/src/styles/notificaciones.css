@@ -1,0 +1,165 @@
+/* Campana de notificaciones y su panel. */
+.noti-campana {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink2, #475569);
+  cursor: pointer;
+}
+.noti-campana:hover { background: rgba(226, 232, 240, 0.8); color: var(--ink, #0f172a); }
+.noti-campana:focus-visible { outline: 2px solid #0284c7; outline-offset: 2px; }
+[data-theme="dark"] .noti-campana { color: #94a3b8; }
+[data-theme="dark"] .noti-campana:hover { background: rgba(255, 255, 255, 0.08); color: #f8fafc; }
+
+.noti-globo {
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}
+
+.noti-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.25);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 56px 16px 16px;
+}
+.noti-panel {
+  width: min(380px, 100%);
+  max-height: min(560px, calc(100vh - 80px));
+  display: flex;
+  flex-direction: column;
+  background: var(--surface, #fff);
+  color: var(--ink, #0f172a);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+}
+.noti-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+.noti-cabecera h3 { margin: 0; font-size: 15px; font-weight: 800; }
+.noti-cabecera-acciones { display: flex; align-items: center; gap: 8px; }
+.noti-enlace {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: #0284c7;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.noti-enlace:hover { text-decoration: underline; }
+.noti-cerrar {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink2, #475569);
+  cursor: pointer;
+}
+.noti-cerrar:hover { background: var(--surface2, #f1f5f9); }
+
+.noti-lista { flex: 1; overflow-y: auto; min-height: 80px; }
+.noti-vacio { margin: 0; padding: 26px 16px; text-align: center; font-size: 13px; color: var(--ink3, #64748b); }
+.noti-error { margin: 0; padding: 14px 16px; font-size: 13px; color: #dc2626; }
+
+.noti-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.noti-item:last-child { border-bottom: 0; }
+.noti-item:hover { background: var(--surface2, #f8fafc); }
+.noti-item.is-nueva { background: rgba(2, 132, 199, 0.06); }
+.noti-item.is-nueva .noti-titulo { font-weight: 800; }
+
+.noti-icono {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+.noti-icono-assignment_graded { background: rgba(5, 150, 105, 0.12); color: #059669; }
+.noti-icono-due_soon { background: rgba(217, 119, 6, 0.14); color: #b45309; }
+.noti-icono-announcement { background: rgba(124, 58, 237, 0.12); color: #7c3aed; }
+
+.noti-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.noti-titulo { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.noti-cuerpo { font-size: 12px; color: var(--ink2, #475569); overflow-wrap: anywhere; }
+.noti-fecha { font-size: 11px; color: var(--ink3, #64748b); }
+.noti-punto { width: 8px; height: 8px; margin-top: 6px; flex-shrink: 0; border-radius: 50%; background: #0284c7; }
+
+.noti-pie { border-top: 1px solid var(--border, #e2e8f0); padding: 8px 10px; }
+.noti-preferencia {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.noti-preferencia:hover { background: var(--surface2, #f1f5f9); }
+
+@media (max-width: 1024px) {
+  .noti-fondo { justify-content: flex-end; padding-top: 62px; }
+}
+
+/* En la barra superior del celular la campana va pegada al botón del menú. */
+.noti-campana-movil { margin-left: auto; margin-right: 6px; }
+
+/* En la cabecera de la barra lateral: la campana a la derecha, junto al botón de colapsar. */
+.sb-head-expanded .noti-campana { margin-left: auto; margin-right: 2px; }

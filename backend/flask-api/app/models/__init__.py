@@ -3,9 +3,15 @@ from app.models.student import Student
 from app.models.teacher import Teacher
 from app.models.course import Course
 from app.models.student_course import StudentCourse
+from app.models.enrollment_request import EnrollmentRequest
 from app.models.course_block import CourseBlock
 from app.models.course_content_item import CourseContentItem
 from app.models.assignment_submission import AssignmentSubmission
+from app.models.submission_file import SubmissionFile
+from app.models.pending_file_deletion import PendingFileDeletion
+from app.models.audit_log import AuditLog
+from app.models.revoked_token import RevokedToken
+from app.models.notification import Notification
 from app.models.course_announcement import CourseAnnouncement
 from app.models.course_announcement_comment import CourseAnnouncementComment
 from app.models.quiz_question import QuizQuestion
@@ -44,6 +50,12 @@ __all__ = [
     "Teacher",
     "Course",
     "StudentCourse",
+    "EnrollmentRequest",
+    "SubmissionFile",
+    "PendingFileDeletion",
+    "AuditLog",
+    "RevokedToken",
+    "Notification",
     "CourseBlock",
     "CourseContentItem",
     "AssignmentSubmission",

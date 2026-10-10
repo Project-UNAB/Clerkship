@@ -118,10 +118,74 @@ def test_actualizar_curso_rechaza_rol_estudiante(app, client):
     assert res.status_code == 403
 
 
+def test_mis_fechas_requiere_sesion(client):
+    res = client.get("/api/cursos/mis-fechas")
+    assert res.status_code == 401
+
+
+def test_mis_fechas_devuelve_lista_vacia_sin_cursos(app, client, monkeypatch):
+    with app.app_context():
+        monkeypatch.setattr(cursos_routes, "get_current_user", lambda: SimpleNamespace(id=uuid.uuid4(), role="STUDENT"))
+        monkeypatch.setattr(
+            cursos_routes.StudentCourse, "query",
+            SimpleNamespace(filter_by=lambda **kw: SimpleNamespace(all=lambda: [])),
+        )
+    headers = {"Authorization": f"Bearer {_token(app, 'STUDENT')}"}
+    res = client.get("/api/cursos/mis-fechas", headers=headers)
+    assert res.status_code == 200
+    assert res.get_json() == {"fechas": []}
+
+
+def test_mis_fechas_devuelve_items_con_due_at(app, client, monkeypatch):
+    from datetime import datetime, timezone
+    docente_id = uuid.uuid4()
+    curso_id = uuid.uuid4()
+    curso = SimpleNamespace(id=curso_id, teacher_id=docente_id, name="Gastro I")
+    bloque_id = uuid.uuid4()
+    bloque = SimpleNamespace(id=bloque_id, course_id=curso_id)
+    due = datetime(2026, 11, 15, 23, 59, tzinfo=timezone.utc)
+    item = SimpleNamespace(id=uuid.uuid4(), block_id=bloque_id, title="Caso 1", type="ASSIGNMENT", due_at=due, open_at=None)
+
+    with app.app_context():
+        monkeypatch.setattr(cursos_routes, "get_current_user", lambda: SimpleNamespace(id=docente_id, role="TEACHER"))
+        monkeypatch.setattr(
+            cursos_routes.Course, "query",
+            SimpleNamespace(
+                filter_by=lambda **kw: SimpleNamespace(all=lambda: [curso]),
+                filter=lambda *a: SimpleNamespace(all=lambda: [curso]),
+            ),
+        )
+        monkeypatch.setattr(
+            cursos_routes.CourseBlock, "query",
+            SimpleNamespace(filter=lambda *a: SimpleNamespace(all=lambda: [bloque])),
+        )
+        monkeypatch.setattr(
+            cursos_routes.CourseContentItem, "query",
+            SimpleNamespace(
+                join=lambda *a: SimpleNamespace(
+                    filter=lambda *a2: SimpleNamespace(
+                        order_by=lambda *a3: SimpleNamespace(all=lambda: [item])
+                    )
+                )
+            ),
+        )
+
+    headers = {"Authorization": f"Bearer {_token(app, 'TEACHER', identity=str(docente_id))}"}
+    res = client.get("/api/cursos/mis-fechas", headers=headers)
+    assert res.status_code == 200
+    body = res.get_json()
+    assert len(body["fechas"]) == 1
+    fecha = body["fechas"][0]
+    assert fecha["title"] == "Caso 1"
+    assert fecha["type"] == "ASSIGNMENT"
+    assert fecha["course_name"] == "Gastro I"
+    assert "2026-11-15" in fecha["due_at"]
+
+
 def test_actualizar_curso_rechaza_docente_que_no_es_dueno(app, client, monkeypatch):
     curso_falso = SimpleNamespace(id=uuid.uuid4(), teacher_id=uuid.uuid4())
     with app.app_context():
-        monkeypatch.setattr(cursos_routes, "get_current_user", lambda: SimpleNamespace(id=uuid.uuid4()))
+        monkeypatch.setattr(cursos_routes, "get_current_user", lambda: SimpleNamespace(id=uuid.uuid4(), role="TEACHER"))
         monkeypatch.setattr(cursos_routes.Course, "query", SimpleNamespace(get=lambda _id: curso_falso))
     headers = {"Authorization": f"Bearer {_token(app, 'TEACHER')}"}
     res = client.patch(f"/api/cursos/{curso_falso.id}", json={"name": "Nuevo"}, headers=headers)
@@ -130,13 +194,15 @@ def test_actualizar_curso_rechaza_docente_que_no_es_dueno(app, client, monkeypat
 
 def test_actualizar_curso_exitoso_sanitiza_descripcion(app, client, monkeypatch):
     docente_id = uuid.uuid4()
-    curso = SimpleNamespace(id=uuid.uuid4(), teacher_id=docente_id, name="Viejo", description=None, academic_period=None)
+    curso = SimpleNamespace(
+        id=uuid.uuid4(), teacher_id=docente_id, name="Viejo", description=None, academic_period=None, cover_image_key=None,
+    )
     curso.to_dict = lambda: {
         "id": str(curso.id), "teacher_id": str(curso.teacher_id),
         "name": curso.name, "description": curso.description, "academic_period": curso.academic_period,
     }
     with app.app_context():
-        monkeypatch.setattr(cursos_routes, "get_current_user", lambda: SimpleNamespace(id=docente_id))
+        monkeypatch.setattr(cursos_routes, "get_current_user", lambda: SimpleNamespace(id=docente_id, role="TEACHER"))
         monkeypatch.setattr(cursos_routes.Course, "query", SimpleNamespace(get=lambda _id: curso))
         monkeypatch.setattr(cursos_routes.db.session, "commit", lambda: None)
 

@@ -19,7 +19,7 @@ export default function PublicarEnBibliotecaModal({ doc, onClose, onPublish }: P
 
   async function handleSave() {
     if (!titulo.trim()) {
-      setError('Ponele un título al recurso.');
+      setError('Asigna un título al recurso.');
       return;
     }
     setSaving(true);
@@ -57,7 +57,7 @@ export default function PublicarEnBibliotecaModal({ doc, onClose, onPublish }: P
         </div>
 
         <p className="dfm-label" style={{ fontWeight: 400 }}>
-          Se publica <strong>{doc.name}</strong>. Cualquier estudiante va a poder verlo en Biblioteca.
+          Se publicará <strong>{doc.name}</strong>. Cualquier estudiante podrá consultarlo en la Biblioteca.
         </p>
 
         <label className="dfm-label">Título del recurso</label>

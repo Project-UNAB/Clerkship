@@ -35,7 +35,7 @@ export default function UploadDocumentModal({ folders, defaultFolderId, onClose,
 
   async function handleConfirm() {
     if (!picked) {
-      setError('Elegí un archivo primero.');
+      setError('Selecciona un archivo primero.');
       return;
     }
     setUploading(true);
@@ -83,7 +83,7 @@ export default function UploadDocumentModal({ folders, defaultFolderId, onClose,
             disabled={reading}
           >
             {reading ? <Loader2 size={26} className="dfm-spin" /> : <UploadCloud size={26} />}
-            <span>{reading ? 'Leyendo...' : 'Hacé clic para elegir un archivo'}</span>
+            <span>{reading ? 'Leyendo...' : 'Haz clic para seleccionar un archivo'}</span>
           </button>
         ) : (
           <div className="dfm-picked-file">

@@ -114,7 +114,7 @@ function fmtDuracion(startIso: string | null, endIso: string | null): string | n
 
 /** Exporta las filas visibles (ya filtradas) a un CSV descargable — todo client-side. */
 function exportarCsv(filas: Consultation[]) {
-  const headers = ['Titulo', 'Subtema', 'Especialidad', 'Dificultad', 'Estado', 'Iniciado', 'Finalizado', 'Puntaje'];
+  const headers = ['Título', 'Subtema', 'Especialidad', 'Dificultad', 'Estado', 'Iniciado', 'Finalizado', 'Puntaje'];
   const escapar = (v: string) => `"${v.replace(/"/g, '""')}"`;
   const lineas = filas.map(s => [
     s.title, s.subtema || '', s.specialty, DIFFICULTY_LABEL[difficultyToNum(s.difficulty)],
@@ -588,7 +588,7 @@ export default function HistorialPage() {
             <div className="hist-th hist-th-diff">Dificultad</div>
             <div className="hist-th hist-th-date">Fecha de finalización</div>
             <div className="hist-th hist-th-time">Tiempo empleado</div>
-            <div className="hist-th hist-th-acc">Accuracy</div>
+            <div className="hist-th hist-th-acc">Precisión</div>
             <div className="hist-th hist-th-res">Resultado</div>
             <div className="hist-th hist-th-act">Acciones</div>
           </div>
@@ -600,7 +600,7 @@ export default function HistorialPage() {
               displayed.map((s, i) => <SessionRow key={s.id} s={s} delay={i * 0.05} onVerDetalle={setDetalleId} />)
             ) : (
               <div className="hist-empty-state">
-                <p>Todavía no completaste ninguna simulación clínica — andá a "Casos" para empezar una.</p>
+                <p>Aún no has completado ninguna simulación clínica — ve a «Casos» para iniciar una.</p>
               </div>
             )}
           </div>
@@ -647,19 +647,19 @@ export default function HistorialPage() {
             <div className="hist-fb-text">
               {recomendacion?.disponible ? (
                 <>
-                  <h4>Tu área más floja: {recomendacion.subtema}</h4>
+                  <h4>Área por reforzar: {recomendacion.subtema}</h4>
                   <p>
                     Promedio de {recomendacion.promedio}/100
                     {recomendacion.dimension_debil && (
                       <> — sobre todo en <strong>{recomendacion.dimension_debil.etiqueta}</strong> ({recomendacion.dimension_debil.promedio}/100)</>
                     )}
-                    . Practicá un caso nuevo de ese subtema para reforzar.
+                    . Practica un nuevo caso de este subtema para reforzar tu aprendizaje.
                   </p>
                 </>
               ) : (
                 <>
                   <h4>¿Quieres mejorar tu desempeño?</h4>
-                  <p>{recomendacion?.motivo || 'Completá más casos clínicos para que la recomendación se active.'}</p>
+                  <p>{recomendacion?.motivo ? recomendacion.motivo.replace(/\bCompletá\b/gi, 'Completa') : 'Completa más casos clínicos para activar las recomendaciones personalizadas.'}</p>
                 </>
               )}
             </div>

@@ -10,6 +10,7 @@ from flask_jwt_extended import jwt_required
 from app import db
 from app.models import Course, CourseAnnouncement, CourseAnnouncementComment, StudentCourse, User
 from app.schemas import ActualizarAvisoRequest, CrearAvisoRequest, CrearComentarioAvisoRequest, validate_body
+from app.services import notificaciones, paginacion
 from app.services.sanitize import sanitizar_html
 from app.utils import get_current_user, role_required
 
@@ -58,10 +59,12 @@ def listar_avisos(course_id):
     if not _puede_ver(user, course):
         return _forbidden()
 
-    avisos = (
+    page, per_page = paginacion.parametros()
+    avisos, total = paginacion.paginar(
         CourseAnnouncement.query.filter_by(course_id=course_id)
-        .order_by(CourseAnnouncement.pinned.desc(), CourseAnnouncement.created_at.desc())
-        .all()
+        # Fijados primero; el desempate por id deja el orden estable entre páginas.
+        .order_by(CourseAnnouncement.pinned.desc(), CourseAnnouncement.created_at.desc(), CourseAnnouncement.id.asc()),
+        page, per_page,
     )
 
     autor_ids = [a.author_id for a in avisos]
@@ -81,7 +84,8 @@ def listar_avisos(course_id):
         "avisos": [
             a.to_dict(author=autores.get(str(a.author_id)), comment_count=conteos.get(str(a.id), 0))
             for a in avisos
-        ]
+        ],
+        **paginacion.meta(total, page, per_page),
     }), 200
 
 
@@ -105,6 +109,8 @@ def crear_aviso(course_id, validated_body: CrearAvisoRequest):
     )
     db.session.add(aviso)
     db.session.commit()
+    # Después del commit y en su propia transacción: avisar no puede tumbar la publicación.
+    notificaciones.aviso_publicado(course, aviso)
 
     return jsonify(aviso.to_dict(author=user, comment_count=0)), 201
 

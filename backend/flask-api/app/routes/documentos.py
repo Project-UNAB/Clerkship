@@ -21,8 +21,8 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy import func
 
-from app import db, get_mongo_db, storage
-from app.services import conversion
+from app import db, get_mongo_db, limiter, storage
+from app.services import conversion, limites
 from app.models import DocumentFolder, UserFile
 from app.schemas import (
     CreateFolderRequest,
@@ -295,6 +295,7 @@ def listar_documentos():
 @documentos_bp.post("/documentos")
 @documentos_bp.post("/archivos")
 @jwt_required()
+@limiter.limit(limites.SUBIDA_MATERIAL, key_func=limites.usuario_o_ip)
 @validate_body(UploadDocumentRequest)
 def subir_documento(validated_body: UploadDocumentRequest):
     user = get_current_user()

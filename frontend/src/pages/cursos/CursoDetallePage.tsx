@@ -19,6 +19,8 @@ import ContenidoPreviewModal from '../../components/cursos/ContenidoPreviewModal
 import AvisosPanel from '../../components/cursos/AvisosPanel';
 import GestionarQuizModal from '../../components/cursos/GestionarQuizModal';
 import TomarQuizModal from '../../components/cursos/TomarQuizModal';
+import GestionarTareaModal from '../../components/cursos/GestionarTareaModal';
+import EntregarTareaModal from '../../components/cursos/EntregarTareaModal';
 import CalificacionesModal from '../../components/cursos/CalificacionesModal';
 import EditarCursoModal from '../../components/cursos/EditarCursoModal';
 import '../../styles/cursos.css';
@@ -62,12 +64,15 @@ export default function CursoDetallePage() {
   const [agregarContenidoEnBloque, setAgregarContenidoEnBloque] = useState<string | null>(null);
   const [itemPreview, setItemPreview] = useState<CourseContentItem | null>(null);
   const [quizItem, setQuizItem] = useState<{ item: CourseContentItem; blockId: string } | null>(null);
+  const [tareaItem, setTareaItem] = useState<{ item: CourseContentItem; blockId: string } | null>(null);
   const [calificacionesAbierto, setCalificacionesAbierto] = useState(false);
   const [editandoCurso, setEditandoCurso] = useState(false);
 
   function handleAbrirItem(item: CourseContentItem, blockId: string) {
     if (item.type === 'QUIZ') {
       setQuizItem({ item, blockId });
+    } else if (item.type === 'ASSIGNMENT') {
+      setTareaItem({ item, blockId });
     } else {
       setItemPreview(item);
     }
@@ -354,6 +359,20 @@ export default function CursoDetallePage() {
           <GestionarQuizModal courseId={id} blockId={quizItem.blockId} item={quizItem.item} onClose={() => setQuizItem(null)} />
         ) : (
           <TomarQuizModal courseId={id} blockId={quizItem.blockId} item={quizItem.item} onClose={() => setQuizItem(null)} />
+        )
+      )}
+
+      {tareaItem && id && (
+        esDocente ? (
+          <GestionarTareaModal
+            courseId={id}
+            blockId={tareaItem.blockId}
+            item={tareaItem.item}
+            onClose={() => setTareaItem(null)}
+            onSaved={cargar}
+          />
+        ) : (
+          <EntregarTareaModal courseId={id} blockId={tareaItem.blockId} item={tareaItem.item} onClose={() => setTareaItem(null)} />
         )
       )}
 
