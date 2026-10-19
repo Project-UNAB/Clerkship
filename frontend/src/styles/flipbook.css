@@ -1,0 +1,2211 @@
+/* ==========================================================================
+   Clerkship · Visor Flipbook 3D para Libros de Biblioteca
+   Efecto de pasar páginas (PageFlip/Turn.js + PDF.js Canvas)
+   ========================================================================== */
+
+/* ── Colores del visor: modo claro (fondo blanco) y modo oscuro ── */
+.fb-backdrop {
+  --fb-fondo: #FFFFFF;
+  --fb-texto: #0F172A;
+  --fb-texto-2: #64748B;
+  --fb-boton: #F1F5F9;
+  --fb-boton-hover: #E2E8F0;
+  --fb-boton-borde: #E2E8F0;
+  --fb-boton-borde-hover: #CBD5E1;
+  --fb-boton-texto: #334155;
+  --fb-boton-texto-hover: #0F172A;
+  --fb-barra: #FFFFFF;
+  --fb-barra-borde: #E2E8F0;
+  --fb-barra-sombra: 0 10px 25px rgba(15, 23, 42, 0.12);
+  --fb-campo: #F8FAFC;
+  --fb-acento: #0284C7;
+  --fb-cerrar: rgba(239, 68, 68, 0.10);
+  --fb-cerrar-borde: rgba(239, 68, 68, 0.30);
+  --fb-cerrar-texto: #DC2626;
+  --fb-sombra-libro: 0 14px 26px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
+  --fb-giro: rgba(15, 23, 42, 0.12);
+}
+[data-theme="dark"] .fb-backdrop {
+  --fb-fondo: radial-gradient(circle at 50% 30%, #0B1222 0%, #040711 100%);
+  --fb-texto: #F8FAFC;
+  --fb-texto-2: #94A3B8;
+  --fb-boton: rgba(30, 41, 59, 0.75);
+  --fb-boton-hover: rgba(51, 65, 85, 0.95);
+  --fb-boton-borde: rgba(255, 255, 255, 0.12);
+  --fb-boton-borde-hover: rgba(255, 255, 255, 0.25);
+  --fb-boton-texto: #E2E8F0;
+  --fb-boton-texto-hover: #FFFFFF;
+  --fb-barra: #0F172A;
+  --fb-barra-borde: rgba(255, 255, 255, 0.16);
+  --fb-barra-sombra: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --fb-campo: rgba(30, 41, 59, 0.8);
+  --fb-acento: #38BDF8;
+  --fb-cerrar: rgba(239, 68, 68, 0.18);
+  --fb-cerrar-borde: rgba(239, 68, 68, 0.35);
+  --fb-cerrar-texto: #FCA5A5;
+  --fb-sombra-libro: 0 14px 26px rgba(0, 0, 0, 0.5);
+  --fb-giro: rgba(255, 255, 255, 0.15);
+}
+
+/* Backdrop y Contenedor Principal a Pantalla Completa */
+.fb-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  /* Fondo sólido (sin backdrop-filter): no hay que difuminar la página de atrás. */
+  background: var(--fb-fondo);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  user-select: none;
+  animation: fbFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fbFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Mientras se descarga el código del visor (solo la primera vez). */
+.fb-cargando-visor {
+  justify-content: center;
+}
+
+/* Header Flotante Superior: transparente y por encima del libro, para que la hoja
+   que se levanta al pasar página se vea completa. Solo sus botones reciben clics. */
+.fb-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Título a la izquierda, controles en el centro y acciones a la derecha. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: transparent;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.fb-header-info,
+.fb-header-actions,
+.fb-toolbar {
+  pointer-events: auto;
+}
+
+.fb-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fb-header-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fb-texto);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.fb-header-author {
+  font-size: 0.82rem;
+  color: var(--fb-texto-2);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fb-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+  grid-column: 3;
+}
+
+.fb-header .fb-toolbar {
+  grid-column: 2;
+}
+
+.fb-icon-btn {
+  background: var(--fb-boton);
+  border: 1px solid var(--fb-boton-borde);
+  color: var(--fb-boton-texto);
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.fb-icon-btn:hover {
+  background: var(--fb-boton-hover);
+  color: var(--fb-boton-texto-hover);
+  border-color: var(--fb-boton-borde-hover);
+  transform: translateY(-1px);
+}
+
+.fb-icon-btn:active {
+  transform: translateY(0);
+}
+
+.fb-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+
+.fb-icon-btn:focus-visible,
+.fb-side-nav:focus-visible {
+  outline: 2px solid var(--fb-acento);
+  outline-offset: 2px;
+}
+
+.fb-close-btn {
+  background: var(--fb-cerrar);
+  border-color: var(--fb-cerrar-borde);
+  color: var(--fb-cerrar-texto);
+}
+
+.fb-close-btn:hover {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #FFFFFF;
+}
+
+/* Área Central de Visualización del Libro: ocupa toda la pantalla y no recorta,
+   así la animación de la hoja no se corta contra la cabecera ni la barra. */
+.fb-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  padding: 70px 66px 14px;
+}
+
+/* Antes el libro tenía `filter: drop-shadow`: el navegador volvía a calcular esa
+   sombra sobre todo el libro en cada cuadro de la animación. Ahora la sombra es de
+   cada página (box-shadow), que se dibuja una vez y se mueve con ella. */
+.fb-book-scaler {
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Envoltorio de cada página dentro de Turn / PageFlip */
+.fb-page-wrapper {
+  background-color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  /* Contención: el contenido de la página no obliga a recalcular el resto del libro. */
+  contain: layout size;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Permitir a PageFlip controlar libremente las matrices 3D sin !important */
+.stf__parent {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+}
+
+/* Sombra del lomo central (adentro) y sombra del libro sobre el fondo (afuera) */
+.fb-page-wrapper.fb-page-left {
+  box-shadow: inset -10px 0 16px -8px rgba(0, 0, 0, 0.14), var(--fb-sombra-libro);
+}
+
+.fb-page-wrapper.fb-page-right {
+  box-shadow: inset 10px 0 16px -8px rgba(0, 0, 0, 0.14), var(--fb-sombra-libro);
+}
+
+.fb-page-wrapper.fb-page-cover {
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.15), var(--fb-sombra-libro);
+}
+
+/* Contenido interno de la página */
+.fb-page-canvas-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  contain: strict;
+}
+
+.fb-page-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  contain: paint;
+}
+
+/* Placeholder de página no renderizada (Lazy Loading). La página del libro es
+   siempre de papel blanco, también en modo oscuro. */
+.fb-page-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #FAFAFA;
+  color: #94A3B8;
+  gap: 12px;
+  position: relative;
+}
+
+.fb-page-num-tag {
+  position: absolute;
+  bottom: 14px;
+  font-size: 0.76rem;
+  color: #94A3B8;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.fb-page-left .fb-page-num-tag {
+  left: 20px;
+}
+
+.fb-page-right .fb-page-num-tag {
+  right: 20px;
+}
+
+/* Flechas Flotantes Laterales */
+.fb-side-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--fb-barra);
+  border: 1px solid var(--fb-barra-borde);
+  color: var(--fb-texto);
+  box-shadow: var(--fb-barra-sombra);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 30;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.fb-side-nav:hover:not(:disabled) {
+  background: var(--fb-boton-hover);
+  border-color: var(--fb-boton-borde-hover);
+  transform: translateY(-50%) scale(1.06);
+}
+
+.fb-side-nav:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.fb-side-prev {
+  left: 16px;
+}
+
+.fb-side-next {
+  right: 16px;
+}
+
+/* Barra de controles: en el centro de la cabecera. */
+.fb-toolbar {
+  margin: 0;
+  padding: 5px 12px;
+  background: var(--fb-barra);
+  border: 1px solid var(--fb-barra-borde);
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--fb-barra-sombra);
+  white-space: nowrap;
+}
+
+.fb-btn-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.fb-icon-btn.is-activo {
+  background: var(--fb-acento);
+  border-color: var(--fb-acento);
+  color: #FFFFFF;
+}
+
+/* ── Lápiz: herramientas, colores y la capa de dibujo de cada página ── */
+.fb-lapiz {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fb-colores {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 4px;
+}
+
+.fb-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--fb-barra);
+  box-shadow: 0 0 0 1px var(--fb-boton-borde-hover);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s ease;
+}
+
+.fb-color:hover {
+  transform: scale(1.12);
+}
+
+.fb-color.is-activo {
+  box-shadow: 0 0 0 2px var(--fb-acento);
+}
+
+.fb-color:focus-visible {
+  outline: 2px solid var(--fb-acento);
+  outline-offset: 2px;
+}
+
+.fb-guardado {
+  font-size: 0.74rem;
+  color: var(--fb-texto-2);
+  min-width: 62px;
+}
+
+.fb-guardado.is-error {
+  color: var(--fb-cerrar-texto);
+}
+
+/* La capa se mezcla con la página (multiply): el resaltador no tapa el texto. */
+.fb-anotaciones {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.fb-anotaciones-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  mix-blend-mode: multiply;
+}
+
+/* El trazo que se está dibujando va encima de los ya hechos. */
+.fb-anotaciones-vivo {
+  position: absolute;
+  inset: 0;
+}
+
+.fb-ayuda-recta {
+  font-size: 0.72rem;
+  color: var(--fb-texto-2);
+  border: 1px dashed var(--fb-boton-borde-hover);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.fb-anotaciones.is-dibujando {
+  pointer-events: auto;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.fb-anotaciones.is-dibujando.is-borrador {
+  cursor: cell;
+}
+
+.fb-toolbar-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--fb-barra-borde);
+}
+
+.fb-page-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fb-texto);
+  font-size: 0.86rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  padding: 0 6px;
+}
+
+.fb-page-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fb-page-input {
+  width: 44px;
+  height: 28px;
+  background: var(--fb-campo);
+  border: 1px solid var(--fb-barra-borde);
+  border-radius: 6px;
+  color: var(--fb-texto);
+  text-align: center;
+  font-size: 0.86rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.fb-page-input:focus {
+  border-color: var(--fb-acento);
+}
+
+.fb-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fb-zoom-badge {
+  color: var(--fb-texto-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  min-width: 42px;
+  text-align: center;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.fb-zoom-badge:hover {
+  color: var(--fb-acento);
+}
+
+/* Estados de Carga y Error */
+.fb-status-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--fb-texto);
+  padding: 32px;
+  text-align: center;
+  max-width: 460px;
+}
+
+.fb-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--fb-giro, rgba(15, 23, 42, 0.12));
+  border-top-color: var(--fb-acento, #0284C7);
+  border-radius: 50%;
+  animation: fbSpin 0.8s linear infinite;
+}
+
+@keyframes fbSpin {
+  to { transform: rotate(360deg); }
+}
+
+.fb-status-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--fb-texto);
+  margin: 0;
+}
+
+.fb-status-desc {
+  font-size: 0.88rem;
+  color: var(--fb-texto-2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.fb-retry-btn {
+  margin-top: 8px;
+  padding: 9px 22px;
+  background: #0284C7;
+  color: #FFFFFF;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fb-retry-btn:hover {
+  background: #0369A1;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Tarjetas de Recursos / Libros (Bib-Book) Mejoradas
+   ========================================================================== */
+.bib-book-clickable {
+  cursor: pointer;
+}
+
+/* Fondo sólido en lugar de backdrop-filter: cada tarjeta difuminaba lo de atrás. */
+.bib-book-read-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 4;
+}
+
+.bib-book:hover .bib-book-read-badge {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.bib-book-pages-badge {
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Quien pide menos movimiento: los cambios son instantáneos, sin quitar el efecto de hoja. */
+@media (prefers-reduced-motion: reduce) {
+  .fb-backdrop,
+  .fb-book-scaler,
+  .fb-icon-btn,
+  .fb-side-nav,
+  .bib-book-read-badge {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Adaptabilidad Responsiva para Móviles */
+@media (max-width: 768px) {
+  /* En el móvil la barra baja a una segunda fila de la cabecera. */
+  .fb-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 8px;
+    padding: 10px 12px;
+  }
+  .fb-header-actions {
+    grid-column: 2;
+  }
+  .fb-header .fb-toolbar {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: center;
+    max-width: 100%;
+    /* Con el lápiz activo las herramientas bajan a otra línea en vez de cortarse. */
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 18px;
+    row-gap: 6px;
+  }
+  .fb-lapiz {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .fb-stage {
+    padding: 112px 10px 12px;
+  }
+  .fb-side-nav {
+    display: none;
+  }
+  .fb-toolbar {
+    gap: 8px;
+    padding: 5px 10px;
+  }
+  .fb-zoom-controls {
+    display: none;
+  }
+  .fb-ayuda-recta {
+    display: none;
+  }
+  .fb-zoom-controls + .fb-toolbar-divider {
+    display: none;
+  }
+}
+
+/* ── Libro con portada propia: la imagen cubre la tapa; el lomo conserva el color del tipo ── */
+.bib-book-cover.has-portada {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #E2E8F0;
+}
+.bib-book-cover.has-portada::after { background: linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 12%); }
+.bib-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* ── Cuadro «Publicar en la biblioteca» ── */
+.plb-modal { max-width: 560px; max-height: 92vh; overflow-y: auto; }
+.plb-tipos, .plb-opciones { display: flex; flex-wrap: wrap; gap: 6px; }
+.plb-tipos button, .plb-opciones button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border, #E2E8F0); background: var(--surface, #FFFFFF); color: var(--ink2, #334155);
+  font: inherit; font-size: 13px; font-weight: 600;
+}
+.plb-tipos button.is-active { border-color: var(--plb-tipo); color: var(--plb-tipo); box-shadow: 0 0 0 1px var(--plb-tipo) inset; }
+.plb-opciones button.is-active { border-color: #0284C7; color: #0369A1; background: #F0F9FF; }
+[data-theme="dark"] .plb-opciones button.is-active { background: transparent; color: #7DD3FC; border-color: #38BDF8; }
+.plb-tipos button:disabled, .plb-opciones button:disabled { opacity: 0.5; cursor: default; }
+.plb-tipo-punto { width: 10px; height: 10px; border-radius: 50%; background: var(--plb-tipo); }
+.plb-portada { display: flex; flex-direction: column; gap: 10px; }
+.plb-portada-fila { display: flex; gap: 16px; align-items: flex-start; }
+.plb-ayuda { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink3, #64748B); }
+
+/* Vista previa con la forma del libro del estante (lomo + tapa 2:3) */
+.plb-libro {
+  position: relative; flex: none; width: 150px; height: 225px; border-radius: 2px 6px 6px 2px; overflow: hidden;
+  box-shadow: 4px 6px 16px rgba(0, 0, 0, 0.2), 1px 1px 3px rgba(0, 0, 0, 0.1); background: #fcfbf9;
+}
+.plb-libro-lomo { position: absolute; inset: 0 auto 0 0; width: 8px; background: var(--plb-lomo); z-index: 2; box-shadow: inset -3px 0 6px rgba(0, 0, 0, 0.25); }
+.plb-libro-portada { position: absolute; inset: 0 0 0 8px; display: grid; place-items: center; background: var(--surface2, #F1F5F9); }
+.plb-libro-portada.is-ajustable { cursor: grab; touch-action: none; }
+.plb-libro-portada.is-ajustable:active { cursor: grabbing; }
+.plb-libro-portada:focus-visible { outline: 2px solid #0284C7; outline-offset: -2px; }
+.plb-libro-portada img { width: 100%; height: 100%; object-fit: cover; user-select: none; pointer-events: none; }
+.plb-libro-vacio { display: flex; align-items: center; gap: 6px; padding: 10px; font-size: 12px; color: var(--ink3, #64748B); text-align: center; }
+.plb-libro-sin-portada { align-self: end; justify-self: start; color: #FFFFFF; font-weight: 800; text-align: left; }
+.plb-libro-portada:has(.plb-libro-sin-portada) { background: var(--plb-lomo); }
+.plb-grilla { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
+@media (max-width: 520px) {
+  .plb-portada-fila { flex-direction: column; align-items: center; }
+  .plb-grilla { grid-template-columns: 1fr 1fr; }
+  .plb-grilla > div:first-child { grid-column: 1 / -1; }
+}
+
+/* Fila superior de la tapa: tipo a la izquierda, idioma a la derecha */
+.bib-book-cover-top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px;
+}
+.bib-book-idioma {
+  flex: none;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  color: #FFFFFF;
+  background: rgba(15, 23, 42, 0.72);
+  border-radius: 3px;
+  padding: 2px 5px;
+}
+.plb-idioma-codigo {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--plb-tipo);
+}
+
+/* ── Estantes por tipo y estantería en cuadrícula ── */
+.bib-shelf-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bib-shelf-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+.bib-shelf-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink3, #64748B);
+  background: var(--surface2, #F1F5F9);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.bib-shelf-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #E2E8F0);
+  background: var(--surface, #FFFFFF);
+  color: var(--ink2, #334155);
+  cursor: pointer;
+}
+.bib-shelf-back:hover {
+  background: var(--surface2, #F1F5F9);
+}
+/* En la estantería cada fila es un estante: sin desplazamiento lateral. */
+.bib-shelf-books-grid {
+  overflow: visible;
+}
+.bib-shelf-container-grid + .bib-shelf-container-grid {
+  margin-top: 18px;
+}
+
+/* Con portada: un velo oscuro (más fuerte abajo, donde van título y autor)
+   para que el texto se lea sobre cualquier imagen. theme.css oculta o cambia
+   este velo con !important según el tema; en las tapas con portada manda este. */
+.bib-book-cover.has-portada::after,
+[data-theme] .bib-book-cover.has-portada::after {
+  display: block !important;
+  background:
+    linear-gradient(to top, rgba(2, 6, 23, 0.94) 0%, rgba(2, 6, 23, 0.8) 30%, rgba(2, 6, 23, 0.42) 58%, rgba(2, 6, 23, 0.2) 78%, rgba(2, 6, 23, 0.4) 100%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 12%) !important;
+}
+
+/* «Leer» al pasar el cursor: abajo a la derecha (arriba a la derecha va el idioma). */
+.bib-book-read-badge {
+  top: auto;
+  bottom: 10px;
+}
+
+/* ── Zoom de la biblioteca: crecen los libros; el texto y las etiquetas no ── */
+.bib-shelves .bib-book {
+  width: calc(114px * var(--bib-zoom, 1));
+  height: calc(168px * var(--bib-zoom, 1));
+}
+@media (max-width: 768px) {
+  .bib-shelves .bib-book {
+    width: calc(98px * var(--bib-zoom, 1));
+    height: calc(146px * var(--bib-zoom, 1));
+  }
+}
+.bib-sbar-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.bib-sbar-zoom-btn,
+.bib-sbar-zoom-valor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: var(--ink2, #334155);
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+}
+.bib-sbar-zoom-btn {
+  width: 30px;
+}
+.bib-sbar-zoom-valor {
+  min-width: 46px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.bib-sbar-zoom-btn:hover:not(:disabled),
+.bib-sbar-zoom-valor:hover {
+  background: var(--surface2, #F1F5F9);
+}
+.bib-sbar-zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Estantes: solo carrusel lateral. Con overflow-x: auto el navegador también
+   habilitaba el scroll vertical (el libro sube al pasar el cursor y se salía).
+   Se corta el eje vertical y se deja aire arriba para que el libro suba sin recortarse. */
+.bib-shelf-books {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-top: 26px;
+  margin-top: -14px;
+  overscroll-behavior-x: contain;
+}
+@media (max-width: 768px) {
+  .bib-shelf-books {
+    padding-top: 22px;
+    margin-top: -14px;
+  }
+}
+/* En la estantería en cuadrícula no hay carrusel: nada que desplazar. */
+.bib-shelf-books.bib-shelf-books-grid {
+  overflow: visible;
+}
+
+/* ── Carrusel de cada estante: arrastrar con el mouse, flechas y degradados ── */
+.bib-carrusel {
+  position: relative;
+}
+.bib-carrusel-pista {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.bib-carrusel-pista.is-arrastrando {
+  cursor: grabbing;
+  scroll-behavior: auto;
+}
+/* Mientras se arrastra, los libros no reaccionan al cursor (no se abren ni se levantan). */
+.bib-carrusel-pista.is-arrastrando .bib-book {
+  pointer-events: none;
+}
+/* Degradado en el borde por donde siguen los libros */
+.bib-carrusel::before,
+.bib-carrusel::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 0;
+  width: 56px;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.bib-carrusel::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg, #F8FAFC) 10%, transparent);
+}
+.bib-carrusel::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg, #F8FAFC) 10%, transparent);
+}
+.bib-carrusel.hay-izq::before,
+.bib-carrusel.hay-der::after {
+  opacity: 1;
+}
+.bib-carrusel-flecha {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  width: 36px;
+  height: 36px;
+  margin-top: 4px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--border, #E2E8F0);
+  background: var(--surface, #FFFFFF);
+  color: var(--ink, #0F172A);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.bib-carrusel-flecha:hover {
+  transform: translateY(-50%) scale(1.08);
+  background: var(--surface2, #F1F5F9);
+}
+.bib-carrusel-flecha:focus-visible {
+  outline: 2px solid #0284C7;
+  outline-offset: 2px;
+}
+.bib-carrusel-flecha.is-izq { left: 4px; }
+.bib-carrusel-flecha.is-der { right: 4px; }
+.bib-carrusel-aviso {
+  position: absolute;
+  top: 0;
+  right: 52px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink3, #64748B);
+  pointer-events: none;
+  animation: bibAvisoCarrusel 2.4s ease-in-out infinite;
+}
+@keyframes bibAvisoCarrusel {
+  0%, 100% { transform: translateX(0); opacity: 0.75; }
+  50% { transform: translateX(-6px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bib-carrusel-aviso { animation: none; }
+}
+/* En pantallas táctiles se desliza con el dedo: las flechas sobran. */
+@media (hover: none) {
+  .bib-carrusel-flecha { display: none; }
+  .bib-carrusel-pista { cursor: auto; }
+}
+
+/* ── Tabla del estante como agarradera del carrusel ── */
+/* La tabla va dentro del carrusel; se ubica donde estaba (al pie del contenedor). */
+.bib-carrusel > .bib-shelf-board {
+  bottom: -12px;
+  z-index: 1;
+}
+.bib-shelf-board.bib-shelf-board-agarre {
+  cursor: grab;
+  touch-action: none;
+  transition: filter 0.15s ease;
+}
+/* Zona de agarre un poco más alta que la tabla (16 px), sin cambiar cómo se ve. */
+.bib-shelf-board.bib-shelf-board-agarre::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -6px;
+  bottom: -6px;
+}
+/* Muesca en el centro de la tabla: indica que se puede agarrar */
+.bib-shelf-board.bib-shelf-board-agarre::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 4px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: rgba(120, 92, 62, 0.35);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.bib-shelf-board.bib-shelf-board-agarre:hover {
+  filter: brightness(0.97);
+}
+.bib-shelf-board.bib-shelf-board-agarre:hover::after,
+.bib-carrusel.is-arrastrando .bib-shelf-board-agarre::after {
+  opacity: 1;
+}
+.bib-carrusel.is-arrastrando .bib-shelf-board-agarre {
+  cursor: grabbing;
+}
+[data-theme="dark"] .bib-shelf-board.bib-shelf-board-agarre::after {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+/* Por debajo del 100 % el texto, las etiquetas y los márgenes internos de la tapa
+   se achican con el libro (--bib-texto); de 100 % hacia arriba se quedan igual. */
+.bib-shelves .bib-book-cover {
+  padding: calc(9px * var(--bib-texto, 1)) calc(8px * var(--bib-texto, 1)) calc(8px * var(--bib-texto, 1));
+}
+.bib-shelves .bib-book-cover-top,
+.bib-shelves .bib-book-cover-body,
+.bib-shelves .bib-book-cover > .bib-book-badge,
+.bib-shelves .bib-book-read-badge,
+.bib-shelves .bib-book-acciones {
+  zoom: var(--bib-texto, 1);
+}
+
+/* ═══════════ Barra de búsqueda de la biblioteca (PC, tablet y móvil) ═══════════ */
+.bib-sbar-wrap > .bib-sbar-pill {
+  max-width: 1080px;
+}
+.bib-sbar-wrap > .bib-sbar-meta {
+  max-width: 1080px;
+}
+.bib-sbar-pill {
+  height: auto;
+  min-height: 54px;
+  padding: 6px 8px 6px 14px;
+  gap: 8px;
+  border-radius: 16px;
+}
+.bib-sbar-buscar {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+}
+.bib-sbar-controles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding-left: 8px;
+  border-left: 1px solid var(--border, #E2E8F0);
+}
+.bib-sbar-filtros,
+.bib-sbar-acciones {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bib-sbar-acciones {
+  padding-left: 8px;
+  border-left: 1px solid var(--border, #E2E8F0);
+}
+.bib-sbar-zoom {
+  background: var(--surface2, #F1F5F9);
+  border-radius: 10px;
+  padding: 2px;
+}
+.bib-sbar-zoom-btn,
+.bib-sbar-zoom-valor {
+  height: 30px;
+}
+.bib-sbar-filter-btn {
+  height: 36px;
+  border-radius: 10px;
+}
+.bib-sbar-subir {
+  background: #0284C7;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+.bib-sbar-subir:hover {
+  background: #0369A1;
+  color: #FFFFFF;
+}
+[data-theme="light"] .bib-sbar-subir,
+[data-theme="dark"] .bib-sbar-subir {
+  background: #0284C7 !important;
+  color: #FFFFFF !important;
+  border-color: transparent !important;
+}
+[data-theme="dark"] .bib-sbar-controles,
+[data-theme="dark"] .bib-sbar-acciones {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="dark"] .bib-sbar-zoom {
+  background: rgba(30, 41, 59, 0.8);
+}
+[data-theme="dark"] .bib-sbar-zoom-btn,
+[data-theme="dark"] .bib-sbar-zoom-valor {
+  color: #CBD5E1;
+}
+
+/* Tablet y PC angosto: la búsqueda arriba y los controles en la fila de abajo */
+@media (max-width: 1180px) {
+  .bib-sbar-pill {
+    flex-wrap: wrap;
+    padding: 6px 8px;
+  }
+  .bib-sbar-buscar {
+    flex: 1 1 100%;
+    padding-left: 6px;
+  }
+  .bib-sbar-controles {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    padding: 6px 0 0;
+    border-left: none;
+    border-top: 1px solid var(--border, #E2E8F0);
+  }
+  [data-theme="dark"] .bib-sbar-controles {
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Móvil: búsqueda, filtros en tres columnas iguales y, abajo, zoom y subir */
+@media (max-width: 640px) {
+  .bib-sbar-pill {
+    padding: 6px;
+    gap: 6px;
+  }
+  .bib-sbar-controles {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .bib-sbar-filtros {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .bib-sbar-filtros .bib-sbar-dd-wrap,
+  .bib-sbar-filtros .bib-sbar-filter-btn {
+    width: 100%;
+    min-width: 0;
+  }
+  .bib-sbar-filtros .bib-sbar-filter-btn {
+    justify-content: center;
+    padding: 0 6px;
+  }
+  .bib-sbar-filtros .bib-sbar-filter-btn > span:not(.bib-sbar-filter-dot) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* El menú del filtro del medio se abre centrado para no salirse de la pantalla */
+  .bib-sbar-filtros .bib-sbar-dd-wrap:nth-child(2) .bib-sbar-dropdown {
+    left: 50%;
+    transform: translateX(-50%);
+    animation: none;
+  }
+  .bib-sbar-acciones {
+    justify-content: space-between;
+    padding-left: 0;
+    border-left: none;
+  }
+  .bib-sbar-subir {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ═══════════ Resumen de la biblioteca (total, filtros activos y orden) ═══════════ */
+.bib-resumen {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 0 10px;
+  margin-bottom: -16px;
+}
+.bib-resumen-total {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--ink3, #64748B);
+}
+.bib-resumen-total strong {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink, #0F172A);
+}
+[data-theme="dark"] .bib-resumen-total strong {
+  color: #F8FAFC;
+}
+.bib-resumen .bib-orden {
+  margin-left: auto;
+}
+.bib-orden {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink3, #64748B);
+}
+.bib-orden select {
+  height: 34px;
+  padding: 0 30px 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #E2E8F0);
+  background: var(--surface, #FFFFFF);
+  color: var(--ink, #0F172A);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+[data-theme="dark"] .bib-orden select {
+  background: #0F172A;
+  color: #E2E8F0;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.bib-chips-activos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.bib-chip-activo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #C7D2FE;
+  background: #EEF2FF;
+  color: #4338CA;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bib-chip-activo:hover {
+  background: #E0E7FF;
+}
+[data-theme="dark"] .bib-chip-activo {
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(129, 140, 248, 0.4);
+  color: #C7D2FE;
+}
+
+/* ═══════════ Vista completa («Ver todos») ═══════════ */
+.bib-vista {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.bib-vista-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--border, #E2E8F0);
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--bib-tipo) 12%, transparent), transparent 60%),
+    var(--surface, #FFFFFF);
+}
+[data-theme="dark"] .bib-vista-head {
+  border-color: rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--bib-tipo) 22%, transparent), transparent 60%),
+    #0F172A;
+}
+.bib-vista-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #E2E8F0);
+  background: var(--surface, #FFFFFF);
+  color: var(--ink2, #334155);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bib-vista-volver:hover {
+  background: var(--surface2, #F1F5F9);
+}
+[data-theme="dark"] .bib-vista-volver {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #E2E8F0;
+}
+.bib-vista-titulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.bib-vista-icono {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: #FFFFFF;
+  background: var(--bib-tipo);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--bib-tipo) 35%, transparent);
+}
+.bib-vista-titulo h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink, #0F172A);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-theme="dark"] .bib-vista-titulo h2 {
+  color: #F8FAFC;
+}
+.bib-vista-titulo p {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: var(--ink3, #64748B);
+}
+.bib-vista-tipos {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 2px 4px;
+}
+.bib-vista-tipos::-webkit-scrollbar { display: none; }
+.bib-vista-tipo {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border, #E2E8F0);
+  background: var(--surface, #FFFFFF);
+  color: var(--ink2, #334155);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.bib-vista-tipo:hover {
+  border-color: var(--bib-tipo);
+}
+.bib-vista-tipo.is-activo {
+  background: var(--bib-tipo);
+  border-color: var(--bib-tipo);
+  color: #FFFFFF;
+}
+[data-theme="dark"] .bib-vista-tipo:not(.is-activo) {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #CBD5E1;
+}
+.bib-vista-tipo-punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bib-tipo);
+}
+.bib-vista-tipo.is-activo .bib-vista-tipo-punto {
+  background: #FFFFFF;
+}
+.bib-vista-tipo-n {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+/* Estantería: columnas fijas del ancho del libro, centradas; la última fila se alinea a la izquierda */
+.bib-estanteria {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  margin-top: 6px;
+}
+.bib-estanteria .bib-shelf-books-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--bib-columnas, 6), calc(114px * var(--bib-zoom, 1)));
+  justify-content: center;
+  column-gap: 14px;
+  padding: 26px 30px 0;
+  margin-top: -14px;
+}
+@media (max-width: 768px) {
+  .bib-estanteria .bib-shelf-books-grid {
+    grid-template-columns: repeat(var(--bib-columnas, 3), calc(98px * var(--bib-zoom, 1)));
+    column-gap: 10px;
+    padding: 22px 10px 0;
+  }
+}
+.bib-estanteria-mas {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 10px;
+}
+.bib-estanteria-mas button {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border, #E2E8F0);
+  background: var(--surface, #FFFFFF);
+  color: var(--ink2, #334155);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bib-estanteria-mas button:hover {
+  background: var(--surface2, #F1F5F9);
+}
+
+@media (max-width: 640px) {
+  .bib-vista-head {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px;
+  }
+  .bib-vista-volver {
+    justify-self: start;
+  }
+  .bib-vista-titulo h2 {
+    font-size: 1.1rem;
+    white-space: normal;
+  }
+  .bib-resumen .bib-orden {
+    margin-left: 0;
+  }
+}
+
+[data-theme="light"] .bib-sbar-subir:hover,
+[data-theme="dark"] .bib-sbar-subir:hover {
+  background: #0369A1 !important;
+}
+
+/* ── Botón para desplegar / esconder los controles (solo en el móvil) ── */
+.bib-sbar-toggle {
+  display: none;
+}
+@media (max-width: 640px) {
+  .bib-sbar-toggle {
+    position: relative;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border, #E2E8F0);
+    background: var(--surface2, #F1F5F9);
+    color: var(--ink2, #334155);
+    cursor: pointer;
+  }
+  .bib-sbar-toggle.is-abierto {
+    background: #EEF2FF;
+    border-color: #C7D2FE;
+    color: #4338CA;
+  }
+  .bib-sbar-toggle-chevron {
+    transition: transform 0.2s ease;
+  }
+  .bib-sbar-toggle.is-abierto .bib-sbar-toggle-chevron {
+    transform: rotate(180deg);
+  }
+  .bib-sbar-toggle-n {
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #4338CA;
+    color: #FFFFFF;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 17px;
+    text-align: center;
+  }
+  [data-theme="dark"] .bib-sbar-toggle {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #CBD5E1;
+  }
+  [data-theme="dark"] .bib-sbar-toggle.is-abierto {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(129, 140, 248, 0.45);
+    color: #C7D2FE;
+  }
+  /* Escondidos hasta que se pulsa el botón */
+  .bib-sbar-pill:not(.is-abierto) .bib-sbar-controles {
+    display: none;
+  }
+  .bib-sbar-pill.is-abierto .bib-sbar-controles {
+    animation: bibControlesIn 0.18s ease;
+  }
+  .bib-sbar-pill:not(.is-abierto) {
+    gap: 0;
+  }
+}
+@keyframes bibControlesIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bib-sbar-pill.is-abierto .bib-sbar-controles { animation: none; }
+}
+
+/* ═══════════ Cabecera del visor: minimalista ═══════════ */
+.fb-header .fb-toolbar {
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+}
+.fb-tb-grupo {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.fb-tb-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--fb-boton-texto);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.fb-tb-btn:hover:not(:disabled) {
+  background: var(--fb-boton);
+  color: var(--fb-boton-texto-hover);
+}
+.fb-tb-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.fb-tb-btn:focus-visible,
+.fb-vista-btn:focus-visible,
+.fb-tb-zoom-valor:focus-visible,
+.fb-tb-pagina:focus-visible {
+  outline: 2px solid var(--fb-acento);
+  outline-offset: 1px;
+}
+.fb-tb-btn.is-activo {
+  background: var(--fb-acento);
+  color: #FFFFFF;
+}
+.fb-tb-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--fb-barra-borde);
+  flex: none;
+}
+.fb-tb-pagina {
+  width: 44px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--fb-campo);
+  color: var(--fb-texto);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+.fb-tb-pagina::-webkit-outer-spin-button,
+.fb-tb-pagina::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.fb-tb-pagina:hover,
+.fb-tb-pagina:focus {
+  border-color: var(--fb-barra-borde);
+}
+.fb-tb-total {
+  padding: 0 4px 0 2px;
+  font-size: 0.82rem;
+  color: var(--fb-texto-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fb-tb-zoom-valor {
+  min-width: 48px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fb-texto-2);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.fb-tb-zoom-valor:hover {
+  background: var(--fb-boton);
+  color: var(--fb-texto);
+}
+/* Selector de vista (segmentado) */
+.fb-vista {
+  display: flex;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 10px;
+  background: var(--fb-campo);
+}
+.fb-vista-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fb-texto-2);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.fb-vista-btn:hover:not(.is-activo) {
+  color: var(--fb-texto);
+}
+.fb-vista-btn.is-activo {
+  background: var(--fb-barra);
+  color: var(--fb-acento);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+/* Acciones de la derecha: iconos sin borde, en una cápsula */
+.fb-header-actions {
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--fb-barra);
+  border: 1px solid var(--fb-barra-borde);
+  box-shadow: var(--fb-barra-sombra);
+}
+.fb-cerrar:hover:not(:disabled) {
+  background: var(--fb-cerrar);
+  color: var(--fb-cerrar-texto);
+}
+.fb-header-title {
+  font-size: 1rem;
+}
+
+/* Herramientas del lápiz: barra flotante abajo, centrada */
+.fb-herramientas {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 30;
+  max-width: calc(100% - 24px);
+  padding: 6px 10px;
+  border-radius: 16px;
+  background: var(--fb-barra);
+  border: 1px solid var(--fb-barra-borde);
+  box-shadow: var(--fb-barra-sombra);
+  animation: fbHerramientasIn 0.18s ease;
+}
+.fb-herramientas .fb-lapiz {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+@keyframes fbHerramientasIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fb-herramientas { animation: none; }
+}
+
+/* ═══════════ Vista normal ═══════════ */
+.fb-normal {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 80px 16px 90px;
+  scroll-behavior: auto;
+}
+.fb-normal-pagina {
+  position: relative;
+  flex: none;
+}
+.fb-normal-pagina > .fb-page-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+.fb-page-wrapper.fb-page-plana {
+  border-radius: 3px;
+  box-shadow: var(--fb-sombra-libro);
+}
+.fb-normal-num {
+  position: absolute;
+  right: -2px;
+  bottom: -18px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--fb-texto-2);
+  font-variant-numeric: tabular-nums;
+}
+/* En la vista normal el contenido pasa por debajo de la cabecera: se le da fondo. */
+.fb-backdrop.is-normal .fb-header {
+  background: color-mix(in srgb, var(--fb-barra) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--fb-barra-borde);
+}
+.fb-backdrop.is-normal .fb-stage {
+  padding: 0;
+}
+
+/* Tablet y móvil */
+@media (max-width: 900px) {
+  .fb-vista-btn span {
+    display: none;
+  }
+  .fb-vista-btn {
+    padding: 0 8px;
+  }
+}
+@media (max-width: 768px) {
+  .fb-normal {
+    padding: 124px 8px 90px;
+  }
+  .fb-header .fb-toolbar {
+    padding: 3px;
+  }
+  .fb-tb-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+@media (max-width: 480px) {
+  .fb-tb-zoom,
+  .fb-tb-zoom + .fb-tb-sep {
+    display: none;
+  }
+}
+
+/* Al saltar a una página en la vista normal, que no quede tapada por la cabecera */
+.fb-normal-pagina {
+  scroll-margin-top: 78px;
+}
+@media (max-width: 768px) {
+  .fb-normal-pagina {
+    scroll-margin-top: 122px;
+  }
+}
+
+/* ═══════════ Notas y comentarios ═══════════ */
+.fb-backdrop { --fb-panel-notas: 0px; }
+@media (min-width: 901px) {
+  .fb-backdrop.con-notas { --fb-panel-notas: 340px; }
+}
+/* El libro y la vista normal se corren a la izquierda para darle lugar al panel */
+.fb-backdrop.con-notas .fb-stage {
+  padding-right: calc(66px + var(--fb-panel-notas));
+}
+.fb-backdrop.con-notas .fb-side-next {
+  right: calc(16px + var(--fb-panel-notas));
+}
+.fb-backdrop.con-notas .fb-normal {
+  right: var(--fb-panel-notas);
+}
+.fb-backdrop.con-notas.is-normal .fb-stage {
+  padding-right: 0;
+}
+.fb-backdrop.con-notas .fb-herramientas {
+  left: calc(50% - var(--fb-panel-notas) / 2);
+}
+
+/* Botón de notas en la barra, con el número de notas */
+.fb-tb-notas {
+  position: relative;
+}
+.fb-tb-notas-n {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: #F59E0B;
+  color: #FFFFFF;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 15px;
+  text-align: center;
+}
+
+/* Zonas marcadas sobre la página */
+.fb-notas-capa {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.fb-notas-capa.is-marcando {
+  pointer-events: auto;
+  touch-action: none;
+  cursor: crosshair;
+}
+.fb-notas-capa.is-buscando {
+  cursor: progress;
+}
+.fb-nota-zona {
+  position: absolute;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--nota-color, #FACC15) 22%, transparent);
+  box-shadow: inset 0 -2px 0 var(--nota-color, #FACC15);
+  mix-blend-mode: multiply;
+  transition: background 0.15s ease;
+}
+.fb-nota-zona.is-seleccionada {
+  background: color-mix(in srgb, var(--nota-color, #FACC15) 38%, transparent);
+  outline: 2px solid var(--nota-color, #FACC15);
+  outline-offset: 1px;
+}
+.fb-nota-zona.is-borrador,
+.fb-nota-zona.is-arrastre {
+  background: rgba(2, 132, 199, 0.12);
+  border: 1.5px dashed #0284C7;
+  box-shadow: none;
+}
+.fb-nota-marcador {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  background: var(--nota-color, #FACC15);
+  color: #0F172A;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
+  cursor: pointer;
+  pointer-events: auto;
+  mix-blend-mode: normal;
+}
+.fb-nota-marcador:hover {
+  transform: scale(1.12);
+}
+
+/* Panel lateral */
+.fb-notas-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  background: var(--fb-barra);
+  border-left: 1px solid var(--fb-barra-borde);
+  box-shadow: -10px 0 30px rgba(15, 23, 42, 0.08);
+  animation: fbPanelIn 0.2s ease;
+}
+@keyframes fbPanelIn {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.fb-notas-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 12px 12px 16px;
+  border-bottom: 1px solid var(--fb-barra-borde);
+}
+.fb-notas-head h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--fb-texto);
+}
+.fb-notas-n {
+  font-size: 0.72rem;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--fb-campo);
+  color: var(--fb-texto-2);
+}
+.fb-notas-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.fb-notas-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fb-notas-grupo h4 {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fb-texto-2);
+}
+.fb-nota-card {
+  position: relative;
+  padding: 10px 12px 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--fb-barra-borde);
+  background: var(--fb-fondo);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.fb-nota-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--nota-color, #0284C7);
+}
+.fb-nota-card:hover {
+  border-color: var(--fb-boton-borde-hover);
+}
+.fb-nota-card.is-seleccionada {
+  border-color: var(--nota-color, #0284C7);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nota-color, #0284C7) 35%, transparent);
+}
+.fb-nota-card.is-nueva {
+  cursor: default;
+  border-color: #0284C7;
+  border-style: dashed;
+}
+.fb-nota-card:focus-visible {
+  outline: 2px solid var(--fb-acento);
+  outline-offset: 2px;
+}
+.fb-nota-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--fb-texto-2);
+  min-height: 26px;
+}
+.fb-nota-num {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--nota-color, #FACC15);
+  color: #0F172A;
+  font-size: 10px;
+  font-weight: 800;
+}
+.fb-nota-acciones {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+.fb-nota-card:hover .fb-nota-acciones,
+.fb-nota-card:focus-within .fb-nota-acciones {
+  opacity: 1;
+}
+.fb-nota-acciones .fb-tb-btn {
+  width: 28px;
+  height: 28px;
+}
+.fb-nota-cita {
+  margin: 6px 0;
+  padding: 6px 10px;
+  border-left: 3px solid color-mix(in srgb, var(--nota-color, #94A3B8) 70%, transparent);
+  background: var(--fb-campo);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.78rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--fb-texto-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.fb-nota-card.is-seleccionada .fb-nota-cita {
+  -webkit-line-clamp: 12;
+  line-clamp: 12;
+}
+.fb-nota-texto {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--fb-texto);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.fb-nota-sin-cita {
+  margin: 4px 0;
+  font-size: 0.78rem;
+  color: var(--fb-texto-2);
+  font-style: italic;
+}
+.fb-nota-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.fb-nota-editor textarea {
+  width: 100%;
+  min-height: 74px;
+  resize: vertical;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--fb-barra-borde);
+  background: var(--fb-barra);
+  color: var(--fb-texto);
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+.fb-nota-editor textarea:focus {
+  outline: none;
+  border-color: var(--fb-acento);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fb-acento) 20%, transparent);
+}
+.fb-nota-editor-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fb-nota-colores {
+  display: flex;
+  gap: 5px;
+}
+.fb-nota-color {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--fb-barra);
+  box-shadow: 0 0 0 1px var(--fb-boton-borde-hover);
+  cursor: pointer;
+}
+.fb-nota-color.is-activo {
+  box-shadow: 0 0 0 2px var(--fb-acento);
+}
+.fb-nota-editor-botones {
+  display: flex;
+  gap: 6px;
+}
+.fb-nota-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--fb-barra-borde);
+  background: var(--fb-barra);
+  color: var(--fb-texto);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fb-nota-btn:hover:not(:disabled) {
+  background: var(--fb-boton);
+}
+.fb-nota-btn.is-principal {
+  background: #0284C7;
+  border-color: #0284C7;
+  color: #FFFFFF;
+}
+.fb-nota-btn.is-principal:hover:not(:disabled) {
+  background: #0369A1;
+}
+.fb-nota-btn.is-peligro {
+  background: #DC2626;
+  border-color: #DC2626;
+  color: #FFFFFF;
+}
+.fb-nota-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.fb-nota-confirmar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--fb-cerrar);
+  font-size: 0.8rem;
+  color: var(--fb-texto);
+}
+.fb-nota-confirmar span {
+  flex: 1;
+}
+.fb-notas-vacio {
+  margin: 30px 10px;
+  text-align: center;
+  color: var(--fb-texto-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.fb-notas-vacio p {
+  margin: 0;
+  font-size: 0.86rem;
+}
+.fb-notas-ayuda {
+  font-size: 0.8rem !important;
+  line-height: 1.5;
+}
+.fb-notas-error {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--fb-cerrar);
+  color: var(--fb-cerrar-texto);
+  font-size: 0.8rem;
+}
+
+/* Tablet angosta y móvil: el panel sale desde abajo, encima del libro */
+@media (max-width: 900px) {
+  .fb-notas-panel {
+    top: auto;
+    left: 0;
+    width: auto;
+    height: min(58vh, 520px);
+    border-left: none;
+    border-top: 1px solid var(--fb-barra-borde);
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -12px 30px rgba(15, 23, 42, 0.18);
+    animation-name: fbPanelInAbajo;
+  }
+  @keyframes fbPanelInAbajo {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fb-notas-panel { animation: none; }
+}
