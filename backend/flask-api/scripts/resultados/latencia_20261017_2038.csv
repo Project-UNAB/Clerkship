@@ -1,0 +1,3 @@
+﻿medicion,n,p50_s,p90_s,max_s,meta_s,pct_bajo_meta,dentro_de_meta
+Turno de chat (esta corrida),54,4.7,11.5,22.5,10,83,False
+Evaluación final (esta corrida),15,4.7,6.5,27.6,45,100,True

@@ -1,0 +1,3 @@
+﻿consulta,subtema,repeticion,sin_proveedor,modelo,latencia_ms,puntaje,fallos,error
+1,Enfermedad inflamatoria intestinal (Crohn / Colitis ulcerosa),1,False,gemini-3.5-flash,10614,66,gemini-3.6-flash:no_disponible; gemini-3.6-flash:no_disponible,
+1,Enfermedad inflamatoria intestinal (Crohn / Colitis ulcerosa),2,False,gemini-3.6-flash,4759,66,,

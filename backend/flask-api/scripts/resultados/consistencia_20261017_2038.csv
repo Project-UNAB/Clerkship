@@ -1,0 +1,6 @@
+﻿consulta,subtema,puntajes,diferencia_max,dentro_de_meta
+1,Enfermedad inflamatoria intestinal (Crohn / Colitis ulcerosa),80 / 77 / 77,3,True
+2,Pancreatitis aguda,82 / 82 / 82,0,True
+3,Hepatitis / hepatopatia,61 / 61 / 67,6,True
+4,Hemorragia digestiva alta o baja,84 / 78 / 84,6,True
+5,Colelitiasis / colecistitis aguda,77 / 77 / 77,0,True
