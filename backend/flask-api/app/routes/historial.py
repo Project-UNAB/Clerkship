@@ -75,12 +75,10 @@ def obtener_retroalimentacion(consultation_id):
     evaluation = AiEvaluation.query.filter_by(consultation_id=cons_uuid).first()
 
     eval_data = evaluation.to_dict() if evaluation else {
-        "final_score": float(consultation.score) if consultation.score else 85.0,
-        "feedback_summary": (
-            "El estudiante demostró adecuada recolección de signos clínicos y síntomas gastrointestinales. "
-            "Se recomienda profundizar en los diagnósticos diferenciales antes de solicitar paraclínicos."
-        ),
-        "execution_time_seconds": 12.5,
+        # Sin evaluación guardada no se inventa ni la nota ni el comentario.
+        "final_score": float(consultation.score) if consultation.score is not None else 0.0,
+        "feedback_summary": "Esta consulta no tiene una evaluación registrada.",
+        "execution_time_seconds": None,
         "created_at": consultation.finished_at.replace(tzinfo=timezone.utc).isoformat() if consultation.finished_at else None,
     }
 

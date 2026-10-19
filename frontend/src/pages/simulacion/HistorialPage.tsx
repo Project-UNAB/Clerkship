@@ -429,11 +429,13 @@ export default function HistorialPage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([listHistorial(), getEstadisticas()])
+    // Las estadísticas son solo del estudiante: para un docente responden 403 y
+    // la lista de casos de sus cursos se debe mostrar igual.
+    Promise.all([listHistorial(), getEstadisticas().catch(() => null)])
       .then(([hist, est]) => {
         if (cancelled) return;
         setSessions(hist);
-        setStats(est);
+        if (est) setStats(est);
       })
       .catch(err => { if (!cancelled) setLoadError(mainAuthErrorMessage(err)); })
       .finally(() => { if (!cancelled) setLoading(false); });
