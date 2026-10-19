@@ -42,6 +42,12 @@ documentos_bp = Blueprint("documentos", __name__)
 MAX_DOCUMENT_BASE64_CHARS = 15 * 1024 * 1024  # ~11MB reales por documento
 
 
+def _espacio_usado(owner_id) -> int:
+    """Bytes que ocupan en R2 los archivos del usuario."""
+    total = db.session.query(func.coalesce(func.sum(UserFile.size_bytes), 0)).filter(UserFile.owner_id == owner_id).scalar()
+    return int(total or 0)
+
+
 def _extension_of(name: str) -> str:
     """".pdf" de "informe.pdf", o "" si no tiene punto — mismo criterio que
     splitExtension() en el frontend."""
@@ -115,8 +121,13 @@ def _archivo_r2_dict(archivo: UserFile, include_data: bool = False) -> dict:
         "origen": "r2",
     }
     if include_data:
-        contenido = storage.descargar_bytes(archivo.storage_key)
-        d["data"] = base64.b64encode(contenido).decode("ascii")
+        if (archivo.size_bytes or 0) > storage.MAX_VISTA_PREVIA_INCRUSTADA:
+            # Un archivo grande no viaja en base64 dentro del JSON: el navegador lo
+            # lee directo de R2 con un enlace temporal.
+            d["url"] = storage.url_descarga(archivo.storage_key, archivo.nombre, archivo.mime_type)
+        else:
+            contenido = storage.descargar_bytes(archivo.storage_key)
+            d["data"] = base64.b64encode(contenido).decode("ascii")
     return d
 
 
@@ -327,6 +338,15 @@ def subir_documento(validated_body: UploadDocumentRequest):
             "status_code": 400
         }), 400
 
+    # La cuota de 5 GB se muestra en el Dashboard: también se hace cumplir acá,
+    # no solo en la subida por URL firmada de /api/almacenamiento.
+    if _espacio_usado(user.id) + len(contenido) > storage.QUOTA_BYTES_PER_USER:
+        return jsonify({
+            "error": "Payload Too Large",
+            "message": "No tienes espacio suficiente. Tu límite es de 5 GB.",
+            "status_code": 413
+        }), 413
+
     carpeta_id = None
     if folder_id:
         folder = DocumentFolder.query.filter_by(id=folder_id, owner_user_id=user.id).first()
@@ -426,6 +446,12 @@ def vista_previa_documento(document_id):
     owner_id = doc.owner_id if origen == "r2" else doc.get("owner_user_id")
     if str(owner_id) != str(user.id):
         return jsonify({"error": "Documento no encontrado"}), 404
+    if origen == "r2" and (doc.size_bytes or 0) > storage.MAX_CONVERSION_BYTES:
+        return jsonify({
+            "error": "Payload Too Large",
+            "message": "El archivo es demasiado grande para la vista previa. Descárgalo para abrirlo.",
+            "status_code": 413,
+        }), 413
 
     contenido, mime_type, nombre = _bytes_y_mime(origen, doc)
     mime_type = (mime_type or "").lower()

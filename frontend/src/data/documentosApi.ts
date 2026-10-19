@@ -30,7 +30,10 @@ export interface DocumentSummary {
 }
 
 export interface DocumentDetail extends DocumentSummary {
-  data: string;
+  /** Contenido en base64 (archivos de hasta 20 MB). */
+  data?: string;
+  /** Enlace temporal de lectura directa en R2, para archivos más grandes. */
+  url?: string;
 }
 
 export function listFolders(): Promise<{ folders: DocumentFolder[] }> {

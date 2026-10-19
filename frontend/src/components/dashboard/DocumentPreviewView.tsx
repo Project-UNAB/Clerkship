@@ -202,6 +202,10 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
 
   function handleDownload() {
     if (!detail) return;
+    if (detail.url) {
+      window.open(detail.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
     const link = window.document.createElement('a');
     link.href = `data:${detail.mime_type};base64,${detail.data}`;
     link.download = detail.name;
@@ -407,20 +411,26 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
             {showPdfViewer && (
               <CustomPdfViewer
                 base64Data={isPdf ? detail.data : (previewPdfBase64 as string)}
+                url={isPdf ? detail.url : undefined}
                 fileName={fileName}
               />
             )}
 
             {/* ── VISOR DE EXCEL (SheetJS + x-data-spreadsheet, grilla real) ── */}
-            {isExcel && (
+            {isExcel && detail.data && (
               <ExcelSpreadsheetViewer base64Data={detail.data} />
+            )}
+            {(isExcel || isText) && !detail.data && (
+              <p className="doc-preview-grande">
+                Este archivo es demasiado grande para verlo aquí. Usa «Descargar» para abrirlo.
+              </p>
             )}
 
             {/* ── VISOR DE IMÁGENES ── */}
             {isImage && (
               <div className="doc-preview-image-wrap">
                 <img
-                  src={`data:${detail.mime_type};base64,${detail.data}`}
+                  src={detail.url ?? `data:${detail.mime_type};base64,${detail.data}`}
                   alt={fileName}
                   className="doc-preview-img"
                   style={{
@@ -432,7 +442,7 @@ export default function DocumentPreviewView({ document, onBack }: DocumentPrevie
             )}
 
             {/* ── VISOR DE CÓDIGO / TEXTO PLANO ── */}
-            {isText && (
+            {isText && detail.data && (
               <div className="doc-preview-text-wrap">
                 <div className="doc-text-topbar">
                   <span>Texto Plano / Archivo de Datos ({decodedText.length} caracteres)</span>

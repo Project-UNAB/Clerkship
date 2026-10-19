@@ -19,7 +19,14 @@ DESCARGA_CURSO_TTL_SECONDS = 10 * 60
 # Portadas de curso: solo las ve quien ya está autenticado y no son material
 # sensible; el enlace dura lo suficiente para una sesión de navegación.
 IMAGEN_TTL_SECONDS = 60 * 60
-MAX_FILE_BYTES = 100 * 1024 * 1024
+# Un archivo puede pesar hasta 2 GB: viaja directo del navegador a R2 con una URL
+# firmada (un PUT de R2 admite hasta 5 GB), sin pasar por el backend ni por Cloud Run.
+MAX_FILE_BYTES = 2 * 1024 ** 3
+# Por encima de esto, la vista previa no trae el archivo dentro de la respuesta:
+# entrega un enlace temporal para que el navegador lo lea directo de R2.
+MAX_VISTA_PREVIA_INCRUSTADA = 20 * 1024 * 1024
+# Tope para convertir Word/Excel/PowerPoint a PDF (Gotenberg): más grande no es razonable.
+MAX_CONVERSION_BYTES = 50 * 1024 * 1024
 QUOTA_BYTES_PER_USER = 5 * 1024 ** 3
 
 # Almacenamiento personal: los mismos tipos que ya acepta la Carpeta de
@@ -39,6 +46,12 @@ TIPOS_PERMITIDOS = {
     "image/gif",
     "text/plain",
     "text/csv",
+    # Archivos grandes habituales en clase: videos y audios.
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+    "audio/mpeg",
+    "audio/wav",
 }
 
 _EXTENSIONES = {
@@ -55,6 +68,11 @@ _EXTENSIONES = {
     "image/gif": ".gif",
     "text/plain": ".txt",
     "text/csv": ".csv",
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/quicktime": ".mov",
+    "audio/mpeg": ".mp3",
+    "audio/wav": ".wav",
     # Solo para entregas de tareas que lo habiliten (no está en TIPOS_PERMITIDOS).
     "application/zip": ".zip",
 }

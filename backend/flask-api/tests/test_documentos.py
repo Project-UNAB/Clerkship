@@ -55,6 +55,7 @@ def test_subir_documento_acepta_base64_y_llega_a_r2(app, client, headers, monkey
     monkeypatch.setattr(documentos_routes, "get_current_user", lambda: usuario_falso)
     monkeypatch.setattr(documentos_routes.storage, "nueva_clave", lambda owner_id, mime: "usuarios/x/y.pdf")
     monkeypatch.setattr(documentos_routes.storage, "subir_bytes", lambda clave, contenido, mime: None)
+    monkeypatch.setattr(documentos_routes, "_espacio_usado", lambda owner_id: 0)
     with app.app_context():
         monkeypatch.setattr(documentos_routes.db.session, "add", lambda *a: None)
         monkeypatch.setattr(documentos_routes.db.session, "commit", lambda: None)
@@ -67,6 +68,25 @@ def test_subir_documento_acepta_base64_y_llega_a_r2(app, client, headers, monkey
     body = res.get_json()
     assert body["document"]["origen"] == "r2"
     assert body["document"]["size_bytes"] == len(b"contenido de prueba")
+
+
+def test_subir_documento_sin_espacio_da_413_y_no_sube_nada(app, client, headers, monkeypatch):
+    """La cuota de 5 GB que muestra el Dashboard también se hace cumplir."""
+    import app.routes.documentos as documentos_routes
+
+    subidos = []
+    usuario_falso = SimpleNamespace(id=uuid.UUID("11111111-1111-1111-1111-111111111111"))
+    monkeypatch.setattr(documentos_routes, "get_current_user", lambda: usuario_falso)
+    monkeypatch.setattr(documentos_routes.storage, "subir_bytes", lambda *a: subidos.append(a))
+    monkeypatch.setattr(documentos_routes, "_espacio_usado", lambda owner_id: documentos_routes.storage.QUOTA_BYTES_PER_USER - 5)
+
+    res = client.post("/api/documentos/documentos", json={
+        "name": "informe.pdf", "mime_type": "application/pdf",
+        "data": base64.b64encode(b"contenido de prueba").decode("ascii"),
+    }, headers=headers)
+    assert res.status_code == 413
+    assert "5 GB" in res.get_json()["message"]
+    assert subidos == []
 
 
 def test_obtener_documento_inexistente_responde_404(client, headers):

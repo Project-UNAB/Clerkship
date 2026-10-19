@@ -17,7 +17,10 @@ try {
 }
 
 interface CustomPdfViewerProps {
-  base64Data: string;
+  /** El PDF en base64 (archivos pequeños)… */
+  base64Data?: string;
+  /** …o un enlace temporal para leerlo directo de R2 (archivos grandes). */
+  url?: string;
   fileName: string;
 }
 
@@ -139,7 +142,7 @@ function PdfThumbnailCard({ pageNum, pdfDoc, isActive, onClick }: PdfThumbnailCa
   );
 }
 
-export default function CustomPdfViewer({ base64Data, fileName }: CustomPdfViewerProps) {
+export default function CustomPdfViewer({ base64Data, url, fileName }: CustomPdfViewerProps) {
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -225,15 +228,22 @@ export default function CustomPdfViewer({ base64Data, fileName }: CustomPdfViewe
 
     async function loadPdf() {
       try {
-        const rawString = atob(base64Data);
-        const bytes = new Uint8Array(rawString.length);
-        for (let i = 0; i < rawString.length; i++) {
-          bytes[i] = rawString.charCodeAt(i);
+        let origen: { url: string } | { data: Uint8Array };
+        if (url) {
+          // PDF.js lo pide por partes (rangos): no hace falta descargarlo entero para ver la primera página.
+          origen = { url };
+        } else {
+          const rawString = atob(base64Data || '');
+          const bytes = new Uint8Array(rawString.length);
+          for (let i = 0; i < rawString.length; i++) {
+            bytes[i] = rawString.charCodeAt(i);
+          }
+          origen = { data: bytes };
         }
 
         const loadingTask = pdfjsLib.getDocument({
-          data: bytes,
-          cMapUrl: 'https://unpkg.com/pdfjs-dist/cmaps/',
+          ...origen,
+          cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
           cMapPacked: true,
         });
 
@@ -256,7 +266,7 @@ export default function CustomPdfViewer({ base64Data, fileName }: CustomPdfViewe
     return () => {
       isCancelled = true;
     };
-  }, [base64Data]);
+  }, [base64Data, url]);
 
   // Renderizar una página en canvas de alta resolución
   const renderPage = useCallback(
@@ -442,6 +452,10 @@ export default function CustomPdfViewer({ base64Data, fileName }: CustomPdfViewe
   }, []);
 
   function handlePrint() {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     printWindow.document.write(`

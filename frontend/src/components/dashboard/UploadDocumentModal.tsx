@@ -1,36 +1,32 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, UploadCloud, FileText, Loader2 } from 'lucide-react';
-import { buildFileAttachment, formatFileSize } from '../../utils/fileUpload';
+import { X, UploadCloud, FileText } from 'lucide-react';
+import { formatFileSize } from '../../utils/fileUpload';
+import { problemaDeArchivo } from '../../data/almacenamientoApi';
 import type { DocumentFolder } from '../../data/documentosApi';
 
 interface UploadDocumentModalProps {
   folders: DocumentFolder[];
   defaultFolderId?: string | null;
   onClose: () => void;
-  onUpload: (file: { name: string; mime_type: string; data: string; size_bytes: number }, folderId: string | null) => Promise<void>;
+  /** Sube el archivo (directo a R2, hasta 2 GB); `alProgresar` recibe de 0 a 1. */
+  onUpload: (file: File, folderId: string | null, alProgresar?: (fraccion: number) => void) => Promise<void>;
 }
 
 export default function UploadDocumentModal({ folders, defaultFolderId, onClose, onUpload }: UploadDocumentModalProps) {
   const [folderId, setFolderId] = useState<string>(defaultFolderId || '');
-  const [picked, setPicked] = useState<{ name: string; mime_type: string; data: string; size_bytes: number } | null>(null);
-  const [reading, setReading] = useState(false);
+  // El archivo se guarda tal cual: no se lee en memoria (puede pesar 2 GB).
+  const [picked, setPicked] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [progreso, setProgreso] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function handleFile(file: File | undefined) {
+  function handleFile(file: File | undefined) {
     if (!file) return;
-    setReading(true);
-    setError(null);
-    try {
-      const built = await buildFileAttachment(file);
-      setPicked(built);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo leer el archivo.');
-    } finally {
-      setReading(false);
-    }
+    const problema = problemaDeArchivo(file);
+    setError(problema);
+    setPicked(problema ? null : file);
   }
 
   async function handleConfirm() {
@@ -39,9 +35,10 @@ export default function UploadDocumentModal({ folders, defaultFolderId, onClose,
       return;
     }
     setUploading(true);
+    setProgreso(0);
     setError(null);
     try {
-      await onUpload(picked, folderId || null);
+      await onUpload(picked, folderId || null, setProgreso);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo subir el documento.');
       setUploading(false);
@@ -54,7 +51,7 @@ export default function UploadDocumentModal({ folders, defaultFolderId, onClose,
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={onClose}
+      onClick={uploading ? undefined : onClose}
     >
       <motion.div
         className="dfm-modal"
@@ -65,7 +62,7 @@ export default function UploadDocumentModal({ folders, defaultFolderId, onClose,
       >
         <div className="dfm-header">
           <span>Subir documento</span>
-          <button type="button" className="dfm-close-btn" onClick={onClose}><X size={16} /></button>
+          <button type="button" className="dfm-close-btn" onClick={onClose} disabled={uploading}><X size={16} /></button>
         </div>
 
         <input
@@ -80,34 +77,40 @@ export default function UploadDocumentModal({ folders, defaultFolderId, onClose,
             type="button"
             className="dfm-dropzone"
             onClick={() => fileInputRef.current?.click()}
-            disabled={reading}
           >
-            {reading ? <Loader2 size={26} className="dfm-spin" /> : <UploadCloud size={26} />}
-            <span>{reading ? 'Leyendo...' : 'Haz clic para seleccionar un archivo'}</span>
+            <UploadCloud size={26} />
+            <span>Haz clic para seleccionar un archivo (hasta 2 GB)</span>
           </button>
         ) : (
           <div className="dfm-picked-file">
             <FileText size={22} />
             <div>
               <p>{picked.name}</p>
-              <span>{formatFileSize(picked.size_bytes)}</span>
+              <span>{formatFileSize(picked.size)}</span>
             </div>
-            <button type="button" onClick={() => setPicked(null)}><X size={14} /></button>
+            <button type="button" onClick={() => setPicked(null)} disabled={uploading}><X size={14} /></button>
           </div>
         )}
 
         <label className="dfm-label">Carpeta (opcional)</label>
-        <select className="dfm-select" value={folderId} onChange={e => setFolderId(e.target.value)}>
+        <select className="dfm-select" value={folderId} onChange={e => setFolderId(e.target.value)} disabled={uploading}>
           <option value="">Sin carpeta</option>
           {folders.map(f => (
             <option key={f.id} value={f.id}>{f.name}</option>
           ))}
         </select>
 
+        {uploading && (
+          <div className="dfm-progreso" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progreso * 100)}>
+            <div className="dfm-progreso-barra" style={{ width: `${Math.round(progreso * 100)}%` }} />
+            <span>{Math.round(progreso * 100)} %</span>
+          </div>
+        )}
+
         {error && <p className="dfm-error">{error}</p>}
 
         <button type="button" className="dfm-save-btn" onClick={handleConfirm} disabled={uploading || !picked}>
-          {uploading ? 'Subiendo...' : 'Subir documento'}
+          {uploading ? `Subiendo… ${Math.round(progreso * 100)} %` : 'Subir documento'}
         </button>
       </motion.div>
     </motion.div>

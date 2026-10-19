@@ -57,9 +57,17 @@ def test_subida_acepta_tipos_de_oficina_e_imagenes(app, client, headers, monkeyp
 
 def test_subida_rechaza_archivo_demasiado_pesado(client, headers):
     res = client.post("/api/almacenamiento/subidas", json={
-        "nombre": "gigante.pdf", "mime_type": "application/pdf", "size_bytes": 200 * 1024 * 1024,
+        "nombre": "gigante.pdf", "mime_type": "application/pdf", "size_bytes": 2 * 1024 ** 3 + 1,
     }, headers=headers)
     assert res.status_code == 413
+    assert "2 GB" in res.get_json()["message"]
+
+
+def test_el_maximo_por_archivo_es_2_gb():
+    from app import storage
+
+    assert storage.MAX_FILE_BYTES == 2 * 1024 ** 3
+    assert {"video/mp4", "audio/mpeg"} <= storage.TIPOS_PERMITIDOS
 
 
 def test_actualizar_archivo_requiere_sesion(client):
