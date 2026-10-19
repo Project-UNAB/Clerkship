@@ -1,4 +1,4 @@
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.sql import func
 
 from app import db
@@ -29,6 +29,12 @@ class Course(SoftDeleteMixin, db.Model):
     # Clave en R2 de la portada (1200x600). La miniatura está al lado, con
     # sufijo _thumb (ver app/services/portadas.py). NULL = sin portada.
     cover_image_key = db.Column(db.String(500))
+    # Texto corto de la tarjeta del curso (texto plano). Es independiente de
+    # description, que es el contenido rico que se ve dentro del curso.
+    card_summary = db.Column(db.String(280))
+    # Accesos directos que el docente pone en la página del curso:
+    # [{"label": "...", "url": "https://..."}]. NULL = ninguno.
+    shortcuts = db.Column(JSONB)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
     updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
@@ -56,6 +62,8 @@ class Course(SoftDeleteMixin, db.Model):
             "teacher_id": str(self.teacher_id),
             "name": self.name,
             "description": self.description,
+            "card_summary": self.card_summary,
+            "shortcuts": self.shortcuts or [],
             "academic_period": self.academic_period,
             # El código de matrícula NUNCA va acá: este dict lo ve cualquier
             # usuario autenticado. Solo sale por GET /cursos/<id>/matricula.

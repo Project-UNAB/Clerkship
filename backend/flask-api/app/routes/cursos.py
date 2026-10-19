@@ -327,6 +327,12 @@ def actualizar(course_id, validated_body: ActualizarCursoRequest):
             course.description = sanitizar_html(validated_body.description)
         if validated_body.academic_period is not None:
             course.academic_period = validated_body.academic_period
+        if validated_body.card_summary is not None:
+            # Texto plano: no pasa por el editor ni admite HTML.
+            course.card_summary = " ".join(validated_body.card_summary.split()) or None
+        if validated_body.shortcuts is not None:
+            accesos = [{"label": " ".join(a.label.split()), "url": a.url.strip()} for a in validated_body.shortcuts]
+            course.shortcuts = [a for a in accesos if a["label"]] or None
         if clave_nueva:
             course.cover_image_key = clave_nueva
         db.session.commit()
@@ -337,7 +343,7 @@ def actualizar(course_id, validated_body: ActualizarCursoRequest):
 
     # La portada reemplazada se borra de R2 solo con el cambio ya confirmado.
     _borrar_portada_de_r2(clave_anterior)
-    return jsonify(course.to_dict()), 200
+    return jsonify({**course.to_dict(), **_ficha_del_curso(course, con_contacto=True)}), 200
 
 
 @cursos_bp.delete("/<course_id>/cover")
@@ -370,7 +376,93 @@ def obtener(course_id):
             "message": "Curso no encontrado",
             "status_code": 404
         }), 404
-    return jsonify(course.to_dict()), 200
+    con_contacto = _es_del_curso(get_current_user(), course)
+    return jsonify({**course.to_dict(), **_ficha_del_curso(course, con_contacto=con_contacto)}), 200
+
+
+def _es_del_curso(user, course) -> bool:
+    """La gente del curso: el docente dueño, sus estudiantes matriculados y un
+    administrador. Solo ellos ven el correo del docente y la lista de
+    miembros; la ficha la puede pedir cualquier usuario con sesión."""
+    if user is None:
+        return False
+    if user.role == "ADMIN" or str(user.id) == str(course.teacher_id):
+        return True
+    try:
+        return StudentCourse.query.filter_by(student_id=user.id, course_id=course.id).first() is not None
+    except Exception:  # noqa: BLE001
+        db.session.rollback()
+        return False
+
+
+def _ficha_del_curso(course, con_contacto: bool = False) -> dict:
+    """Datos reales para la ficha del curso: quién lo dicta y cuánta gente hay.
+    Nombre y avatar del docente y conteos; su correo solo con con_contacto
+    (ver _es_del_curso). Si alguna consulta falla, la ficha sale
+    sin esos datos: no tumba la página del curso."""
+    try:
+        docente = User.query.get(course.teacher_id)
+        cursos_del_docente = [c.id for c in Course.query.filter_by(teacher_id=course.teacher_id).with_entities(Course.id).all()]
+        estudiantes_del_docente = (
+            db.session.query(db.func.count(db.func.distinct(StudentCourse.student_id)))
+            .filter(StudentCourse.course_id.in_(cursos_del_docente)).scalar()
+        ) if cursos_del_docente else 0
+        return {
+            "teacher_name": f"{docente.first_name} {docente.last_name}".strip() if docente else None,
+            "teacher_avatar": docente.avatar_svg if docente else None,
+            "teacher_email": docente.email if docente and con_contacto else None,
+            "teacher_since": docente.created_at.isoformat() if docente and docente.created_at else None,
+            "teacher_courses": len(cursos_del_docente),
+            "teacher_students": int(estudiantes_del_docente or 0),
+            "student_count": StudentCourse.query.filter_by(course_id=course.id).count(),
+            "created_at": course.created_at.isoformat() if course.created_at else None,
+        }
+    except Exception:  # noqa: BLE001
+        db.session.rollback()
+        return {}
+
+
+# Tope de la lista de miembros: una cohorte clínica cabe de sobra.
+MAX_MIEMBROS = 300
+
+
+@cursos_bp.get("/<course_id>/miembros")
+@jwt_required()
+def listar_miembros(course_id):
+    """Quiénes están en el curso: el docente y los estudiantes matriculados.
+    Solo lo ve la gente del curso. Entre compañeros se ven por nombre; el
+    correo de los estudiantes solo le llega al docente dueño y al administrador."""
+    user = get_current_user()
+    course = Course.query.get(course_id)
+    if course is None:
+        return jsonify({"error": "Not Found", "message": "Curso no encontrado", "status_code": 404}), 404
+    if not _es_del_curso(user, course):
+        return jsonify({"error": "Forbidden", "message": "No haces parte de este curso", "status_code": 403}), 403
+
+    ve_correos = user.role == "ADMIN" or str(user.id) == str(course.teacher_id)
+    docente = User.query.get(course.teacher_id)
+    matriculados = (
+        db.session.query(User)
+        .join(StudentCourse, StudentCourse.student_id == User.id)
+        .filter(StudentCourse.course_id == course.id)
+    )
+    total = matriculados.count()
+    filas = matriculados.order_by(User.first_name.asc(), User.last_name.asc(), User.id.asc()).limit(MAX_MIEMBROS).all()
+    return jsonify({
+        "docente": {
+            "nombre": f"{docente.first_name} {docente.last_name}".strip(),
+            "email": docente.email,
+        } if docente else None,
+        "estudiantes": [
+            {
+                "user_id": str(u.id),
+                "nombre": f"{u.first_name} {u.last_name}".strip(),
+                "email": u.email if ve_correos else None,
+            }
+            for u in filas
+        ],
+        "total": total,
+    }), 200
 
 
 @cursos_bp.post("/<course_id>/matricular")

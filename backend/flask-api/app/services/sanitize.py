@@ -24,13 +24,33 @@ ATRIBUTOS_PERMITIDOS = {
     "img": ["src", "alt", "title", "width", "height"],
     "span": ["style"],
     "div": ["style"],
+    # La alineación la lleva el bloque (párrafo, título, ítem de lista o cita):
+    # sin `style` acá, un texto centrado en el editor se guardaba sin centrar.
+    "p": ["style"],
+    "h1": ["style"], "h2": ["style"], "h3": ["style"], "h4": ["style"],
+    "li": ["style", "value"],
+    "blockquote": ["style"],
+    "strong": ["style"], "b": ["style"], "em": ["style"], "i": ["style"], "u": ["style"], "s": ["style"],
     "td": ["colspan", "rowspan"],
     "th": ["colspan", "rowspan"],
 }
 
 # Solo permitir estilos inline inofensivos (alineación/color de texto), no
 # todo CSS — por ejemplo "position: fixed" podría tapar el resto de la UI.
-ESTILOS_PERMITIDOS = ["text-align", "color", "background-color"]
+# white-space conserva los espacios seguidos tal como se escribieron.
+ESTILOS_PERMITIDOS = ["text-align", "color", "background-color", "white-space", "font-size", "font-family"]
+
+# Tamaños y tipografías que ofrece el editor. Cualquier otro valor se descarta:
+# así un tamaño gigante o una fuente externa no pueden dañar la página.
+TAMANOS_DE_LETRA = re.compile(r"^(?:1[0-9]|2[0-9]|3[0-9]|4[0-8])px$")
+TIPOGRAFIAS = {
+    "arial, sans-serif",
+    "verdana, sans-serif",
+    "tahoma, sans-serif",
+    "georgia, serif",
+    "garamond, serif",
+    "consolas, monospace",
+}
 
 PROTOCOLOS_PERMITIDOS = ["http", "https", "mailto"]
 
@@ -42,9 +62,20 @@ _REL = (None, "rel")
 _STYLE = (None, "style")
 
 _DECLARACION_CSS_SEGURA = re.compile(
-    r"^[a-z-]+\s*:\s*(?:[a-z]+|#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\([0-9.,%\s/]+\))$",
+    r"^[a-z-]+\s*:\s*(?:[a-z]+(?:-[a-z]+)?|#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\([0-9.,%\s/]+\))$",
     re.IGNORECASE,
 )
+
+
+def _declaracion_segura(declaracion: str) -> bool:
+    propiedad, _, valor = declaracion.partition(":")
+    propiedad, valor = propiedad.strip().lower(), valor.strip()
+    if propiedad == "font-size":
+        return bool(TAMANOS_DE_LETRA.match(valor))
+    if propiedad == "font-family":
+        normalizado = re.sub(r"\s*,\s*", ", ", valor.replace('"', "").replace("'", "")).lower()
+        return normalizado in TIPOGRAFIAS
+    return bool(_DECLARACION_CSS_SEGURA.match(declaracion))
 
 
 class _EnlacesSeguros(Filter):
@@ -76,7 +107,7 @@ class _EstilosSeguros(Filter):
             attrs = token.get("data") if token.get("type") in ("StartTag", "EmptyTag") else None
             if attrs and _STYLE in attrs:
                 declaraciones = [d.strip() for d in attrs[_STYLE].split(";")]
-                seguras = [d for d in declaraciones if _DECLARACION_CSS_SEGURA.match(d)]
+                seguras = [d for d in declaraciones if _declaracion_segura(d)]
                 if seguras:
                     attrs[_STYLE] = "; ".join(seguras) + ";"
                 else:

@@ -91,6 +91,12 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
 /* ── Cursos (necesario para poder crear una consulta) ─────────────── */
 
+/** Acceso directo de un curso: un nombre y un enlace web. */
+export interface AccesoDirecto {
+  label: string;
+  url: string;
+}
+
 export interface Course {
   id: string;
   name: string;
@@ -106,6 +112,11 @@ export interface Course {
   cover_url?: string | null;
   /** Portada completa (1200x600). */
   cover_full_url?: string | null;
+  /** Texto corto de la tarjeta en "Mis cursos" (texto plano). No es la
+   *  descripción: esa es el contenido que se ve dentro del curso. */
+  card_summary?: string | null;
+  /** Accesos directos que el docente puso en la página del curso. */
+  shortcuts?: AccesoDirecto[];
   /** Con fecha: el curso está en la papelera del docente. */
   deleted_at?: string | null;
   /** Solo para el estudiante (GET /api/cursos/mios): tareas abiertas que no ha entregado. */
@@ -113,6 +124,15 @@ export interface Course {
   /** Solo para el estudiante: el cierre más cercano entre sus tareas pendientes (UTC). */
   next_due_at?: string | null;
   next_due_title?: string | null;
+  /** Solo en el detalle del curso (GET /api/cursos/<id>): datos reales para la ficha. */
+  teacher_avatar?: string | null;
+  /** Correo de contacto del docente. Solo llega a la gente del curso. */
+  teacher_email?: string | null;
+  teacher_since?: string | null;
+  teacher_courses?: number;
+  teacher_students?: number;
+  student_count?: number;
+  created_at?: string | null;
 }
 
 export type EnrollmentMode = 'OPEN' | 'CODE' | 'APPROVAL';

@@ -122,8 +122,40 @@ def test_sanitizar_html_quita_atributos_fuera_de_la_lista():
     )
     for prohibido in ("id=", "class=", "onclick", "data-x", "onmouseover", "srcset", "onerror", "position"):
         assert prohibido not in resultado
-    # <p> no admite style: solo span y div.
-    assert "<p>t</p>" in resultado
+    # El párrafo conserva solo las propiedades de estilo permitidas.
+    assert '<p style="color:red;">t</p>' in resultado
+
+
+def test_sanitizar_html_conserva_lo_que_escribe_el_editor():
+    """Lo que el docente ve al escribir es lo que se guarda: alineación en
+    párrafos, títulos e ítems de lista, listas anidadas, formatos y espacios."""
+    html = (
+        '<h2 class="x" dir="ltr" style="text-align: center;"><span style="white-space: pre-wrap;">Bienvenidos</span></h2>'
+        '<p style="text-align: right;"><b><strong style="white-space: pre-wrap;">Negrita</strong></b>'
+        '<u><span style="white-space: pre-wrap;">subrayado</span></u><s><span>tachado</span></s></p>'
+        '<ul><li value="1" style="text-align: center;"><span>uno</span></li>'
+        '<li value="2"><ul><li value="1"><span>anidado</span></li></ul></li></ul>'
+        '<ol><li value="1"><i><em>a</em></i></li></ol>'
+        '<blockquote style="text-align: justify;"><span>cita</span></blockquote>'
+    )
+    resultado = sanitizar_html(html)
+    for esperado in (
+        '<h2 style="text-align: center;">', '<p style="text-align: right;">', '<li value="1" style="text-align: center;">',
+        '<blockquote style="text-align: justify;">', 'white-space: pre-wrap;', "<b><strong", "<u>", "<s>", "<i><em>",
+        "<ul><li", "<ol><li", "<li value=\"2\"><ul>",
+    ):
+        assert esperado in resultado, esperado
+    assert "class=" not in resultado and "dir=" not in resultado
+
+
+def test_sanitizar_html_la_alineacion_no_abre_la_puerta_a_otro_css():
+    resultado = sanitizar_html(
+        '<p style="text-align: center; position: fixed; background: url(x); white-space: expression(alert(1))">t</p>'
+        '<li style="text-align: right; z-index: 9999">x</li>'
+    )
+    assert '<p style="text-align: center;">t</p>' in resultado
+    for prohibido in ("position", "url(", "expression", "z-index", "background"):
+        assert prohibido not in resultado
 
 
 def test_sanitizar_html_no_deja_url_ni_expresiones_en_css():
@@ -148,3 +180,21 @@ def test_sanitizar_html_quita_comentarios_y_no_reabre_etiquetas():
 def test_sanitizar_html_vacio_no_rompe():
     assert sanitizar_html(None) == ""
     assert sanitizar_html("") == ""
+
+
+def test_sanitizar_html_conserva_tamano_y_tipografia_del_editor():
+    resultado = sanitizar_html(
+        '<p><span style="font-size: 24px; font-family: Georgia, serif;">grande</span>'
+        '<strong style="font-size: 12px; font-family: Consolas, monospace;">pequeña</strong></p>'
+    )
+    assert 'font-size: 24px' in resultado and 'font-family: Georgia, serif' in resultado
+    assert 'font-size: 12px' in resultado and 'Consolas, monospace' in resultado
+
+
+def test_sanitizar_html_descarta_tamanos_y_fuentes_que_el_editor_no_ofrece():
+    resultado = sanitizar_html(
+        '<p><span style="font-size: 900px">a</span><span style="font-size: 2em">b</span>'
+        '<span style="font-family: Comic Sans MS">c</span><span style="font-family: url(https://x/f.woff)">d</span></p>'
+    )
+    assert "font-size" not in resultado and "font-family" not in resultado
+    assert "<span>a</span>" in resultado

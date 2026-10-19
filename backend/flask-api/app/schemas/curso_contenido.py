@@ -7,6 +7,15 @@ from app.schemas.base import BaseSchema
 
 PoliticaNota = Literal["BEST", "LAST", "AVERAGE", "FIRST"]
 
+# Icono y color de la tarjeta de un módulo: listas cerradas, las mismas del
+# selector del frontend (components/cursos/estiloModulo.ts).
+IconoDeModulo = Literal[
+    "book", "stethoscope", "heart-pulse", "activity", "pill", "syringe", "microscope", "flask", "dna", "brain",
+    "bone", "clipboard", "file", "folder", "video", "graduation", "calendar", "users", "message", "lightbulb",
+    "target", "flag", "star", "award",
+]
+ColorDeModulo = Literal["azul", "turquesa", "verde", "ambar", "naranja", "rojo", "rosa", "morado", "gris"]
+
 
 class CriterioRubrica(BaseSchema):
     """Un criterio de la rúbrica de una tarea."""
@@ -28,12 +37,22 @@ class NotaDeCriterio(BaseSchema):
 class CrearBloqueRequest(BaseSchema):
     title: str = Field(..., min_length=1, max_length=150, description="Título del bloque/tema")
     description: Optional[str] = Field(None, max_length=1000)
+    icon: Optional[IconoDeModulo] = None
+    color: Optional[ColorDeModulo] = None
+
+
+class ReordenarBloquesRequest(BaseSchema):
+    """El orden completo de los módulos del curso: todos sus ids, cada uno una vez."""
+
+    orden: List[str] = Field(..., min_length=1, max_length=500)
 
 
 class ActualizarBloqueRequest(BaseSchema):
     title: Optional[str] = Field(None, min_length=1, max_length=150)
     description: Optional[str] = Field(None, max_length=1000)
     position: Optional[int] = None
+    icon: Optional[IconoDeModulo] = None
+    color: Optional[ColorDeModulo] = None
 
 
 class CrearContenidoRequest(BaseSchema):

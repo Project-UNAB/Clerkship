@@ -17,6 +17,10 @@ class CourseBlock(db.Model):
     title = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text)
     position = db.Column(db.Integer, nullable=False, default=0)
+    # Claves del icono y del color de la tarjeta del módulo (lista cerrada en
+    # schemas/curso_contenido.py). NULL = los de por defecto.
+    icon = db.Column(db.String(30))
+    color = db.Column(db.String(20))
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
     updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
@@ -36,5 +40,7 @@ class CourseBlock(db.Model):
             "title": self.title,
             "description": self.description,
             "position": self.position,
+            "icon": self.icon,
+            "color": self.color,
             "created_at": created,
         }

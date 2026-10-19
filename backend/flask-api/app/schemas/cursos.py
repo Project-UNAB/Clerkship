@@ -13,6 +13,15 @@ class CreateCourseRequest(BaseSchema):
     name: str = Field(..., min_length=1, max_length=150, description="Nombre del curso")
     description: Optional[str] = Field(None, max_length=20000, description="Descripción del programa (HTML del editor WYSIWYG)")
     academic_period: Optional[str] = Field(None, max_length=20, description="Período académico (ej. 2026-1)")
+    card_summary: Optional[str] = Field(None, max_length=280, description="Texto corto de la tarjeta del curso (texto plano)")
+
+
+class AccesoDirecto(BaseSchema):
+    """Un acceso directo del curso: un nombre y un enlace web."""
+
+    label: str = Field(..., min_length=1, max_length=40)
+    # Solo enlaces web: nada de javascript:, data: ni otros esquemas.
+    url: str = Field(..., max_length=500, pattern=r"^[hH][tT][tT][pP][sS]?://[^\s<>\"']+$")
 
 
 class ActualizarCursoRequest(BaseSchema):
@@ -21,6 +30,8 @@ class ActualizarCursoRequest(BaseSchema):
     name: Optional[str] = Field(None, min_length=1, max_length=150)
     description: Optional[str] = Field(None, max_length=20000)
     academic_period: Optional[str] = Field(None, max_length=20)
+    card_summary: Optional[str] = Field(None, max_length=280, description="Texto corto de la tarjeta; vacío para quitarlo")
+    shortcuts: Optional[list[AccesoDirecto]] = Field(None, max_length=8, description="Accesos directos; lista vacía para quitarlos")
 
 
 class CourseResponse(BaseSchema):

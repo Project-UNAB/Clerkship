@@ -4,7 +4,7 @@
  * también el flujo de simulación del estudiante) — acá solo lo que falta.
  */
 import { apiFetch, todasLasPaginas, type Paginacion } from './apiClient';
-import type { Course, EnrollmentMode } from './consultasApi';
+import type { AccesoDirecto, Course, EnrollmentMode } from './consultasApi';
 
 export function obtenerCurso(courseId: string): Promise<Course> {
   return apiFetch(`/api/cursos/${courseId}`);
@@ -18,11 +18,12 @@ export interface PortadaNueva {
 }
 
 /** Con portada el curso viaja como multipart (campo "cover"); sin ella, como JSON. */
-function cuerpoDeCurso(campos: Record<string, string | undefined>, portada?: PortadaNueva | null): BodyInit {
+function cuerpoDeCurso(campos: Record<string, string | AccesoDirecto[] | undefined>, portada?: PortadaNueva | null): BodyInit {
   if (!portada) return JSON.stringify(campos);
   const form = new FormData();
   Object.entries(campos).forEach(([clave, valor]) => {
-    if (valor !== undefined) form.append(clave, valor);
+    // Las listas (accesos directos) solo viajan por JSON, nunca junto a una portada.
+    if (typeof valor === 'string') form.append(clave, valor);
   });
   form.append('cover', portada.file);
   form.append('focus_x', String(portada.focusX));
@@ -69,16 +70,29 @@ export function borrarCursoDefinitivamente(
   return apiFetch(`/api/cursos/${courseId}/permanente`, { method: 'DELETE' });
 }
 
-/** El docente dueño edita nombre, descripción (HTML), período o portada de su curso. */
+/** El docente dueño edita nombre, descripción (HTML), período, portada o el
+ * texto de la tarjeta de su curso. Solo cambia lo que se manda. */
 export function actualizarCurso(
   courseId: string,
-  updates: { name?: string; description?: string; academic_period?: string },
+  updates: { name?: string; description?: string; academic_period?: string; card_summary?: string; shortcuts?: AccesoDirecto[] },
   portada?: PortadaNueva | null,
 ): Promise<Course> {
   return apiFetch(`/api/cursos/${courseId}`, {
     method: 'PATCH',
     body: cuerpoDeCurso(updates, portada),
   });
+}
+
+export interface MiembrosDeCurso {
+  docente: { nombre: string; email: string } | null;
+  /** El correo de los estudiantes solo le llega al docente del curso. */
+  estudiantes: { user_id: string; nombre: string; email: string | null }[];
+  total: number;
+}
+
+/** Docente y estudiantes del curso. Solo para quien hace parte del curso. */
+export function listarMiembrosDeCurso(courseId: string): Promise<MiembrosDeCurso> {
+  return apiFetch(`/api/cursos/${courseId}/miembros`);
 }
 
 export interface EstudianteDeCurso {

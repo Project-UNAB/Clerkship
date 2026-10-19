@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Megaphone, Pin, Plus, Pencil, Trash2, MessageCircle, Loader2 } from 'lucide-react';
+import { Megaphone, Pin, Plus, Pencil, Trash2, MessageCircle, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { listarAvisos, borrarAviso, type CourseAnnouncement } from '../../data/cursoAvisosApi';
 import CrearAvisoModal from './CrearAvisoModal';
 import AvisoDetalleModal from './AvisoDetalleModal';
@@ -60,9 +60,12 @@ export default function AvisosPanel({ courseId, esDocente }: Props) {
   return (
     <div className="ccv-avisos-panel">
       <button type="button" className="ccv-avisos-header" onClick={() => setColapsado(v => !v)}>
-        <Megaphone size={16} />
-        <span>Avisos</span>
-        <span className="ccv-block-count">{avisos.length}</span>
+        <div className="ccv-avisos-header-left">
+          <Megaphone size={18} color="#0284C7" />
+          <span>Avisos y Comunicados</span>
+          <span className="ccv-block-count">{avisos.length}</span>
+        </div>
+        {colapsado ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
       </button>
 
       {!colapsado && (

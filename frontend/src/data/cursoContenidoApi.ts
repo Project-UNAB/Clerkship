@@ -61,6 +61,9 @@ export interface CourseBlock {
   title: string;
   description: string | null;
   position: number;
+  /** Claves del icono y del color de la tarjeta (ver components/cursos/estiloModulo.ts); null = por defecto. */
+  icon?: string | null;
+  color?: string | null;
   created_at: string | null;
   contenido: CourseContentItem[];
 }
@@ -69,17 +72,30 @@ export function listarBloques(courseId: string): Promise<{ bloques: CourseBlock[
   return apiFetch(`/api/cursos/${courseId}/bloques`);
 }
 
-export function crearBloque(courseId: string, title: string, description?: string): Promise<CourseBlock> {
+export function crearBloque(
+  courseId: string,
+  title: string,
+  estilo?: { icon?: string; color?: string },
+  description?: string,
+): Promise<CourseBlock> {
   return apiFetch(`/api/cursos/${courseId}/bloques`, {
     method: 'POST',
-    body: JSON.stringify({ title, description: description || null }),
+    body: JSON.stringify({ title, description: description || null, ...estilo }),
+  });
+}
+
+/** Guarda el orden de todos los módulos del curso (ids en el orden nuevo). */
+export function reordenarBloques(courseId: string, orden: string[]): Promise<{ orden: string[] }> {
+  return apiFetch(`/api/cursos/${courseId}/bloques/orden`, {
+    method: 'PUT',
+    body: JSON.stringify({ orden }),
   });
 }
 
 export function actualizarBloque(
   courseId: string,
   blockId: string,
-  updates: { title?: string; description?: string | null; position?: number },
+  updates: { title?: string; description?: string | null; position?: number; icon?: string; color?: string },
 ): Promise<CourseBlock> {
   return apiFetch(`/api/cursos/${courseId}/bloques/${blockId}`, {
     method: 'PATCH',

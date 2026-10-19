@@ -765,6 +765,10 @@ export default function CursosPage() {
                               </div>
                             </div>
 
+                            {card.realCourse.card_summary && (
+                              <p className="mc-card-resumen">{card.realCourse.card_summary}</p>
+                            )}
+
                             {!esDocente ? (
                               <div className="mc-card-indicadores">
                                 <span className={`mc-card-pendientes ${card.realCourse.pending_assignments ? 'has-pendientes' : ''}`}>
@@ -783,7 +787,7 @@ export default function CursosPage() {
                                   </span>
                                 )}
                               </div>
-                            ) : (
+                            ) : !card.realCourse.card_summary && (
                               <p className="mc-card-subtitle">
                                 {card.subtitle}
                               </p>

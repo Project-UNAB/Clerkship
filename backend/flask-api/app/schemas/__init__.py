@@ -42,6 +42,7 @@ from app.schemas.curso_contenido import (
     ActualizarContenidoRequest,
     CalificarEntregaRequest,
     CrearBloqueRequest,
+    ReordenarBloquesRequest,
     CrearContenidoRequest,
     EntregarTareaRequest,
     PreferenciasNotificacionRequest,
@@ -148,6 +149,7 @@ __all__ = [
     "ActualizarMatriculaRequest",
     # Contenido de cursos (bloques y material)
     "CrearBloqueRequest",
+    "ReordenarBloquesRequest",
     "ActualizarBloqueRequest",
     "CrearContenidoRequest",
     "ActualizarContenidoRequest",

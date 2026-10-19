@@ -32,6 +32,7 @@ from app.schemas import (
     ActualizarContenidoRequest,
     CalificarEntregaRequest,
     CrearBloqueRequest,
+    ReordenarBloquesRequest,
     CrearContenidoRequest,
     EntregarTareaRequest,
     validate_body,
@@ -236,6 +237,8 @@ def crear_bloque(course_id, validated_body: CrearBloqueRequest):
         title=validated_body.title.strip(),
         description=validated_body.description,
         position=max_pos + 1,
+        icon=validated_body.icon,
+        color=validated_body.color,
     )
     db.session.add(bloque)
     db.session.commit()
@@ -243,6 +246,35 @@ def crear_bloque(course_id, validated_body: CrearBloqueRequest):
     d = bloque.to_dict()
     d["contenido"] = []
     return jsonify(d), 201
+
+
+@curso_contenido_bp.put("/<course_id>/bloques/orden")
+@role_required("TEACHER")
+@validate_body(ReordenarBloquesRequest)
+def reordenar_bloques(course_id, validated_body: ReordenarBloquesRequest):
+    """El docente dueño guarda el orden de todos los módulos de una vez (lo
+    que deja el arrastre de tarjetas). La lista debe traer exactamente los
+    módulos del curso: así un orden viejo o incompleto no deja posiciones repetidas."""
+    user = get_current_user()
+    course, err = _curso_o_404(course_id)
+    if err:
+        return err
+    if not _es_docente_dueno(user, course):
+        return _forbidden()
+
+    bloques = {str(b.id): b for b in CourseBlock.query.filter_by(course_id=course_id).all()}
+    orden = validated_body.orden
+    if len(orden) != len(set(orden)) or set(orden) != set(bloques):
+        return jsonify({
+            "error": "Bad Request",
+            "message": "El orden debe incluir cada módulo del curso exactamente una vez. Recarga la página e inténtalo de nuevo.",
+            "status_code": 400,
+        }), 400
+
+    for posicion, block_id in enumerate(orden):
+        bloques[block_id].position = posicion
+    db.session.commit()
+    return jsonify({"orden": orden}), 200
 
 
 @curso_contenido_bp.patch("/<course_id>/bloques/<block_id>")
@@ -265,6 +297,10 @@ def actualizar_bloque(course_id, block_id, validated_body: ActualizarBloqueReque
         bloque.description = validated_body.description
     if validated_body.position is not None:
         bloque.position = validated_body.position
+    if validated_body.icon is not None:
+        bloque.icon = validated_body.icon
+    if validated_body.color is not None:
+        bloque.color = validated_body.color
 
     db.session.commit()
     return jsonify(bloque.to_dict()), 200

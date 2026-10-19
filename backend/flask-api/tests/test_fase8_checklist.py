@@ -73,6 +73,7 @@ _CUERPOS = {
     ("POST", "/entregas"): {"name": "a.pdf", "file_base64": "JVBERi0xLjQKJSVFT0YK"},
     ("POST", "/responder"): {"answers": []},
     ("PUT", "/respuestas"): {"answers": []},
+    ("PUT", "/bloques/orden"): {"orden": ["00000000-0000-0000-0000-000000000001"]},
 }
 
 

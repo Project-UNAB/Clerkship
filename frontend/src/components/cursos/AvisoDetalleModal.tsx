@@ -14,7 +14,7 @@ const SANITIZE_OPTS = {
     'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'a',
     'blockquote', 'code', 'pre', 'span', 'div',
   ],
-  ALLOWED_ATTR: ['href', 'target', 'rel', 'style'],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'style', 'value'],
 };
 
 interface Props {
