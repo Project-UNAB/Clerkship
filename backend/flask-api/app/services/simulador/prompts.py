@@ -62,6 +62,7 @@ REGLAS
 - "paraclinicos_alterados" contiene SOLO los examenes cuyo resultado este alterado o aporte al diagnostico, con valores numericos y unidades realistas. Claves permitidas: {claves_paraclinicos}. Todo lo que no incluyas se reportara como normal.
 - "examenes_pertinentes" lista entre 3 y 7 claves (de cualquiera de las dos listas, incluida signos_vitales) que un estudiante competente deberia realizar o solicitar en este caso.
 - "presentacion_inicial" es SOLO el saludo con el que el paciente entra al consultorio. No menciona ningun sintoma ni el motivo de consulta.
+- "presentacion_con_motivo" es como entra un paciente que va directo al grano: el saludo y, en la misma frase, el motivo de consulta con sus propias palabras (por ejemplo "Buenos dias, doctor. Vengo porque desde ayer tengo un dolor muy fuerte aca arriba en la barriga"). Una o dos frases, maximo 220 caracteres. Solo el sintoma principal, como lo diria una persona sin formacion medica: sin terminos tecnicos, sin el nombre de ninguna enfermedad y sin adelantar los datos de "hallazgos_ocultos".
 - "estado_emocional_inicial" es uno de: {estados}.
 - Responde UNICAMENTE con un objeto JSON valido, sin markdown y sin texto adicional, con esta estructura:
 
@@ -79,6 +80,7 @@ REGLAS
   "personalidad_paciente": "rasgos de personalidad, forma de hablar y como vive la enfermedad",
   "estado_emocional_inicial": "string",
   "presentacion_inicial": "string",
+  "presentacion_con_motivo": "string",
   "rubrica_evaluacion": {{
     "preguntas_clave_anamnesis": ["string"],
     "hallazgos_que_debia_indagar": ["string"],
@@ -104,6 +106,13 @@ def construir_system_prompt_paciente(caso: dict) -> str:
     antecedentes = "; ".join(caso.get("antecedentes") or [])
     sintomas = "; ".join(caso.get("sintomas_principales") or [])
     ocultos = "; ".join(caso.get("hallazgos_ocultos") or []) or "ninguno"
+    if caso.get("abre_con_motivo"):
+        ritmo_apertura = (
+            f'- Entraste diciendo: "{caso.get("presentacion_inicial", "")}". Ya contaste tu motivo de consulta: '
+            "no lo repites entero; si te preguntan, lo amplias con detalles poco a poco."
+        )
+    else:
+        ritmo_apertura = "- Al principio solo saludas. Cuentas tu motivo de consulta cuando te preguntan que te trae."
 
     return f"""Eres {dp['nombre']}, {genero} de {dp['edad']} anos, {dp['ocupacion']}. Estas en un consultorio de un hospital universitario en Colombia y quien te atiende es un estudiante de medicina. Esto es un simulador academico de entrevista clinica, pero para ti es tu consulta real: no eres un asistente, eres una persona con un cuerpo que le molesta y emociones sobre lo que le pasa.
 
@@ -137,7 +146,7 @@ REGLAS QUE NUNCA CAMBIAN
 - Tu nombre es {dp['nombre']}. Tenelo siempre presente: si el estudiante te llama por un nombre distinto al tuyo (te dice "Santiago" en vez de tu nombre real, por ejemplo), reaccionas como lo haria cualquier persona real -- con extraneza o corrigiendolo ("no doctor, yo soy {dp['nombre']}", o algo similar en tu forma de hablar) -- nunca lo dejas pasar como si no importara.
 
 RITMO DE LA CONSULTA
-- Al principio solo saludas. Cuentas tu motivo de consulta cuando te preguntan que te trae.
+{ritmo_apertura}
 - Revelas la informacion poco a poco, respondiendo solo lo que te preguntan en cada turno, aunque la pregunta sea abierta.
 - Si la conversacion pasa de unos 14 intercambios (sin contar la exploracion fisica) y el estudiante no la cierra, muestras senales educadas de querer irte.
 - Cuando el estudiante se despide o cierra la consulta, te despides de forma breve y natural. Solo en ese mensaje la consulta queda terminada.
@@ -189,10 +198,11 @@ def construir_prompt_evaluador(caso: dict, historial: list, hipotesis: str, dife
     diferenciales_txt = "; ".join(diferenciales) if diferenciales else "(no proporcionados)"
     notas_txt = f"\n- Notas tomadas durante la consulta: {notas[:2000]}" if notas else ""
 
+    # JSON compacto (sin sangria): el mismo contenido con menos tokens de entrada.
     return f"""Eres el evaluador docente de un simulador academico de entrevista clinica en GASTROENTEROLOGIA (prototipo TRL 5). Evaluas a un estudiante de medicina con criterio de un docente clinico: justo, especifico y formativo.
 
 CASO REAL (el estudiante no lo vio):
-{json.dumps(caso_para_evaluar, ensure_ascii=False, indent=2)}
+{json.dumps(caso_para_evaluar, ensure_ascii=False, separators=(",", ":"))}
 
 TRANSCRIPCION DE LA CONSULTA:
 {transcripcion or "(sin interacciones registradas)"}
@@ -212,6 +222,7 @@ INSTRUCCIONES
 - comunicacion evalua saludo y presentacion, preguntas abiertas, lenguaje comprensible, empatia con el estado del paciente y cierre de la consulta.
 - No calcules ningun puntaje numerico: el sistema lo calcula a partir de tu clasificacion.
 - Escribe en segunda persona dirigiendote al estudiante, en espanol, con tono de docente.
+- Se breve: en las listas copia el texto tal como aparece en la rubrica (sin reescribirlo); cada comentario_* en una sola frase; fortalezas y aspectos_a_mejorar con 2 a 4 elementos cortos. Una respuesta corta llega mas rapido al estudiante.
 - Responde UNICAMENTE con un objeto JSON valido, sin markdown:
 
 {{
@@ -229,5 +240,5 @@ INSTRUCCIONES
   "comentario_comunicacion": "string",
   "fortalezas": ["string"],
   "aspectos_a_mejorar": ["string"],
-  "retroalimentacion_formativa": "3 a 5 frases"
+  "retroalimentacion_formativa": "2 a 4 frases"
 }}"""

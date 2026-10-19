@@ -14,6 +14,8 @@ tampoco se guarda: es 100% derivable del caso, se reconstruye en cada turno.
 """
 
 import logging
+import os
+import random
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -27,6 +29,7 @@ from app.services.simulador.catalogo import (
 )
 from app.services.simulador.guardrails import (
     aplicar_guardrails_paciente,
+    apertura_con_motivo_valida,
     asignar_nombre_si_falta,
     estado_emocional_valido,
     guardrail_saludo,
@@ -45,6 +48,16 @@ from app.services.simulador.rag import obtener_referencias
 from app.services.simulador.scoring import calcular_puntaje
 
 logger = logging.getLogger(__name__)
+
+
+def _probabilidad_motivo_inicial() -> float:
+    """Proporcion de casos en que el paciente entra diciendo de una vez que
+    le pasa ("Buenos dias, doctor, vengo porque..."), en vez de solo saludar.
+    Lo pidio el docente: 80 % por defecto. SIMULADOR_PROB_MOTIVO_INICIAL la cambia."""
+    try:
+        return min(1.0, max(0.0, float(os.getenv("SIMULADOR_PROB_MOTIVO_INICIAL", "0.8"))))
+    except ValueError:
+        return 0.8
 
 _CATALOGO_EXPLORACION = {
     "examen_fisico": [{"clave": c, "etiqueta": d["etiqueta"], "grupo": d["grupo"]} for c, d in CATALOGO_EXAMEN_FISICO.items()],
@@ -71,7 +84,7 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
     sobreescribe nombre/edad/sexo/peso al final por si el modelo la ignora.
     """
     prompt = construir_prompt_generador(subtema, dificultad, referencias or [], identidad_forzada)
-    resp = llamar_modelo([prompt, "Genera un caso nuevo siguiendo las reglas. Responde solo con el JSON."], temperature=0.3)
+    resp = llamar_modelo([prompt, "Genera un caso nuevo siguiendo las reglas. Responde solo con el JSON."], temperature=0.3, agente="generador")
 
     avisos = []
     caso = None
@@ -186,13 +199,21 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
     return _finalizar_caso(
         caso, subtema, dificultad, avisos,
         provider_used=resp.proveedor, model_used=resp.modelo, is_mock=False, error_details=None,
-        uso_tokens={"prompt_tokens": resp.prompt_tokens, "completion_tokens": resp.completion_tokens, "total_tokens": resp.total_tokens},
+        uso_tokens={"prompt_tokens": resp.prompt_tokens, "completion_tokens": resp.completion_tokens, "total_tokens": resp.total_tokens, "latency_ms": resp.latency_ms},
     )
 
 
 def _finalizar_caso(caso, subtema, dificultad, avisos, provider_used, model_used, is_mock, error_details, uso_tokens=None) -> dict:
-    presentacion, guardrail_saludo_activado = guardrail_saludo(caso["presentacion_inicial"], caso.get("sintomas_principales") or [])
-    caso["presentacion_inicial"] = presentacion
+    con_motivo = caso.pop("presentacion_con_motivo", None)
+    guardrail_saludo_activado = False
+    if random.random() < _probabilidad_motivo_inicial() and apertura_con_motivo_valida(con_motivo, caso.get("diagnostico_real")):
+        # El paciente entra contando que le pasa; la guarda del saludo no aplica.
+        caso["presentacion_inicial"] = con_motivo.strip()
+        caso["abre_con_motivo"] = True
+    else:
+        presentacion, guardrail_saludo_activado = guardrail_saludo(caso["presentacion_inicial"], caso.get("sintomas_principales") or [])
+        caso["presentacion_inicial"] = presentacion
+        caso["abre_con_motivo"] = False
 
     system_prompt_paciente = construir_system_prompt_paciente(caso)
 
@@ -238,7 +259,7 @@ def chat(system_prompt_paciente: str, caso_completo_oculto: dict, historial: lis
     )
     parte_usuario = (texto_historial + "\n" if texto_historial else "") + f"Estudiante: {mensaje_estudiante}"
 
-    resp = llamar_modelo([system_prompt_paciente, parte_usuario], temperature=0.4)
+    resp = llamar_modelo([system_prompt_paciente, parte_usuario], temperature=0.4, agente="paciente")
 
     if resp.es_mock:
         turno = sum(1 for m in turnos_validos if m["role"] == "user")
@@ -254,6 +275,7 @@ def chat(system_prompt_paciente: str, caso_completo_oculto: dict, historial: lis
             "guardrails": [],
             "formato_valido": True,
             "uso_tokens": None,
+            "intentos": resp.intentos,
         }
 
     formato_valido = True
@@ -273,6 +295,7 @@ def chat(system_prompt_paciente: str, caso_completo_oculto: dict, historial: lis
         estado_emocional = None
 
     diagnostico_real = (caso_completo_oculto or {}).get("diagnostico_real")
+    mensaje_modelo = mensaje
     mensaje, guardrails = aplicar_guardrails_paciente(mensaje, diagnostico_real)
     if guardrails:
         consulta_terminada = False
@@ -287,7 +310,11 @@ def chat(system_prompt_paciente: str, caso_completo_oculto: dict, historial: lis
         "consulta_terminada": consulta_terminada,
         "guardrails": guardrails,
         "formato_valido": formato_valido,
-        "uso_tokens": {"prompt_tokens": resp.prompt_tokens, "completion_tokens": resp.completion_tokens, "total_tokens": resp.total_tokens},
+        "uso_tokens": {"prompt_tokens": resp.prompt_tokens, "completion_tokens": resp.completion_tokens, "total_tokens": resp.total_tokens, "latency_ms": resp.latency_ms},
+        "intentos": resp.intentos,
+        # Lo que dijo el modelo antes de las guardas: permite medir cuanto
+        # filtraria el modelo solo, sin la red de seguridad.
+        "mensaje_sin_guardas": mensaje_modelo,
     }
 
 
@@ -365,12 +392,12 @@ def explorar(caso_completo_oculto: dict, tipo: str, clave: str) -> dict:
 def evaluar(caso_completo_oculto: dict, historial: list, hipotesis: str, diferenciales: list,
             plan: str, notas: str, acciones_clinicas: list, duracion_segundos) -> dict:
     prompt = construir_prompt_evaluador(caso_completo_oculto, historial, hipotesis, diferenciales, plan, notas, acciones_clinicas)
-    resp = llamar_modelo([prompt, "Genera la evaluacion en el formato indicado. Responde solo con el JSON."], temperature=0.2)
+    resp = llamar_modelo([prompt, "Genera la evaluacion en el formato indicado. Responde solo con el JSON."], temperature=0.2, agente="evaluador")
 
     if resp.es_mock:
         ev = mock.evaluacion_demo()
         ev = calcular_puntaje(ev, caso_completo_oculto, acciones_clinicas, duracion_segundos)
-        return {"is_mock": True, "provider_used": "Mock", "model_used": None, "error_details": resp.error, "evaluacion": ev, "uso_tokens": None}
+        return {"is_mock": True, "provider_used": "Mock", "model_used": None, "error_details": resp.error, "evaluacion": ev, "uso_tokens": None, "intentos": resp.intentos}
 
     from app.services.simulador.scoring import validar_evaluacion
 
@@ -385,10 +412,12 @@ def evaluar(caso_completo_oculto: dict, historial: list, hipotesis: str, diferen
         return {
             "is_mock": True, "provider_used": "Mock", "model_used": None,
             "error_details": f"La evaluacion devuelta no es utilizable: {exc}", "evaluacion": ev, "uso_tokens": None,
+            "intentos": resp.intentos,
         }
 
     ev = calcular_puntaje(ev, caso_completo_oculto, acciones_clinicas, duracion_segundos)
     return {
         "is_mock": False, "provider_used": resp.proveedor, "model_used": resp.modelo, "error_details": None, "evaluacion": ev,
-        "uso_tokens": {"prompt_tokens": resp.prompt_tokens, "completion_tokens": resp.completion_tokens, "total_tokens": resp.total_tokens},
+        "uso_tokens": {"prompt_tokens": resp.prompt_tokens, "completion_tokens": resp.completion_tokens, "total_tokens": resp.total_tokens, "latency_ms": resp.latency_ms},
+        "intentos": resp.intentos,
     }

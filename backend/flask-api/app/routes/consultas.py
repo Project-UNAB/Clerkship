@@ -22,7 +22,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy.sql import func
 
-from app import db, get_mongo_db
+from app import db, get_mongo_db, limiter
 from app.models import AgenteUsoTokens, AiEvaluation, Consultation, Course, StudentCourse
 from app.schemas import (
     ConsultationDetailResponse,
@@ -36,6 +36,7 @@ from app.schemas import (
     UpdateConsultationRequest,
     validate_body,
 )
+from app.services import limites
 from app.services.simulador import agentes
 from app.services.simulador.adaptativo import elegir_subtema_y_dificultad
 from app.services.simulador.catalogo import PERFILES_DIFICULTAD
@@ -77,6 +78,7 @@ def _registrar_uso_tokens(agente: str, consultation_id, resultado: dict):
             prompt_tokens=(uso or {}).get("prompt_tokens"),
             completion_tokens=(uso or {}).get("completion_tokens"),
             total_tokens=(uso or {}).get("total_tokens"),
+            latency_ms=int(uso["latency_ms"]) if (uso or {}).get("latency_ms") is not None else None,
         ))
         db.session.commit()
     except Exception:  # noqa: BLE001
@@ -212,6 +214,7 @@ def obtener_ficha_previa():
 
 @consultas_bp.route("", methods=["POST"])
 @role_required("STUDENT")
+@limiter.limit(limites.GENERAR_CASO, key_func=limites.usuario_o_ip)
 @validate_body(CreateConsultationRequest)
 def crear_consulta(validated_body: CreateConsultationRequest):
     """Iniciar una nueva consulta clínica simulada — Agente Generador de Casos:
@@ -366,6 +369,7 @@ def eliminar_consulta(consultation_id):
 
 @consultas_bp.route("/<string:consultation_id>/mensajes", methods=["POST"])
 @role_required("STUDENT")
+@limiter.limit(limites.MENSAJE_PACIENTE, key_func=limites.usuario_o_ip)
 @validate_body(SendMessageRequest)
 def enviar_mensaje(consultation_id, validated_body: SendMessageRequest):
     """Enviar mensaje durante la consulta y recibir respuesta del paciente
@@ -469,6 +473,7 @@ def explorar_consulta(consultation_id, validated_body: ExplorarRequest):
 
 @consultas_bp.route("/<string:consultation_id>/finalizar", methods=["PATCH"])
 @role_required("STUDENT")
+@limiter.limit(limites.EVALUAR_CONSULTA, key_func=limites.usuario_o_ip)
 @validate_body(FinishConsultationRequest)
 def finalizar_consulta(consultation_id, validated_body: FinishConsultationRequest):
     """Finalizar la sesión de consulta clínica — Agente Evaluador: clasifica

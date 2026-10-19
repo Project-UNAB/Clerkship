@@ -7,6 +7,9 @@ These endpoints provide unified access to the multi-agent cognitive simulation a
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required
 
+from app import limiter
+from app.services import limites
+
 from app.schemas.agentes import (
     EvaluateSessionRequest,
     EvaluationResultResponse,
@@ -27,6 +30,7 @@ agentes_bp = Blueprint("agentes", __name__)
 
 @agentes_bp.route("/caso", methods=["POST"])
 @jwt_required()
+@limiter.limit(limites.GENERAR_CASO, key_func=limites.usuario_o_ip)
 @validate_body(GenerateCaseRequest)
 def generar_caso(validated_body: GenerateCaseRequest):
     """
@@ -41,6 +45,7 @@ def generar_caso(validated_body: GenerateCaseRequest):
 
 @agentes_bp.route("/paciente/chat", methods=["POST"])
 @jwt_required()
+@limiter.limit(limites.MENSAJE_PACIENTE, key_func=limites.usuario_o_ip)
 @validate_body(PatientChatRequest)
 def interrogar_paciente(validated_body: PatientChatRequest):
     """
@@ -55,6 +60,7 @@ def interrogar_paciente(validated_body: PatientChatRequest):
 
 @agentes_bp.route("/evaluar", methods=["POST"])
 @jwt_required()
+@limiter.limit(limites.EVALUAR_CONSULTA, key_func=limites.usuario_o_ip)
 @validate_body(EvaluateSessionRequest)
 def evaluar_sesion(validated_body: EvaluateSessionRequest):
     """

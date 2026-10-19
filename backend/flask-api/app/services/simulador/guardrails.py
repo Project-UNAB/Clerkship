@@ -133,6 +133,12 @@ def guardrail_saludo(presentacion_inicial: str, sintomas_principales: list) -> t
     return presentacion_inicial, False
 
 
+def apertura_con_motivo_valida(texto, diagnostico_real) -> bool:
+    """La apertura con el motivo de consulta sirve si es corta y no nombra el diagnostico."""
+    texto = (texto or "").strip()
+    return 15 <= len(texto) <= 260 and not filtra_diagnostico(texto, diagnostico_real)
+
+
 def asignar_nombre_si_falta(nombre, sexo: str) -> tuple:
     """Devuelve (nombre_final, se_asigno)."""
     if isinstance(nombre, str) and len(nombre.strip()) >= 3:
@@ -220,6 +226,7 @@ __all__ = [
     "validar_signos_vitales",
     "solo_claves_del_catalogo",
     "guardrail_saludo",
+    "apertura_con_motivo_valida",
     "asignar_nombre_si_falta",
     "estado_emocional_valido",
     "terminos_diagnosticos",

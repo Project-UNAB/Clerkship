@@ -26,6 +26,12 @@ SUBIDA_PORTADA = "10 per minute; 30 per hour"
 ENTREGA = "6 per minute; 30 per hour"
 # Iniciar intentos de cuestionario en ráfaga.
 INICIO_QUIZ = "10 per minute; 60 per hour"
+# Simulador clínico: cada una de estas acciones llama al modelo de IA y gasta
+# tokens. Los topes dejan margen de sobra para una consulta real (y para los
+# reintentos automáticos del navegador cuando el proveedor está saturado).
+GENERAR_CASO = "6 per minute; 40 per hour"
+MENSAJE_PACIENTE = "30 per minute; 600 per hour"
+EVALUAR_CONSULTA = "6 per minute; 40 per hour"
 
 
 def usuario_o_ip() -> str:

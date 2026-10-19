@@ -30,6 +30,7 @@ CASO_DEMO_BASE = {
     "personalidad_paciente": "Conversadora, preocupada por no poder trabajar.",
     "estado_emocional_inicial": "adolorido",
     "presentacion_inicial": "Buenos dias, doctor. Con permiso.",
+    "presentacion_con_motivo": "Buenos dias, doctor. Vengo porque desde anoche tengo un dolor muy fuerte aca a la derecha, debajo de las costillas.",
     "rubrica_evaluacion": {
         "preguntas_clave_anamnesis": ["Inicio y evolucion del dolor", "Relacion con comidas", "Fiebre", "Irradiacion"],
         "hallazgos_que_debia_indagar": ["Episodios previos", "Fiebre"],

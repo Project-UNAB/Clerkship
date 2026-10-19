@@ -77,7 +77,7 @@ class ChatMessage(BaseSchema):
 class SendMessageRequest(BaseSchema):
     """Payload to send a message / question to the virtual patient."""
 
-    content: str = Field(..., min_length=1, description="Pregunta anamnésica o indicación para el paciente")
+    content: str = Field(..., min_length=1, max_length=2000, description="Pregunta anamnésica o indicación para el paciente")
 
 
 class SendMessageResponse(BaseSchema):
