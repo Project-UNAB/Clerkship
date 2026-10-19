@@ -66,7 +66,7 @@ PROPIEDAD = [
 # Rutas con sesión que no restringen por dueño, revisadas una por una.
 SIN_PROPIEDAD_JUSTIFICADO = {
     ("GET", "/api/cursos"): "Catálogo para «Unirme a un curso»: nombre, descripción y docente. El código de matrícula no sale acá.",
-    ("GET", "/api/cursos/<course_id>"): "Ficha pública del curso (lo mismo que el catálogo). El contenido, el roster y las notas sí exigen matrícula o ser el dueño.",
+    ("GET", "/api/cursos/<course_id>"): "Ficha pública del curso (lo mismo que el catálogo). El correo del docente solo se entrega al dueño, a sus matriculados y al administrador. El contenido, el roster y las notas sí exigen matrícula o ser el dueño.",
     ("GET", "/api/cursos/opciones-tarea"): "Constantes del servidor (extensiones soportadas y topes); no son datos de nadie.",
     ("GET", "/api/usuarios/buscar"): "Buscador de usuarios por nombre de usuario: devuelve nombre y rol, nunca el correo.",
     ("GET", "/api/usuarios/<user_id>"): "Perfil público (nombre, rol, avatar); el correo solo se le devuelve al propio usuario.",
@@ -76,14 +76,34 @@ SIN_PROPIEDAD_JUSTIFICADO = {
     ("GET", "/api/comunidad/posts"): "Muro de la comunidad: publicaciones visibles para cualquier usuario con sesión.",
     ("GET", "/api/comunidad/posts/<post_id>/comentarios"): "Comentarios de una publicación de la comunidad; trae nombre del autor, no su correo.",
     ("GET", "/api/consultas/ficha-previa"): "Genera una identidad de paciente ficticia al azar; no lee datos guardados.",
-    ("POST", "/api/agentes/caso"): "Agente de IA sin estado: genera un caso y no lee ni guarda datos de nadie. PENDIENTE: no tiene límite de peticiones y cada llamada consume cuota del proveedor de IA.",
-    ("POST", "/api/agentes/paciente/chat"): "Agente de IA sin estado: responde sobre el caso que va en la petición. PENDIENTE: sin límite de peticiones.",
-    ("POST", "/api/agentes/evaluar"): "Agente de IA sin estado: evalúa la sesión que va en la petición. PENDIENTE: sin límite de peticiones.",
+    ("POST", "/api/agentes/caso"): "Agente de IA sin estado: genera un caso y no lee ni guarda datos de nadie. Con límite de peticiones por usuario.",
+    ("POST", "/api/agentes/paciente/chat"): "Agente de IA sin estado: responde sobre el caso que va en la petición. Con límite de peticiones por usuario.",
+    ("POST", "/api/agentes/evaluar"): "Agente de IA sin estado: evalúa la sesión que va en la petición. Con límite de peticiones por usuario.",
 }
 
 # Reglas que combinan dos condiciones y que la lectura automática del código
 # resumiría mal: se escriben tal cual son.
 PROPIEDAD_EXACTA = {
+    ("POST", "/api/articulos/<article_id>/portada"): "Autor del recurso o administrador (Article.es_autor)",
+    ("DELETE", "/api/articulos/<article_id>/portada"): "Autor del recurso o administrador (Article.es_autor)",
+    ("PATCH", "/api/articulos/<article_id>"): "Autor del recurso o administrador (Article.es_autor)",
+    ("DELETE", "/api/articulos/<article_id>"): "Autor del recurso o administrador (Article.es_autor)",
+    ("GET", "/api/articulos/<article_id>/anotaciones"):
+        "Solo las anotaciones del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para)",
+    ("GET", "/api/articulos/<article_id>/notas"):
+        "Solo las notas del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para)",
+    ("POST", "/api/articulos/<article_id>/notas"):
+        "Solo las notas del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para)",
+    ("PATCH", "/api/articulos/<article_id>/notas/<nota_id>"):
+        "Solo las notas del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para)",
+    ("DELETE", "/api/articulos/<article_id>/notas/<nota_id>"):
+        "Solo las notas del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para)",
+    ("PUT", "/api/articulos/<article_id>/anotaciones/<pagina>"):
+        "Solo las anotaciones del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para)",
+    ("POST", "/api/usuarios/consentimiento"):
+        "Solo el propio usuario: registra su consentimiento (identidad tomada del token)",
+    ("GET", "/api/cursos/<course_id>/miembros"):
+        "Docente dueño del curso, estudiante matriculado o administrador (el correo de los estudiantes, solo el dueño)",
     ("GET", "/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/intentos/<attempt_id>"):
         "Docente dueño del curso, o estudiante matriculado que además es el dueño del intento",
     ("GET", "/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/intentos"):
@@ -165,7 +185,10 @@ def inventario(app) -> list:
         vista = app.view_functions[regla.endpoint]
         rol = _rol_de(vista)
         for metodo in sorted(regla.methods - {"HEAD", "OPTIONS"}):
-            propiedad = PROPIEDAD_EXACTA.get((metodo, regla.rule)) or _propiedad_de(vista)
+            # Una ruta declarada abierta a propósito sigue siéndolo aunque su código
+            # compare al usuario para decidir un dato puntual (p. ej. el correo del docente).
+            abierta_a_proposito = (metodo, regla.rule) in SIN_PROPIEDAD_JUSTIFICADO
+            propiedad = PROPIEDAD_EXACTA.get((metodo, regla.rule)) or (None if abierta_a_proposito else _propiedad_de(vista))
             nota, estado = "", "ok"
             if not rol:
                 if regla.rule in PUBLICAS:

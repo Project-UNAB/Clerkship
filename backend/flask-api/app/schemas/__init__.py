@@ -73,6 +73,7 @@ from app.schemas.documentos import (
     UploadDocumentRequest,
 )
 from app.schemas.admin import ActualizarUsuarioRequest, RechazarArticuloRequest
+from app.schemas.anotaciones import ActualizarNotaRequest, CrearNotaRequest, GuardarAnotacionesRequest
 from app.schemas.comunidad import (
     CommunityCommentResponse,
     CommunityPostResponse,
@@ -121,6 +122,9 @@ __all__ = [
     # Admin
     "ActualizarUsuarioRequest",
     "RechazarArticuloRequest",
+    "GuardarAnotacionesRequest",
+    "CrearNotaRequest",
+    "ActualizarNotaRequest",
     # Base
     "BaseSchema",
     "DatabaseStatus",

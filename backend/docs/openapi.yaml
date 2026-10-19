@@ -453,6 +453,31 @@ paths:
           description: Información pública del usuario obtenida con éxito
         '404':
           $ref: '#/components/responses/NotFoundError'
+  /api/usuarios/consentimiento:
+    post:
+      tags:
+      - Usuarios
+      summary: Registra que el usuario aceptó el consentimiento informado (Ley 1581 de 2012)
+      description: Guarda la fecha y la versión aceptada. Aceptar de nuevo la misma versión no cambia la fecha.
+      operationId: registrarConsentimiento
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version: {type: string, minLength: 1, maxLength: 20, example: '2026-10'}
+      responses:
+        '200':
+          description: Correcto (devuelve el usuario con consent_accepted_at y consent_version)
+        '400':
+          description: Versión ausente o inválida
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/usuarios/me:
     patch:
       tags:
@@ -475,6 +500,12 @@ paths:
                 last_name:
                   type: string
                   example: Vega
+                biblioteca_zoom:
+                  type: integer
+                  minimum: 60
+                  maximum: 200
+                  description: Zoom de la biblioteca en porcentaje (tamaño de los libros del estante). Sin guardar, 130.
+                  example: 125
       responses:
         '200':
           description: Perfil actualizado
@@ -945,6 +976,12 @@ paths:
         schema:
           type: string
         description: Texto en título o contenido
+      - name: idioma
+        in: query
+        schema:
+          type: string
+          enum: [es, en]
+        description: Solo los recursos en ese idioma
       responses:
         '200':
           content:
@@ -1001,6 +1038,338 @@ paths:
           description: Detalle del artículo médico obtenido con éxito
         '404':
           $ref: '#/components/responses/NotFoundError'
+    patch:
+      tags:
+      - Biblioteca Médica
+      summary: El autor o el administrador editan los datos de un recurso
+      description: Título, autores, año, páginas, descripción e idioma. Si lo edita el autor y estaba aprobado o rechazado, vuelve a quedar PENDIENTE.
+      operationId: editarArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: {type: string, maxLength: 255}
+                authors: {type: string, nullable: true}
+                year: {type: integer, nullable: true}
+                pages: {type: integer, nullable: true}
+                description: {type: string, nullable: true}
+                idioma:
+                  type: string
+                  enum: [es, en]
+      responses:
+        '200':
+          description: Recurso actualizado
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags:
+      - Biblioteca Médica
+      summary: El autor o el administrador retiran un recurso (y su PDF en R2)
+      operationId: retirarArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Recurso retirado
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/articulos/{id}/portada:
+    post:
+      tags:
+      - Biblioteca Médica
+      summary: El autor o el administrador ponen la portada del libro (se recorta a 2:3 vertical)
+      operationId: subirPortadaArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [cover]
+              properties:
+                cover:
+                  type: string
+                  format: binary
+                  description: "Imagen JPG, PNG o WebP (o la primera página del PDF convertida en imagen)"
+                focus_x: {type: number, minimum: 0, maximum: 1}
+                focus_y: {type: number, minimum: 0, maximum: 1}
+      responses:
+        '200':
+          description: Recurso con su portada (portada_url y portada_full_url)
+        '400':
+          description: La imagen no es válida
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags:
+      - Biblioteca Médica
+      summary: Quita la portada (el libro vuelve a mostrarse con el color de su tipo)
+      operationId: quitarPortadaArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Portada quitada
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/articulos/{id}/anotaciones:
+    get:
+      tags:
+      - Biblioteca Médica
+      summary: Lo que el usuario subrayó o dibujó en el libro (privado, por página)
+      description: Cada usuario ve solo sus propias anotaciones, y solo en los libros que puede ver.
+      operationId: listarAnotacionesArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: 'Trazos por número de página, por ejemplo {"paginas": {"3": [...]}}'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paginas:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/TrazoAnotacion'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/articulos/{id}/anotaciones/{pagina}:
+    put:
+      tags:
+      - Biblioteca Médica
+      summary: Guarda los trazos del usuario en una página (reemplaza los anteriores; lista vacía la limpia)
+      operationId: guardarAnotacionesPagina
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: pagina
+        in: path
+        required: true
+        schema: {type: integer, minimum: 1, maximum: 10000}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trazos]
+              properties:
+                trazos:
+                  type: array
+                  maxItems: 400
+                  items:
+                    $ref: '#/components/schemas/TrazoAnotacion'
+      responses:
+        '200':
+          description: Página guardada (número de trazos)
+        '400':
+          description: Trazos inválidos o página fuera de rango
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Demasiados guardados seguidos
+  /api/articulos/{id}/notas:
+    get:
+      tags:
+      - Biblioteca Médica
+      summary: Notas y comentarios del usuario en el libro (privados)
+      operationId: listarNotasArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Notas ordenadas por página
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notas:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotaLibro'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    post:
+      tags:
+      - Biblioteca Médica
+      summary: Crea una nota sobre una zona de una página (párrafo, texto o recuadro)
+      operationId: crearNotaArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pagina, rect]
+              properties:
+                pagina: {type: integer, minimum: 1, maximum: 10000}
+                rect:
+                  type: object
+                  required: [x, y, w, h]
+                  properties:
+                    x: {type: number, minimum: 0, maximum: 1}
+                    y: {type: number, minimum: 0, maximum: 1}
+                    w: {type: number, minimum: 0, maximum: 1}
+                    h: {type: number, minimum: 0, maximum: 1}
+                cita: {type: string, maxLength: 2000}
+                texto: {type: string, maxLength: 5000}
+                color:
+                  type: string
+                  enum: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6', '#FB923C']
+      responses:
+        '201':
+          description: Nota creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotaLibro'
+        '400':
+          description: Datos inválidos (zona fuera de la página, texto muy largo…)
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Demasiadas peticiones seguidas
+  /api/articulos/{id}/notas/{nota_id}:
+    patch:
+      tags:
+      - Biblioteca Médica
+      summary: Edita el texto o el color de una nota propia
+      operationId: editarNotaArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: nota_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                texto: {type: string, maxLength: 5000}
+                color:
+                  type: string
+                  enum: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6', '#FB923C']
+      responses:
+        '200':
+          description: Nota actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotaLibro'
+        '400':
+          description: Datos inválidos
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags:
+      - Biblioteca Médica
+      summary: Elimina una nota propia
+      operationId: borrarNotaArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: nota_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Nota eliminada
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/articulos/estante:
     get:
       tags:
@@ -1788,6 +2157,15 @@ paths:
                 titulo: {type: string, maxLength: 255}
                 descripcion: {type: string, maxLength: 2000}
                 specialty: {type: string, maxLength: 100}
+                autores: {type: string, maxLength: 500}
+                ano: {type: integer, minimum: 1800, maximum: 2100}
+                paginas: {type: integer, minimum: 1, maximum: 10000}
+                tipo:
+                  type: string
+                  enum: [LIBRO, GUIA, ENSAYO, PROTOCOLO, CASO]
+                idioma:
+                  type: string
+                  enum: [es, en]
       responses:
         '201':
           description: Creado
@@ -2091,6 +2469,12 @@ paths:
       operationId: adminListarBiblioteca
       security:
       - BearerAuth: []
+      parameters:
+      - name: estado
+        in: query
+        required: false
+        description: Filtra por estado de moderación.
+        schema: {type: string, enum: [PENDIENTE, APROBADO, RECHAZADO]}
       responses:
         '200':
           description: Correcto
@@ -2114,6 +2498,61 @@ paths:
       responses:
         '200':
           description: Correcto
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/biblioteca/{article_id}/aprobar:
+    post:
+      tags:
+      - Administración
+      summary: Aprueba un recurso pendiente de la biblioteca (queda visible para todos)
+      operationId: adminAprobarArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: article_id
+        in: path
+        required: true
+        schema: {type: string}
+      responses:
+        '200':
+          description: Correcto
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/biblioteca/{article_id}/rechazar:
+    post:
+      tags:
+      - Administración
+      summary: Rechaza un recurso de la biblioteca con un motivo (lo ve solo su autor)
+      operationId: adminRechazarArticulo
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: article_id
+        in: path
+        required: true
+        schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo]
+              properties:
+                motivo: {type: string, minLength: 1, maxLength: 500}
+      responses:
+        '200':
+          description: Correcto
+        '400':
+          description: Motivo ausente o inválido
         '404':
           description: No encontrado
         '401':
@@ -2421,6 +2860,28 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+  /api/cursos/{course_id}/miembros:
+    get:
+      tags:
+      - Cursos
+      summary: Docente y estudiantes del curso (solo para quien hace parte del curso; el correo de los estudiantes solo lo recibe el docente dueño)
+      operationId: listarMiembrosCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/cursos/{course_id}/estudiantes:
     get:
       tags:
@@ -2551,6 +3012,42 @@ paths:
       responses:
         '201':
           description: Creado
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/cursos/{course_id}/bloques/orden:
+    put:
+      tags:
+      - Cursos
+      summary: El docente dueño guarda el orden de todos los módulos del curso (arrastre de tarjetas)
+      operationId: reordenarBloques
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orden]
+              properties:
+                orden:
+                  type: array
+                  description: Ids de todos los módulos del curso, cada uno una vez, en el orden nuevo.
+                  items: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Correcto
+        '400':
+          description: El orden no trae exactamente los módulos del curso
         '403':
           $ref: '#/components/responses/ForbiddenError'
         '404':
@@ -4395,6 +4892,56 @@ paths:
           $ref: '#/components/responses/BadRequestError'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/seguimiento/cursos/{course_id}:
+    get:
+      tags:
+      - Seguimiento docente
+      summary: Desempeño de los estudiantes de un curso en el simulador (solo el docente dueño)
+      operationId: seguimientoCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PerPage'
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Resumen del curso y estudiantes con sus métricas
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Curso no encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/seguimiento/cursos/{course_id}/estudiantes/{student_id}:
+    get:
+      tags:
+      - Seguimiento docente
+      summary: Evolución y consultas completadas de un estudiante del curso (solo el docente dueño)
+      operationId: seguimientoEstudiante
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: course_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - name: student_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Evolución, desglose por dimensión y consultas
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Curso inexistente o estudiante no matriculado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/historial/recomendacion:
     get:
       tags:
@@ -4791,6 +5338,55 @@ components:
             message: El recurso solicitado no fue encontrado.
             status_code: 404
   schemas:
+    NotaLibro:
+      type: object
+      description: Nota o comentario privado sobre una zona de una página.
+      properties:
+        id: {type: string, format: uuid}
+        pagina: {type: integer, minimum: 1}
+        rect:
+          type: object
+          description: Zona relativa a la página (0 a 1), origen arriba a la izquierda.
+          properties:
+            x: {type: number, minimum: 0, maximum: 1}
+            y: {type: number, minimum: 0, maximum: 1}
+            w: {type: number, minimum: 0, maximum: 1}
+            h: {type: number, minimum: 0, maximum: 1}
+        cita: {type: string, nullable: true, maxLength: 2000}
+        texto: {type: string, maxLength: 5000}
+        color:
+          type: string
+          enum: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6', '#FB923C']
+        creada_en: {type: string, format: date-time, nullable: true}
+        editada_en: {type: string, format: date-time, nullable: true}
+    TrazoAnotacion:
+      type: object
+      description: Trazo a mano alzada. Coordenadas de 0 a 1 respecto de la página; grosor como fracción del ancho.
+      required: [herramienta, color, grosor, puntos]
+      properties:
+        herramienta:
+          type: string
+          enum: [lapiz, resaltador]
+        color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+        grosor:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          maximum: 0.08
+        puntos:
+          type: array
+          minItems: 1
+          maxItems: 4000
+          items:
+            type: array
+            minItems: 2
+            maxItems: 2
+            items:
+              type: number
+              minimum: 0
+              maximum: 1
     ErrorResponse:
       type: object
       required:

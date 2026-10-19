@@ -35,6 +35,7 @@ class UpdateUserRequest(BaseSchema):
 
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    biblioteca_zoom: Optional[int] = Field(None, ge=60, le=200, description="Zoom de la biblioteca en porcentaje")
 
 
 class StorageUsageResponse(BaseSchema):

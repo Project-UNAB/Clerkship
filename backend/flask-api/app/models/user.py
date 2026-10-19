@@ -4,6 +4,10 @@ from sqlalchemy.sql import func
 from app import db
 
 
+# Zoom con el que se ve la biblioteca si el usuario nunca lo cambió.
+ZOOM_BIBLIOTECA_PREDETERMINADO = 130
+
+
 class User(db.Model):
     __tablename__ = "users"
 
@@ -52,6 +56,9 @@ class User(db.Model):
     # Null si no ha aceptado. Se guarda en el servidor para persistir entre navegadores.
     consent_accepted_at = db.Column(db.DateTime(timezone=True))
     consent_version = db.Column(db.String(20))
+    # Zoom de la biblioteca (porcentaje, 60 a 200). NULL = 130 % (el predeterminado). Se guarda por
+    # usuario para que se mantenga en cualquier dispositivo.
+    library_zoom = db.Column(db.SmallInteger)
 
     def to_dict(self):
         return {
@@ -68,4 +75,5 @@ class User(db.Model):
             "email_notifications": bool(self.email_notifications),
             "consent_accepted_at": self.consent_accepted_at.isoformat() if self.consent_accepted_at else None,
             "consent_version": self.consent_version,
+            "biblioteca_zoom": self.library_zoom or ZOOM_BIBLIOTECA_PREDETERMINADO,
         }

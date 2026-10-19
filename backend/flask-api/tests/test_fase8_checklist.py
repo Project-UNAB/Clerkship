@@ -64,6 +64,7 @@ def _url(ruta: str) -> str:
 # Cuerpo mínimo válido de las rutas que validan el JSON antes de mirar permisos.
 _CUERPOS = {
     ("POST", "/bloques"): {"title": "Bloque"},
+    ("PUT", "/anotaciones/<pagina>"): {"trazos": []},
     ("POST", "/contenido"): {"type": "LINK", "title": "Enlace", "link_url": "https://example.com"},
     ("POST", "/preguntas"): {"type": "TRUE_FALSE", "prompt": "¿?", "choices": [{"text": "V", "is_correct": True}, {"text": "F"}]},
     ("POST", "/estudiantes"): {"email": "alguien@example.com"},

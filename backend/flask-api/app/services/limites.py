@@ -24,6 +24,11 @@ MATRICULA = "10 per minute; 40 per hour"
 SUBIDA_MATERIAL = "20 per minute; 120 per hour"
 SUBIDA_PORTADA = "10 per minute; 30 per hour"
 ENTREGA = "6 per minute; 30 per hour"
+# Guardar lo dibujado en un libro: el visor guarda cada página un momento
+# después del último trazo, así que en uso normal son pocas por minuto.
+ANOTACIONES = "120 per minute; 2000 per hour"
+# Notas y comentarios sobre los libros (crear, editar, borrar).
+NOTAS = "60 per minute; 600 per hour"
 # Iniciar intentos de cuestionario en ráfaga.
 INICIO_QUIZ = "10 per minute; 60 per hour"
 # Simulador clínico: cada una de estas acciones llama al modelo de IA y gasta

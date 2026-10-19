@@ -9,7 +9,7 @@ desactualizado o si aparece una ruta sin control.
   rol del token sea el rol actual del usuario.
 - **Propiedad**: cómo se comprueba que el recurso de la URL le pertenece a quien lo pide.
 
-Total: **169** rutas — 138 con rol y propiedad, 13 con sesión pero sin restricción por dueño (a propósito), 18 públicas, **0 sin control**.
+Total: **186** rutas — 154 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 18 públicas, **0 sin control**.
 
 ## Públicas a propósito
 
@@ -38,9 +38,9 @@ Total: **169** rutas — 138 con rol y propiedad, 13 con sesión pero sin restri
 
 | Método | Ruta | Rol | Propiedad | Nota |
 |---|---|---|---|---|
-| POST | `/api/agentes/caso` | Cualquiera con sesión | Ninguna (a propósito) | Agente de IA sin estado: genera un caso y no lee ni guarda datos de nadie. PENDIENTE: no tiene límite de peticiones y cada llamada consume cuota del proveedor de IA. |
-| POST | `/api/agentes/evaluar` | Cualquiera con sesión | Ninguna (a propósito) | Agente de IA sin estado: evalúa la sesión que va en la petición. PENDIENTE: sin límite de peticiones. |
-| POST | `/api/agentes/paciente/chat` | Cualquiera con sesión | Ninguna (a propósito) | Agente de IA sin estado: responde sobre el caso que va en la petición. PENDIENTE: sin límite de peticiones. |
+| POST | `/api/agentes/caso` | Cualquiera con sesión | Ninguna (a propósito) | Agente de IA sin estado: genera un caso y no lee ni guarda datos de nadie. Con límite de peticiones por usuario. |
+| POST | `/api/agentes/evaluar` | Cualquiera con sesión | Ninguna (a propósito) | Agente de IA sin estado: evalúa la sesión que va en la petición. Con límite de peticiones por usuario. |
+| POST | `/api/agentes/paciente/chat` | Cualquiera con sesión | Ninguna (a propósito) | Agente de IA sin estado: responde sobre el caso que va en la petición. Con límite de peticiones por usuario. |
 | GET | `/api/almacenamiento/biblioteca/<article_id>/descarga` | Cualquiera con sesión | Ninguna (a propósito) | PDF de un artículo publicado en la biblioteca, visible para cualquier usuario con sesión. |
 | GET | `/api/articulos` | Cualquiera con sesión | Ninguna (a propósito) | Biblioteca: artículos publicados, visibles para cualquier usuario con sesión. |
 | GET | `/api/articulos/<article_id>` | Cualquiera con sesión | Ninguna (a propósito) | Biblioteca: artículo publicado, visible para cualquier usuario con sesión. |
@@ -48,8 +48,9 @@ Total: **169** rutas — 138 con rol y propiedad, 13 con sesión pero sin restri
 | GET | `/api/comunidad/posts/<post_id>/comentarios` | Cualquiera con sesión | Ninguna (a propósito) | Comentarios de una publicación de la comunidad; trae nombre del autor, no su correo. |
 | GET | `/api/consultas/ficha-previa` | STUDENT | Ninguna (a propósito) | Genera una identidad de paciente ficticia al azar; no lee datos guardados. |
 | GET | `/api/cursos` | Cualquiera con sesión | Ninguna (a propósito) | Catálogo para «Unirme a un curso»: nombre, descripción y docente. El código de matrícula no sale acá. |
-| GET | `/api/cursos/<course_id>` | Cualquiera con sesión | Ninguna (a propósito) | Ficha pública del curso (lo mismo que el catálogo). El contenido, el roster y las notas sí exigen matrícula o ser el dueño. |
+| GET | `/api/cursos/<course_id>` | Cualquiera con sesión | Ninguna (a propósito) | Ficha pública del curso (lo mismo que el catálogo). El correo del docente solo se entrega al dueño, a sus matriculados y al administrador. El contenido, el roster y las notas sí exigen matrícula o ser el dueño. |
 | GET | `/api/cursos/opciones-tarea` | Cualquiera con sesión | Ninguna (a propósito) | Constantes del servidor (extensiones soportadas y topes); no son datos de nadie. |
+| GET | `/api/usuarios/<user_id>` | Cualquiera con sesión | Ninguna (a propósito) | Perfil público (nombre, rol, avatar); el correo solo se le devuelve al propio usuario. |
 | GET | `/api/usuarios/buscar` | Cualquiera con sesión | Ninguna (a propósito) | Buscador de usuarios por nombre de usuario: devuelve nombre y rol, nunca el correo. |
 
 ## Con rol y propiedad — admin
@@ -59,6 +60,8 @@ Total: **169** rutas — 138 con rol y propiedad, 13 con sesión pero sin restri
 | GET | `/api/admin/auditoria` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | GET | `/api/admin/biblioteca` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | DELETE | `/api/admin/biblioteca/<article_id>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+| POST | `/api/admin/biblioteca/<article_id>/aprobar` | ADMIN | Solo datos del propio usuario |
+| POST | `/api/admin/biblioteca/<article_id>/rechazar` | ADMIN | Solo datos del propio usuario |
 | DELETE | `/api/admin/comunidad/comentarios/<comentario_id>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | GET | `/api/admin/comunidad/posts` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | DELETE | `/api/admin/comunidad/posts/<post_id>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
@@ -82,13 +85,28 @@ Total: **169** rutas — 138 con rol y propiedad, 13 con sesión pero sin restri
 | POST | `/api/almacenamiento/subidas/<file_id>/confirmar` | Cualquiera con sesión | Solo datos del propio usuario |
 | GET | `/api/almacenamiento/uso` | Cualquiera con sesión | Solo datos del propio usuario |
 
+## Con rol y propiedad — anotaciones
+
+| Método | Ruta | Rol | Propiedad |
+|---|---|---|---|
+| GET | `/api/articulos/<article_id>/anotaciones` | Cualquiera con sesión | Solo las anotaciones del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para) |
+| PUT | `/api/articulos/<article_id>/anotaciones/<pagina>` | Cualquiera con sesión | Solo las anotaciones del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para) |
+| GET | `/api/articulos/<article_id>/notas` | Cualquiera con sesión | Solo las notas del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para) |
+| POST | `/api/articulos/<article_id>/notas` | Cualquiera con sesión | Solo las notas del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para) |
+| DELETE | `/api/articulos/<article_id>/notas/<nota_id>` | Cualquiera con sesión | Solo las notas del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para) |
+| PATCH | `/api/articulos/<article_id>/notas/<nota_id>` | Cualquiera con sesión | Solo las notas del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para) |
+
 ## Con rol y propiedad — articulos
 
 | Método | Ruta | Rol | Propiedad |
 |---|---|---|---|
 | POST | `/api/articulos` | TEACHER o ADMIN | Solo datos del propio usuario |
+| DELETE | `/api/articulos/<article_id>` | Cualquiera con sesión | Autor del recurso o administrador (Article.es_autor) |
+| PATCH | `/api/articulos/<article_id>` | Cualquiera con sesión | Autor del recurso o administrador (Article.es_autor) |
 | DELETE | `/api/articulos/<article_id>/estante` | STUDENT | Solo datos del propio usuario |
 | POST | `/api/articulos/<article_id>/estante` | STUDENT | Solo datos del propio usuario |
+| DELETE | `/api/articulos/<article_id>/portada` | Cualquiera con sesión | Autor del recurso o administrador (Article.es_autor) |
+| POST | `/api/articulos/<article_id>/portada` | Cualquiera con sesión | Autor del recurso o administrador (Article.es_autor) |
 | GET | `/api/articulos/estante` | STUDENT | Solo datos del propio usuario |
 
 ## Con rol y propiedad — auth
@@ -169,6 +187,7 @@ Total: **169** rutas — 138 con rol y propiedad, 13 con sesión pero sin restri
 | POST | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/entregas/<submission_id>/restaurar` | TEACHER | Docente dueño del curso |
 | GET | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/entregas/mia` | Cualquiera con sesión | Estudiante matriculado en el curso |
 | GET | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/vista-previa` | Cualquiera con sesión | Docente dueño o estudiante matriculado en el curso |
+| PUT | `/api/cursos/<course_id>/bloques/orden` | TEACHER | Docente dueño del curso |
 
 ## Con rol y propiedad — curso_quiz
 
@@ -201,6 +220,7 @@ Total: **169** rutas — 138 con rol y propiedad, 13 con sesión pero sin restri
 | POST | `/api/cursos/<course_id>/matricula/codigo` | TEACHER | Docente dueño del curso |
 | DELETE | `/api/cursos/<course_id>/matricular` | STUDENT | Solo datos del propio usuario |
 | POST | `/api/cursos/<course_id>/matricular` | STUDENT | Solo datos del propio usuario |
+| GET | `/api/cursos/<course_id>/miembros` | Cualquiera con sesión | Docente dueño del curso, estudiante matriculado o administrador (el correo de los estudiantes, solo el dueño) |
 | DELETE | `/api/cursos/<course_id>/permanente` | TEACHER | Docente dueño del curso |
 | POST | `/api/cursos/<course_id>/restaurar` | TEACHER | Docente dueño del curso |
 | GET | `/api/cursos/<course_id>/solicitudes` | TEACHER | Docente dueño del curso |
@@ -267,10 +287,17 @@ Total: **169** rutas — 138 con rol y propiedad, 13 con sesión pero sin restri
 | GET | `/api/notificaciones/preferencias` | Cualquiera con sesión | Solo datos del propio usuario |
 | PATCH | `/api/notificaciones/preferencias` | Cualquiera con sesión | Solo datos del propio usuario |
 
+## Con rol y propiedad — seguimiento
+
+| Método | Ruta | Rol | Propiedad |
+|---|---|---|---|
+| GET | `/api/seguimiento/cursos/<string:course_id>` | TEACHER | Docente dueño del curso |
+| GET | `/api/seguimiento/cursos/<string:course_id>/estudiantes/<string:student_id>` | TEACHER | Docente dueño del curso |
+
 ## Con rol y propiedad — usuarios
 
 | Método | Ruta | Rol | Propiedad |
 |---|---|---|---|
-| GET | `/api/usuarios/<user_id>` | Cualquiera con sesión | Solo datos del propio usuario |
+| POST | `/api/usuarios/consentimiento` | Cualquiera con sesión | Solo el propio usuario: registra su consentimiento (identidad tomada del token) |
 | PATCH | `/api/usuarios/me` | Cualquiera con sesión | Solo datos del propio usuario |
 | GET | `/api/usuarios/uso-almacenamiento` | Cualquiera con sesión | Solo datos del propio usuario |

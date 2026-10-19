@@ -138,6 +138,8 @@ def actualizar_me(validated_body: UpdateUserRequest):
         user.first_name = validated_body.first_name.strip()
     if validated_body.last_name and validated_body.last_name.strip():
         user.last_name = validated_body.last_name.strip()
+    if validated_body.biblioteca_zoom is not None:
+        user.library_zoom = validated_body.biblioteca_zoom
 
     db.session.commit()
     return jsonify(user.to_dict()), 200

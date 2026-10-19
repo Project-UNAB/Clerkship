@@ -21,6 +21,8 @@ from app.models.quiz_answer import QuizAnswer
 from app.models.article import Article
 from app.models.article_tag import ArticleTag
 from app.models.student_library import StudentLibrary
+from app.models.article_annotation import ArticleAnnotation
+from app.models.article_note import ArticleNote
 # AiAgent, Conversation y ConversationParticipant se archivaron junto con
 # Chats — ver archivado_buzon_chats/ en la raiz del repo.
 from app.models.community_post import CommunityPost
@@ -68,6 +70,8 @@ __all__ = [
     "Article",
     "ArticleTag",
     "StudentLibrary",
+    "ArticleAnnotation",
+    "ArticleNote",
     "CommunityPost",
     "CommunityComment",
     "CommunityLike",
