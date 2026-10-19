@@ -16,6 +16,8 @@ RUTAS = [
     ("delete", "/api/admin/comunidad/posts/11111111-1111-1111-1111-111111111111"),
     ("delete", "/api/admin/comunidad/comentarios/11111111-1111-1111-1111-111111111111"),
     ("get", "/api/admin/biblioteca"),
+    ("post", "/api/admin/biblioteca/11111111-1111-1111-1111-111111111111/aprobar"),
+    ("post", "/api/admin/biblioteca/11111111-1111-1111-1111-111111111111/rechazar"),
     ("delete", "/api/admin/biblioteca/11111111-1111-1111-1111-111111111111"),
     ("get", "/api/admin/feedback/inicio"),
     ("get", "/api/admin/validacion/inicio"),

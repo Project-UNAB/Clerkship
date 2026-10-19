@@ -59,6 +59,7 @@ from app.schemas.quiz import (
     ResponderIntentoRequest,
 )
 from app.schemas.articulos import (
+    ActualizarArticuloRequest,
     ArticleResponse,
     CreateArticleRequest,
     StudentShelfItem,
@@ -71,7 +72,7 @@ from app.schemas.documentos import (
     UpdateFolderRequest,
     UploadDocumentRequest,
 )
-from app.schemas.admin import ActualizarUsuarioRequest
+from app.schemas.admin import ActualizarUsuarioRequest, RechazarArticuloRequest
 from app.schemas.comunidad import (
     CommunityCommentResponse,
     CommunityPostResponse,
@@ -119,6 +120,7 @@ from app.schemas.agentes import (
 __all__ = [
     # Admin
     "ActualizarUsuarioRequest",
+    "RechazarArticuloRequest",
     # Base
     "BaseSchema",
     "DatabaseStatus",
@@ -166,6 +168,7 @@ __all__ = [
     "CalificarEntregaRequest",
     # Articulos
     "CreateArticleRequest",
+    "ActualizarArticuloRequest",
     "ArticleResponse",
     "UpdateShelfRequest",
     "StudentShelfItem",

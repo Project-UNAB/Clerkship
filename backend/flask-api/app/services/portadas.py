@@ -18,6 +18,10 @@ from app.services.archivos import ArchivoInvalido, validar_archivo
 # Proporción 2:1, la de la card del curso.
 PORTADA_TAMANO = (1200, 600)
 MINIATURA_TAMANO = (400, 200)
+# Portada de un libro de la biblioteca: vertical, proporción 2:3.
+PORTADA_LIBRO_TAMANO = (600, 900)
+MINIATURA_LIBRO_TAMANO = (240, 360)
+MINIMO_LIBRO = (200, 200)
 FORMATO_SALIDA = "WEBP"
 MIME_SALIDA = "image/webp"
 
@@ -45,9 +49,9 @@ def tamano_maximo_bytes() -> int:
     return int(current_app.config.get("COURSE_COVER_MAX_MB", 2)) * 1024 * 1024
 
 
-def claves_nuevas() -> tuple:
+def claves_nuevas(carpeta: str = "portadas") -> tuple:
     """(clave de la portada, clave de la miniatura) con nombre aleatorio."""
-    clave = f"portadas/{uuid.uuid4().hex}.webp"
+    clave = f"{carpeta}/{uuid.uuid4().hex}.webp"
     return clave, clave_miniatura(clave)
 
 
@@ -75,8 +79,11 @@ def _codificar(imagen, tamano, foco) -> bytes:
     return salida.getvalue()
 
 
-def procesar_portada(nombre: str, contenido: bytes, foco_x=None, foco_y=None) -> tuple:
-    """(portada, miniatura) en bytes, ya recortadas a 2:1 y recomprimidas.
+def procesar_portada(nombre: str, contenido: bytes, foco_x=None, foco_y=None,
+                     tamano=PORTADA_TAMANO, tamano_miniatura=MINIATURA_TAMANO,
+                     minimo=(ANCHO_MINIMO, ALTO_MINIMO)) -> tuple:
+    """(portada, miniatura) en bytes, ya recortadas al formato pedido (2:1 para
+    los cursos, 2:3 vertical para los libros) y recomprimidas.
     Lanza PortadaInvalida si el archivo no es una imagen JPG/PNG/WebP real,
     pesa de más o tiene dimensiones fuera de rango.
 
@@ -113,9 +120,9 @@ def procesar_portada(nombre: str, contenido: bytes, foco_x=None, foco_y=None) ->
     if formato not in _FORMATOS_PILLOW:
         raise PortadaInvalida("La portada tiene que ser una imagen JPG, PNG o WebP.", "COVER_FORMAT")
 
-    if ancho < ANCHO_MINIMO or alto < ALTO_MINIMO:
+    if ancho < minimo[0] or alto < minimo[1]:
         raise PortadaInvalida(
-            f"La imagen es muy pequeña ({ancho}×{alto}). Mínimo {ANCHO_MINIMO}×{ALTO_MINIMO} píxeles.", "COVER_TOO_SMALL", 400,
+            f"La imagen es muy pequeña ({ancho}×{alto}). Mínimo {minimo[0]}×{minimo[1]} píxeles.", "COVER_TOO_SMALL", 400,
         )
     if ancho > LADO_MAXIMO or alto > LADO_MAXIMO or ancho * alto > PIXELES_MAXIMOS:
         raise PortadaInvalida(
@@ -136,7 +143,7 @@ def procesar_portada(nombre: str, contenido: bytes, foco_x=None, foco_y=None) ->
         else:
             imagen = imagen.convert("RGB")
         foco = (_foco(foco_x), _foco(foco_y))
-        return _codificar(imagen, PORTADA_TAMANO, foco), _codificar(imagen, MINIATURA_TAMANO, foco)
+        return _codificar(imagen, tamano, foco), _codificar(imagen, tamano_miniatura, foco)
     except PortadaInvalida:
         raise
     except Exception as err:  # noqa: BLE001 — cualquier fallo al decodificar es un archivo inválido

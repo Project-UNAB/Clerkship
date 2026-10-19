@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity
 
 from app import db
 from app.models import (
@@ -15,7 +16,7 @@ from app.models import (
     FeedbackInicio, Student, Teacher, User, UserFile,
     ValidacionBiblioteca, ValidacionCasos, ValidacionHistorial, ValidacionInicio,
 )
-from app.schemas import ActualizarUsuarioRequest, validate_body
+from app.schemas import ActualizarUsuarioRequest, RechazarArticuloRequest, validate_body
 from app.services import auditoria, paginacion, sesiones
 from app.utils import get_current_user, role_required
 
@@ -223,21 +224,64 @@ def borrar_comentario_admin(comentario_id):
     return jsonify({"ok": True}), 200
 
 
+def _revisar_articulo(article_id, estado: str, motivo=None):
+    """Aprueba o rechaza un recurso: guarda quién y cuándo, y deja la acción en la auditoría."""
+    articulo = Article.query.get(article_id)
+    if articulo is None:
+        return _error(404, "Recurso no encontrado.")
+    admin_id = uuid.UUID(get_jwt_identity())
+    anterior = articulo.estado
+    articulo.estado = estado
+    articulo.revisado_por = admin_id
+    articulo.revisado_en = datetime.now(timezone.utc)
+    articulo.motivo_rechazo = motivo
+    nuevo = {"estado": estado, **({"motivo_rechazo": motivo} if motivo else {})}
+    auditoria.registrar(
+        "ARTICLE_APPROVE" if estado == "APROBADO" else "ARTICLE_REJECT", "article", articulo.id,
+        old={"estado": anterior}, new=nuevo, user_id=admin_id,
+    )
+    db.session.commit()
+    return jsonify(articulo.to_dict(tags=[])), 200
+
+
 @admin_bp.get("/biblioteca")
 @role_required("ADMIN")
 def listar_biblioteca_admin():
-    articulos = Article.query.order_by(Article.created_at.desc()).limit(300).all()
+    query = Article.query
+    estado = (request.args.get("estado") or "").strip().upper()
+    if estado:
+        if estado not in ("PENDIENTE", "APROBADO", "RECHAZADO"):
+            return _error(400, "Estado inválido.")
+        query = query.filter(Article.estado == estado)
+    articulos = query.order_by(Article.created_at.desc()).limit(300).all()
     return jsonify({"articulos": [a.to_dict(tags=[]) for a in articulos]}), 200
+
+
+@admin_bp.post("/biblioteca/<article_id>/aprobar")
+@role_required("ADMIN")
+def aprobar_articulo_admin(article_id):
+    return _revisar_articulo(article_id, "APROBADO")
+
+
+@admin_bp.post("/biblioteca/<article_id>/rechazar")
+@role_required("ADMIN")
+@validate_body(RechazarArticuloRequest)
+def rechazar_articulo_admin(article_id, validated_body: RechazarArticuloRequest):
+    return _revisar_articulo(article_id, "RECHAZADO", motivo=validated_body.motivo.strip())
 
 
 @admin_bp.delete("/biblioteca/<article_id>")
 @role_required("ADMIN")
 def borrar_articulo_admin(article_id):
+    from app.routes.articulos import borrar_de_r2, claves_en_r2
+
     articulo = Article.query.get(article_id)
     if articulo is None:
         return _error(404, "Recurso no encontrado.")
+    claves = claves_en_r2(articulo)
     db.session.delete(articulo)
     db.session.commit()
+    borrar_de_r2(claves)
     return jsonify({"ok": True}), 200
 
 

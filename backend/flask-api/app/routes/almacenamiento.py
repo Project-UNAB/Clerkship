@@ -6,9 +6,10 @@ Flujo de subida:
   3. POST /subidas/<id>/confirmar -> el backend verifica que R2 tiene el archivo.
 """
 import uuid
+from typing import Literal
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt_identity, jwt_required
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from pydantic import Field
 from sqlalchemy import func
 
@@ -32,6 +33,11 @@ class PublicarRequest(BaseSchema):
     titulo: str | None = Field(None, max_length=255)
     descripcion: str | None = Field(None, max_length=2000)
     specialty: str | None = Field(None, max_length=100)
+    autores: str | None = Field(None, max_length=500)
+    ano: int | None = Field(None, ge=1800, le=2100)
+    paginas: int | None = Field(None, ge=1, le=10000)
+    tipo: Literal["LIBRO", "GUIA", "ENSAYO", "PROTOCOLO", "CASO"] | None = None
+    idioma: Literal["es", "en"] | None = None
 
 
 class ActualizarArchivoRequest(BaseSchema):
@@ -90,7 +96,7 @@ def iniciar_subida(validated_body: SubidaRequest):
     if validated_body.mime_type not in storage.TIPOS_PERMITIDOS:
         return _error(400, "Ese tipo de archivo no está permitido.")
     if validated_body.size_bytes > storage.MAX_FILE_BYTES:
-        return _error(413, "El archivo supera el máximo de 100 MB.")
+        return _error(413, "El archivo supera el máximo de 2 GB.")
 
     owner_id = _usuario_id()
     if _espacio_usado(owner_id) + validated_body.size_bytes > storage.QUOTA_BYTES_PER_USER:
@@ -229,6 +235,9 @@ def publicar_en_biblioteca(file_id, validated_body: PublicarRequest):
     if archivo.mime_type != "application/pdf":
         return _error(400, "Solo se pueden publicar archivos PDF en la biblioteca.")
 
+    # Lo que publica un ADMIN queda APROBADO; cualquier otro usuario queda PENDIENTE.
+    estado_inicial = "APROBADO" if get_jwt().get("role") == "ADMIN" else "PENDIENTE"
+
     article_id = uuid.uuid4()
     titulo = (validated_body.titulo or archivo.nombre.rsplit(".", 1)[0]).strip()
     clave_publica = storage.clave_biblioteca(str(article_id))
@@ -237,15 +246,25 @@ def publicar_en_biblioteca(file_id, validated_body: PublicarRequest):
     except storage.StorageNotConfigured as err:
         return _error(503, str(err))
 
+    tipo = validated_body.tipo or "GUIA"
+    autores = validated_body.autores
+    ano = validated_body.ano
+    paginas = validated_body.paginas
+
     articulo = Article(
         id=article_id,
-        type="GUIA",
+        type=tipo,
         title=titulo,
+        authors=autores.strip() if autores else None,
+        year=ano,
+        pages=paginas,
+        language=validated_body.idioma,
         description=validated_body.descripcion or "",
         specialty=validated_body.specialty,
         url=f"/api/almacenamiento/biblioteca/{article_id}/descarga",
         archivo_key=clave_publica,
         publicado_por=owner_id,
+        estado=estado_inicial,
     )
     db.session.add(articulo)
     db.session.commit()
@@ -261,6 +280,10 @@ def descargar_de_biblioteca(article_id):
         articulo = None
     if articulo is None or not articulo.archivo_key:
         return _error(404, "Este recurso no tiene archivo descargable.")
+
+    if not articulo.visible_para(_usuario_id(), get_jwt().get("role")):
+        return _error(404, "Este recurso no tiene archivo descargable.")
+
     try:
         return jsonify({"url": storage.url_descarga(articulo.archivo_key, f"{articulo.title}.pdf")}), 200
     except storage.StorageNotConfigured as err:
