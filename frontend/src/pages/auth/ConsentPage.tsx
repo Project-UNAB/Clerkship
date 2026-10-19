@@ -10,7 +10,9 @@ import logoUrl from '../../assets/Logo Clerkship.svg';
 import DashboardPage from '../dashboard/DashboardPage';
 import InteractiveBackgroundCanvas from '../../components/shared/InteractiveBackgroundCanvas';
 import ThemeToggleFloating from '../../components/shared/ThemeToggleFloating';
-import { recordUserConsent } from '../../utils/authConsent';
+import { recordUserConsent, VERSION_CONSENTIMIENTO } from '../../utils/authConsent';
+import { registrarConsentimiento } from '../../data/consentimientoApi';
+import { updateStoredUser } from '../../data/mainAuth';
 import '../../styles/landing.css';
 
 /* ── Datos ─────────────────────────────────────────────── */
@@ -27,7 +29,7 @@ const sections: ConsentSection[] = [
     Icon: FileText,
     title: 'Propósito del prototipo',
     content:
-      'Clerkship es un prototipo académico desarrollado como Proyecto de Grado en Ingeniería de Sistemas. Su objetivo es explorar el uso de inteligencia artificial generativa (LLM + RAG) para apoyar el entrenamiento del razonamiento clínico-diagnóstico en estudiantes de ciencias de la salud, a través de la resolución guiada de casos clínicos simulados y la generación de retroalimentación formativa.\n\nEste sistema NO constituye una herramienta de diagnóstico médico, ni reemplaza la enseñanza clínica formal ni el criterio de un docente. Su uso está restringido al contexto académico del proyecto de investigación.',
+      'Clerkship es un prototipo académico desarrollado como Proyecto de Grado en Ingeniería de Sistemas. Su objetivo es explorar el uso de tres agentes inteligentes basados en la API de Gemini (generador de casos, paciente virtual y evaluador) con reglas programadas —sin búsqueda vectorial ni entrenamiento de modelos— para apoyar el entrenamiento del razonamiento clínico-diagnóstico en estudiantes de ciencias de la salud, a través de la resolución guiada de casos clínicos simulados y la generación de retroalimentación formativa.\n\nEste sistema NO constituye una herramienta de diagnóstico médico, ni reemplaza la enseñanza clínica formal ni el criterio de un docente. Su uso está restringido al contexto académico del proyecto de investigación.',
   },
   {
     Icon: Database,
@@ -80,6 +82,8 @@ export default function ConsentPage() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
   const [accepted, setAccepted] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [errorServidor, setErrorServidor] = useState<string | null>(null);
 
   // Estados de la transición cinematográfica
   // 'idle' | 'loading' | 'success' | 'crossfade' | 'done'
@@ -95,38 +99,54 @@ export default function ConsentPage() {
     setOpenIdx(prev => (prev === i ? null : i));
   }
 
-  function handleAccept() {
-    if (!accepted) { setShowError(true); return; }
-    recordUserConsent();
+  async function handleAccept() {
+    if (!accepted || guardando) {
+      if (!accepted) setShowError(true);
+      return;
+    }
+    setErrorServidor(null);
+    setGuardando(true);
 
-    // 1. Fase de Carga (Dashboard pre-cargado 100% en el DOM)
-    setTransitionPhase('loading');
+    try {
+      // 1. Guardar en el servidor
+      const updatedUser = await registrarConsentimiento(VERSION_CONSENTIMIENTO);
 
-    let step = 0;
-    const msgInterval = setInterval(() => {
-      step++;
-      if (step < LOADING_MESSAGES.length) {
-        setMsgIdx(step);
-      }
-    }, PHRASE_INTERVAL);
+      // 2. Actualizar el usuario en sesión para que los guards de rutas lo reconozcan
+      updateStoredUser(updatedUser);
 
-    // 2. Transcurridos 3.0s, pasar a fase 'success' (Chulo verde + "¡Creado exitosamente!")
-    setTimeout(() => {
-      clearInterval(msgInterval);
-      setTransitionPhase('success');
+      // 3. Respaldo en localStorage por compatibilidad con sesiones previas
+      recordUserConsent(updatedUser.email);
 
-      // 3. Estar ahí durante EXACTAMENTE 1.0 SEGUNDO (1000ms)
+      // 4. Iniciar animación de transición cinematográfica
+      setTransitionPhase('loading');
+
+      let step = 0;
+      const msgInterval = setInterval(() => {
+        step++;
+        if (step < LOADING_MESSAGES.length) {
+          setMsgIdx(step);
+        }
+      }, PHRASE_INTERVAL);
+
       setTimeout(() => {
-        // 4. Iniciar Crossfade Cinematográfico de 1.8s (opacity: 1 -> 0 en Loading, opacity: 0 -> 1 en Dashboard)
-        setTransitionPhase('crossfade');
+        clearInterval(msgInterval);
+        setTransitionPhase('success');
 
-        // 5. Tras concluir los 1800ms de desvanecimiento, navegar a /dashboard
         setTimeout(() => {
-          setTransitionPhase('done');
-          navigate('/dashboard', { replace: true });
-        }, CROSSFADE_TIME + 50);
-      }, SUCCESS_HOLD);
-    }, 3000);
+          setTransitionPhase('crossfade');
+
+          setTimeout(() => {
+            setTransitionPhase('done');
+            navigate('/dashboard', { replace: true });
+          }, CROSSFADE_TIME + 50);
+        }, SUCCESS_HOLD);
+      }, 3000);
+    } catch (err: any) {
+      setGuardando(false);
+      setErrorServidor(
+        err?.message || 'No se pudo guardar el consentimiento en el servidor. Intente nuevamente.'
+      );
+    }
   }
 
   function handleReject() {
@@ -234,7 +254,7 @@ export default function ConsentPage() {
               <div className="cp-accept">
                 <div
                   className="cp-check-row"
-                  onClick={() => { setAccepted(v => !v); setShowError(false); }}
+                  onClick={() => { setAccepted(v => !v); setShowError(false); setErrorServidor(null); }}
                   role="checkbox"
                   aria-checked={accepted}
                   tabIndex={0}
@@ -266,6 +286,19 @@ export default function ConsentPage() {
                       Debe aceptar los términos para continuar.
                     </motion.p>
                   )}
+                  {errorServidor && (
+                    <motion.div
+                      className="cp-alert"
+                      style={{ marginTop: '0.75rem', borderColor: '#ef4444', color: '#ef4444' }}
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <span>{errorServidor}</span>
+                    </motion.div>
+                  )}
                 </AnimatePresence>
               </div>
 
@@ -280,13 +313,20 @@ export default function ConsentPage() {
                   Rechazar y salir
                 </motion.button>
                 <motion.button
-                  className={`cp-btn-accept${!accepted ? ' disabled' : ''}`}
+                  className={`cp-btn-accept${!accepted || guardando ? ' disabled' : ''}`}
                   onClick={handleAccept}
-                  whileHover={accepted ? { scale: 1.02 } : {}}
-                  whileTap={accepted ? { scale: 0.97 } : {}}
+                  // Sin marcar la casilla el botón sigue respondiendo, para mostrar
+                  // el aviso "Debe aceptar los términos"; solo se bloquea mientras guarda.
+                  disabled={guardando}
+                  whileHover={accepted && !guardando ? { scale: 1.02 } : {}}
+                  whileTap={accepted && !guardando ? { scale: 0.97 } : {}}
                 >
-                  Aceptar y continuar
-                  <ArrowRight size={15} />
+                  {guardando ? 'Guardando...' : (
+                    <>
+                      Aceptar y continuar
+                      <ArrowRight size={15} />
+                    </>
+                  )}
                 </motion.button>
               </div>
             </motion.div>

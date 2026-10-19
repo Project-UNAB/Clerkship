@@ -5,6 +5,10 @@
  * del consentimiento informado de manera PERMANENTE Y ÚNICA POR CUENTA.
  */
 
+import { getStoredUser } from '../data/mainAuth';
+
+export const VERSION_CONSENTIMIENTO = '2026-10b';
+
 export function getActiveUserEmail(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('clerkship_user_email') || null;
@@ -26,10 +30,18 @@ export function isAuthenticated(): boolean {
 
 export function hasUserAcceptedConsent(email?: string | null): boolean {
   if (typeof window === 'undefined') return false;
-  const targetEmail = (email || getActiveUserEmail())?.toLowerCase().trim();
+
+  const user = getStoredUser();
+
+  // Si el usuario en sesión ya tiene el campo traído del servidor, se toma como verdad
+  if (user && user.consent_accepted_at !== undefined) {
+    return Boolean(user.consent_accepted_at && user.consent_version === VERSION_CONSENTIMIENTO);
+  }
+
+  // Respaldo para sesiones viejas que aún no traen el campo en el objeto usuario
+  const targetEmail = (email || user?.email || getActiveUserEmail())?.toLowerCase().trim();
 
   if (!targetEmail) {
-    // Si no hay correo registrado todavía, cae a la clave heredada si existe
     return localStorage.getItem('clerkship_consent') === 'accepted';
   }
 

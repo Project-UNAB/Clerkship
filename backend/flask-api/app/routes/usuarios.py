@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import uuid
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -6,7 +7,14 @@ from sqlalchemy import func as sa_func
 
 from app import db, get_mongo_db
 from app.models import User, UserFile
-from app.schemas import StorageUsageResponse, UpdateUserRequest, UserResponse, UserSummary, validate_body
+from app.schemas import (
+    RegistrarConsentimientoRequest,
+    StorageUsageResponse,
+    UpdateUserRequest,
+    UserResponse,
+    UserSummary,
+    validate_body,
+)
 from app.utils import get_current_user
 
 usuarios_bp = Blueprint("usuarios", __name__)
@@ -132,4 +140,25 @@ def actualizar_me(validated_body: UpdateUserRequest):
         user.last_name = validated_body.last_name.strip()
 
     db.session.commit()
+    return jsonify(user.to_dict()), 200
+
+
+@usuarios_bp.post("/consentimiento")
+@jwt_required()
+@validate_body(RegistrarConsentimientoRequest)
+def registrar_consentimiento(validated_body: RegistrarConsentimientoRequest):
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            "error": "Not Found",
+            "message": "Usuario no encontrado",
+            "status_code": 404,
+        }), 404
+
+    # Idempotente: si ya había aceptado exactamente esta versión, no movemos la fecha
+    if user.consent_version != validated_body.version or user.consent_accepted_at is None:
+        user.consent_accepted_at = datetime.now(timezone.utc)
+        user.consent_version = validated_body.version
+        db.session.commit()
+
     return jsonify(user.to_dict()), 200

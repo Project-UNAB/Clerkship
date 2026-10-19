@@ -48,6 +48,11 @@ class User(db.Model):
     # plataforma llegan siempre). Apagado hasta que el usuario lo active.
     email_notifications = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("false"))
 
+    # Consentimiento informado (Ley 1581 de 2012): fecha de aceptación y versión.
+    # Null si no ha aceptado. Se guarda en el servidor para persistir entre navegadores.
+    consent_accepted_at = db.Column(db.DateTime(timezone=True))
+    consent_version = db.Column(db.String(20))
+
     def to_dict(self):
         return {
             "id": str(self.id),
@@ -61,4 +66,6 @@ class User(db.Model):
             "mailbox_created": self.mailbox_created,
             "activo": self.activo,
             "email_notifications": bool(self.email_notifications),
+            "consent_accepted_at": self.consent_accepted_at.isoformat() if self.consent_accepted_at else None,
+            "consent_version": self.consent_version,
         }

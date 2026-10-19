@@ -23,6 +23,7 @@ from app.schemas.auth import (
     VerifyEmailRequest,
 )
 from app.schemas.usuarios import (
+    RegistrarConsentimientoRequest,
     StorageUsageResponse,
     UpdateUserRequest,
     UserResponse,
@@ -139,6 +140,7 @@ __all__ = [
     "UserSummary",
     "UpdateUserRequest",
     "StorageUsageResponse",
+    "RegistrarConsentimientoRequest",
     # Cursos
     "CreateCourseRequest",
     "ActualizarCursoRequest",

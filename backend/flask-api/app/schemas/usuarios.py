@@ -44,3 +44,9 @@ class StorageUsageResponse(BaseSchema):
     limit_bytes: int = 5368709120  # 5 GB default
     breakdown: Dict[str, Any] = Field(default_factory=dict)
 
+
+class RegistrarConsentimientoRequest(BaseSchema):
+    """Payload para registrar la aceptación del consentimiento informado."""
+
+    version: str = Field(..., min_length=1, max_length=20)
+

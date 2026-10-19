@@ -22,6 +22,8 @@ export interface MainUser {
   role: 'STUDENT' | 'TEACHER' | 'ADMIN';
   email_verified?: boolean;
   avatar_svg?: string | null;
+  consent_accepted_at?: string | null;
+  consent_version?: string | null;
 }
 
 interface AuthResponse {
@@ -80,13 +82,15 @@ export async function loginWithEmailPassword(email: string, password: string): P
 
   const data = await res.json().catch(() => null);
 
-  if (res.status === 403 && data?.error === 'email_not_verified') {
+  // Correo sin verificar: el backend responde 403 pero entrega igual el usuario y
+  // los tokens, para poder pasar directo a la pantalla de verificación.
+  if (res.status === 403 && data?.access_token && data?.user?.email_verified === false) {
     persistSession(data as AuthResponse);
     throw new EmailNotVerifiedError((data as AuthResponse).user);
   }
 
   if (!res.ok) {
-    throw new Error(data?.error || 'No se pudo iniciar sesión.');
+    throw new Error(data?.message || data?.error || 'No se pudo iniciar sesión.');
   }
 
   persistSession(data as AuthResponse);
@@ -103,7 +107,7 @@ export async function registerUser(payload: RegisterPayload): Promise<MainUser> 
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(data?.error || 'No se pudo crear la cuenta.');
+    throw new Error(data?.message || data?.error || 'No se pudo crear la cuenta.');
   }
 
   persistSession(data as AuthResponse);
@@ -144,7 +148,7 @@ export async function refreshAccessToken(): Promise<string> {
 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(data?.error || 'No se pudo renovar la sesión.');
+    throw new Error(data?.message || data?.error || 'No se pudo renovar la sesión.');
   }
 
   localStorage.setItem(STORAGE_KEYS.accessToken, data.access_token);
@@ -219,8 +223,8 @@ function authedHeaders(): HeadersInit {
 }
 
 /** Actualiza solo el usuario guardado en localStorage (sin tocar los tokens)
- *  — lo usan verifyEmailCode()/saveAvatarSvg() para reflejar el cambio ya. */
-function updateStoredUser(user: MainUser) {
+ *  — lo usan verifyEmailCode()/saveAvatarSvg() y el registro de consentimiento para reflejar el cambio ya. */
+export function updateStoredUser(user: MainUser) {
   localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user));
   window.dispatchEvent(new Event(MAIN_AUTH_CHANGED_EVENT));
 }
@@ -233,7 +237,7 @@ export async function verifyEmailCode(code: string): Promise<MainUser> {
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(data?.error || 'No se pudo verificar el código.');
+    throw new Error(data?.message || data?.error || 'No se pudo verificar el código.');
   }
   updateStoredUser(data.user as MainUser);
   return data.user as MainUser;
@@ -270,7 +274,7 @@ export async function resendVerificationCode(): Promise<void> {
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(data?.error || 'No se pudo reenviar el código.');
+    throw new Error(data?.message || data?.error || 'No se pudo reenviar el código.');
   }
 }
 
@@ -282,7 +286,7 @@ export async function saveAvatarSvg(avatarSvg: string): Promise<MainUser> {
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(data?.error || 'No se pudo guardar el avatar.');
+    throw new Error(data?.message || data?.error || 'No se pudo guardar el avatar.');
   }
   updateStoredUser(data.user as MainUser);
   return data.user as MainUser;
