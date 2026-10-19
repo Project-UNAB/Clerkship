@@ -12,16 +12,16 @@ import WelcomeOverlay from '../../components/shared/WelcomeOverlay';
 import FolderModal from '../../components/dashboard/FolderModal';
 import UploadDocumentModal from '../../components/dashboard/UploadDocumentModal';
 import DocumentPreviewView from '../../components/dashboard/DocumentPreviewView';
-import PublicarEnBibliotecaModal from '../../components/dashboard/PublicarEnBibliotecaModal';
-import { formatFileSize, readFileAsBase64 } from '../../utils/fileUpload';
+import PublicarLibroModal from '../../components/biblioteca/PublicarLibroModal';
+import { formatFileSize } from '../../utils/fileUpload';
 import { mainAuthErrorMessage } from '../../data/mainAuth';
 import {
   listFolders, createFolder, updateFolder, deleteFolder,
-  listDocuments, getDocument, uploadDocument, updateDocument, deleteDocument,
+  listDocuments, getDocument, updateDocument, deleteDocument,
   type DocumentFolder, type DocumentSummary,
 } from '../../data/documentosApi';
 import { getStorageUsage, type StorageUsage } from '../../data/usuariosApi';
-import { publicarEnBiblioteca } from '../../data/almacenamientoApi';
+import { descargarArchivo, problemaDeArchivo, subirArchivo } from '../../data/almacenamientoApi';
 
 const SORT_OPTIONS = ['Más reciente', 'Más antiguo', 'Nombre A–Z', 'Tamaño (Mayor)'] as const;
 type SortOption = typeof SORT_OPTIONS[number];
@@ -390,14 +390,21 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleUpload(
-    file: { name: string; mime_type: string; data: string; size_bytes: number },
-    folderId: string | null,
-  ) {
-    const { document } = await uploadDocument({ ...file, folder_id: folderId });
+  /** Sube un archivo directo a Cloudflare R2 (hasta 2 GB) y lo agrega a la lista. */
+  async function handleUpload(file: File, folderId: string | null, alProgresar?: (fraccion: number) => void) {
+    const archivo = await subirArchivo(file, folderId, alProgresar);
+    const document: DocumentSummary = {
+      id: archivo.id,
+      folder_id: archivo.carpeta_id,
+      name: archivo.nombre,
+      mime_type: archivo.mime_type,
+      size_bytes: archivo.size_bytes,
+      created_at: archivo.created_at,
+      origen: 'r2',
+    };
     setUploadModalOpen(false);
     if (folderId) {
-      setFolders(prev => prev.map(f => (f.id === folderId ? { ...f, file_count: f.file_count + 1, total_size_bytes: f.total_size_bytes + file.size_bytes } : f)));
+      setFolders(prev => prev.map(f => (f.id === folderId ? { ...f, file_count: f.file_count + 1, total_size_bytes: f.total_size_bytes + file.size } : f)));
       if (openFolder?.id === folderId) setFolderDocs(prev => [document, ...prev]);
       setAllDocs(prev => [document, ...prev]);
     } else {
@@ -409,7 +416,7 @@ export default function DashboardPage() {
     if (storageUsage) {
       setStorageUsage({
         ...storageUsage,
-        used_bytes: storageUsage.used_bytes + file.size_bytes,
+        used_bytes: storageUsage.used_bytes + file.size,
       });
     }
   }
@@ -453,17 +460,12 @@ export default function DashboardPage() {
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        if (file.size > 11 * 1024 * 1024) {
-          setError(`El archivo "${file.name}" supera el límite de 11 MB.`);
+        const problema = problemaDeArchivo(file);
+        if (problema) {
+          setError(problema);
           continue;
         }
-        const data = await readFileAsBase64(file);
-        await handleUpload({
-          name: file.name,
-          mime_type: file.type || 'application/octet-stream',
-          data,
-          size_bytes: file.size,
-        }, openFolder?.id ?? null);
+        await handleUpload(file, openFolder?.id ?? null);
       }
     } catch (err) {
       setError(mainAuthErrorMessage(err));
@@ -475,6 +477,12 @@ export default function DashboardPage() {
   async function handleDownload(doc: DocumentSummary) {
     setDownloadingId(doc.id);
     try {
+      if (doc.origen === 'r2') {
+        // Enlace temporal directo a R2: sirve para archivos de cualquier tamaño.
+        const { url } = await descargarArchivo(doc.id);
+        window.open(url, '_blank', 'noopener,noreferrer');
+        return;
+      }
       const { document } = await getDocument(doc.id);
       const link = window.document.createElement('a');
       link.href = `data:${document.mime_type};base64,${document.data}`;
@@ -487,11 +495,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function handlePublicarEnBiblioteca(titulo: string) {
-    if (!publicandoDoc) return;
-    await publicarEnBiblioteca(publicandoDoc.id, { titulo });
-    setPublicandoDoc(null);
-  }
 
   async function handleDeleteDocument(doc: DocumentSummary, fromFolder: boolean) {
     setBusyId(doc.id);
@@ -1282,10 +1285,10 @@ export default function DashboardPage() {
           />
         )}
         {publicandoDoc && (
-          <PublicarEnBibliotecaModal
-            doc={publicandoDoc}
+          <PublicarLibroModal
+            fuente={{ tipo: 'documento', id: publicandoDoc.id, nombre: publicandoDoc.name }}
             onClose={() => setPublicandoDoc(null)}
-            onPublish={handlePublicarEnBiblioteca}
+            onPublicado={() => undefined}
           />
         )}
         {confirmDeleteFolder && (

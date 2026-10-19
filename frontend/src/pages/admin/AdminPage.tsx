@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../data/firebase';
@@ -8,14 +8,18 @@ import { useCurrentUser } from '../../utils/currentUser';
 import {
   getEstadisticas,
   listarPostsAdmin, borrarPostAdmin,
-  listarBibliotecaAdmin, borrarArticuloAdmin,
+  borrarArticuloAdmin,
   listarFeedbackAdmin, listarValidacionAdmin,
   getEstadisticasTokens,
   type Estadisticas, type EstadisticasTokens,
 } from '../../data/adminApi';
+import {
+  listarArticulosAdmin, aprobarArticulo, rechazarArticulo,
+  type Articulo, type EstadoArticulo,
+} from '../../data/articulosApi';
 import { mainAuthErrorMessage } from '../../data/mainAuth';
 import {
-  obtenerUso, listarArchivos, subirArchivo, publicarEnBiblioteca, borrarArchivo,
+  obtenerUso, listarArchivos, subirArchivo, borrarArchivo,
   TIPOS_PERMITIDOS, MAX_FILE_BYTES, type ArchivoR2, type UsoAlmacenamiento,
 } from '../../data/almacenamientoApi';
 import { formatFileSize } from '../../utils/fileUpload';
@@ -23,7 +27,12 @@ import AnalyticsDashboard from '../../components/admin/AnalyticsDashboard';
 import TokensDashboard from '../../components/admin/TokensDashboard';
 import UsersManagementDashboard from '../../components/admin/UsersManagementDashboard';
 import AdminSidebar, { type AdminTab } from '../../components/admin/AdminSidebar';
+import PublicarLibroModal, { type FuentePdf } from '../../components/biblioteca/PublicarLibroModal';
 import '../../styles/admin.css';
+import '../../styles/flipbook.css';
+
+// El visor de libros (PDF.js) se descarga solo cuando el administrador abre uno.
+const FlipbookViewer = lazy(() => import('../../components/biblioteca/FlipbookViewer'));
 
 const PESTANAS = ['inicio', 'casos', 'historial', 'biblioteca'] as const;
 
@@ -122,15 +131,16 @@ function PanelComunidad() {
   );
 }
 
-/** Subir un PDF propio y publicarlo como recurso de biblioteca. El admin no
- *  tiene Dashboard, así que esto reemplaza el "Mi nube" que usan estudiantes
- *  y docentes — mismo backend (/api/almacenamiento), sin carpetas. */
+/** Subir un PDF y publicarlo como recurso de biblioteca. El admin no tiene
+ *  Dashboard, así que esto reemplaza el "Mi nube" que usan estudiantes y
+ *  docentes — mismo backend (/api/almacenamiento), sin carpetas. Antes de
+ *  publicar se piden los datos del recurso, el tipo y la portada, con el mismo
+ *  cuadro que usan la biblioteca y el Dashboard. */
 function SubirYPublicar({ onPublicado }: { onPublicado: () => void }) {
   const [uso, setUso] = useState<UsoAlmacenamiento | null>(null);
   const [archivos, setArchivos] = useState<ArchivoR2[]>([]);
   const [subiendo, setSubiendo] = useState(false);
-  const [publicandoId, setPublicandoId] = useState<string | null>(null);
-  const [titulo, setTitulo] = useState('');
+  const [aPublicar, setAPublicar] = useState<FuentePdf | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function cargar() {
@@ -148,7 +158,12 @@ function SubirYPublicar({ onPublicado }: { onPublicado: () => void }) {
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
-      setError('El archivo supera el máximo de 100 MB.');
+      setError('El archivo supera el máximo de 2 GB.');
+      return;
+    }
+    // Un PDF va a la biblioteca: primero se piden sus datos (el cuadro lo sube y lo publica).
+    if (file.type === 'application/pdf') {
+      setAPublicar({ tipo: 'archivo', file });
       return;
     }
     setSubiendo(true);
@@ -162,19 +177,14 @@ function SubirYPublicar({ onPublicado }: { onPublicado: () => void }) {
     }
   }
 
-  async function publicar(archivo: ArchivoR2) {
-    setPublicandoId(archivo.id);
-    setError(null);
-    try {
-      await publicarEnBiblioteca(archivo.id, { titulo: titulo.trim() || undefined });
-      setArchivos(prev => prev.filter(a => a.id !== archivo.id));
-      setTitulo('');
-      onPublicado();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo publicar.');
-    } finally {
-      setPublicandoId(null);
+  function handlePublicado() {
+    // Si venía de la lista de subidos sin publicar, ya no está pendiente.
+    if (aPublicar?.tipo === 'documento') {
+      const id = aPublicar.id;
+      setArchivos(prev => prev.filter(a => a.id !== id));
     }
+    cargar();
+    onPublicado();
   }
 
   async function quitar(archivo: ArchivoR2) {
@@ -192,7 +202,8 @@ function SubirYPublicar({ onPublicado }: { onPublicado: () => void }) {
       <div className="adm-toolbar">
         <label className="adm-btn">
           {subiendo ? 'Subiendo…' : 'Subir PDF / archivo'}
-          <input type="file" style={{ display: 'none' }} disabled={subiendo} accept={TIPOS_PERMITIDOS.join(',')} onChange={e => handleFile(e.target.files?.[0])} />
+          <input type="file" style={{ display: 'none' }} disabled={subiendo} accept={TIPOS_PERMITIDOS.join(',')}
+            onChange={e => { handleFile(e.target.files?.[0]); e.target.value = ''; }} />
         </label>
         {uso && <span className="adm-stat-sub">{formatFileSize(uso.usado_bytes)} de {formatFileSize(uso.limite_bytes)} usados</span>}
       </div>
@@ -200,17 +211,17 @@ function SubirYPublicar({ onPublicado }: { onPublicado: () => void }) {
       {archivos.length > 0 && (
         <div className="adm-tabla-wrap">
           <table className="adm-tabla">
-            <thead><tr><th>Archivo</th><th>Tamaño</th><th>Título para publicar</th><th></th></tr></thead>
+            <thead><tr><th>Archivo subido sin publicar</th><th>Tamaño</th><th></th></tr></thead>
             <tbody>
               {archivos.map(a => (
                 <tr key={a.id}>
                   <td>{a.nombre}</td>
                   <td>{formatFileSize(a.size_bytes)}</td>
-                  <td><input className="adm-input" placeholder={a.nombre.replace(/\.pdf$/i, '')} value={titulo} onChange={e => setTitulo(e.target.value)} /></td>
                   <td style={{ display: 'flex', gap: 6 }}>
                     {a.mime_type === 'application/pdf' && (
-                      <button type="button" className="adm-btn adm-btn-sm" disabled={publicandoId === a.id} onClick={() => publicar(a)}>
-                        {publicandoId === a.id ? 'Publicando…' : 'Publicar'}
+                      <button type="button" className="adm-btn adm-btn-sm"
+                        onClick={() => setAPublicar({ tipo: 'documento', id: a.id, nombre: a.nombre })}>
+                        Publicar…
                       </button>
                     )}
                     <button type="button" className="adm-btn adm-btn-sm adm-btn-danger" onClick={() => quitar(a)}>Quitar</button>
@@ -221,24 +232,99 @@ function SubirYPublicar({ onPublicado }: { onPublicado: () => void }) {
           </table>
         </div>
       )}
+
+      {aPublicar && (
+        <PublicarLibroModal
+          fuente={aPublicar}
+          aviso="Como administrador, quedará publicado y visible en la biblioteca de inmediato."
+          onClose={() => setAPublicar(null)}
+          onPublicado={handlePublicado}
+        />
+      )}
     </div>
   );
 }
 
-function PanelBiblioteca() {
-  const [articulos, setArticulos] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
+const ESTADOS_BIBLIOTECA: { id: EstadoArticulo; label: string }[] = [
+  { id: 'PENDIENTE', label: 'Pendientes' },
+  { id: 'APROBADO', label: 'Aprobados' },
+  { id: 'RECHAZADO', label: 'Rechazados' },
+];
 
-  function cargar() {
-    listarBibliotecaAdmin().then(r => setArticulos(r.articulos)).catch(err => setError(mainAuthErrorMessage(err)));
+function PanelBiblioteca() {
+  const [estadoFiltro, setEstadoFiltro] = useState<EstadoArticulo>('PENDIENTE');
+  const [articulos, setArticulos] = useState<Articulo[]>([]);
+  const [pendientesCount, setPendientesCount] = useState(0);
+  const [rechazandoId, setRechazandoId] = useState<string | null>(null);
+  const [motivoRechazo, setMotivoRechazo] = useState('');
+  const [procesandoId, setProcesandoId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  // Recurso que el administrador está leyendo para decidir si lo aprueba.
+  const [leyendo, setLeyendo] = useState<Articulo | null>(null);
+
+  function cargar(estadoActual: EstadoArticulo = estadoFiltro) {
+    setError(null);
+    Promise.all([
+      listarArticulosAdmin(estadoActual),
+      estadoActual === 'PENDIENTE' ? Promise.resolve(null) : listarArticulosAdmin('PENDIENTE'),
+    ])
+      .then(([actual, pendientes]) => {
+        setArticulos(actual.articulos);
+        setPendientesCount(
+          estadoActual === 'PENDIENTE'
+            ? actual.articulos.length
+            : (pendientes?.articulos.length ?? 0),
+        );
+      })
+      .catch(err => setError(mainAuthErrorMessage(err)));
   }
-  useEffect(cargar, []);
+
+  useEffect(() => {
+    cargar(estadoFiltro);
+  }, [estadoFiltro]);
+
+  async function aprobar(id: string) {
+    setProcesandoId(id);
+    setError(null);
+    try {
+      await aprobarArticulo(id);
+      if (rechazandoId === id) {
+        setRechazandoId(null);
+        setMotivoRechazo('');
+      }
+      cargar(estadoFiltro);
+    } catch (err) {
+      setError(mainAuthErrorMessage(err));
+    } finally {
+      setProcesandoId(null);
+    }
+  }
+
+  async function confirmarRechazo(id: string) {
+    const motivo = motivoRechazo.trim();
+    if (!motivo) {
+      setError('Indica el motivo del rechazo (1 a 500 caracteres).');
+      return;
+    }
+    setProcesandoId(id);
+    setError(null);
+    try {
+      await rechazarArticulo(id, motivo);
+      setRechazandoId(null);
+      setMotivoRechazo('');
+      cargar(estadoFiltro);
+    } catch (err) {
+      setError(mainAuthErrorMessage(err));
+    } finally {
+      setProcesandoId(null);
+    }
+  }
 
   async function borrar(id: string) {
     if (!window.confirm('¿Borrar este recurso de la biblioteca?')) return;
     try {
       await borrarArticuloAdmin(id);
-      setArticulos(prev => prev.filter(a => a.id !== id));
+      cargar(estadoFiltro);
     } catch (err) {
       setError(mainAuthErrorMessage(err));
     }
@@ -246,24 +332,149 @@ function PanelBiblioteca() {
 
   return (
     <div>
-      <SubirYPublicar onPublicado={cargar} />
+      <SubirYPublicar onPublicado={() => cargar(estadoFiltro)} />
+
+      <div className="adm-toolbar">
+        {ESTADOS_BIBLIOTECA.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            className={`adm-btn adm-btn-sm ${estadoFiltro === id ? 'adm-btn-active' : ''}`}
+            onClick={() => {
+              setEstadoFiltro(id);
+              setRechazandoId(null);
+              setMotivoRechazo('');
+            }}
+          >
+            {id === 'PENDIENTE' ? `${label} (${pendientesCount})` : label}
+          </button>
+        ))}
+      </div>
+
       {error && <p className="adm-error">{error}</p>}
       <div className="adm-tabla-wrap">
         <table className="adm-tabla">
-          <thead><tr><th>Título</th><th>Tipo</th><th>Especialidad</th><th>Fecha</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Tipo</th>
+              <th>Especialidad</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
           <tbody>
             {articulos.map(a => (
               <tr key={a.id}>
-                <td>{a.title}</td>
+                <td>
+                  {a.title}
+                  {a.estado === 'RECHAZADO' && a.motivo_rechazo && (
+                    <div className="adm-stat-sub" style={{ color: '#b91c1c' }}>
+                      Rechazado: {a.motivo_rechazo}
+                    </div>
+                  )}
+                </td>
                 <td>{a.type}</td>
                 <td>{a.specialty}</td>
+                <td>{a.estado ?? 'APROBADO'}</td>
                 <td>{a.created_at}</td>
-                <td><button type="button" className="adm-btn adm-btn-sm adm-btn-danger" onClick={() => borrar(a.id)}>Borrar</button></td>
+                <td>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="adm-btn adm-btn-sm"
+                      disabled={!a.pdf_url}
+                      title={a.pdf_url ? 'Leer el PDF antes de decidir' : 'Este recurso no tiene PDF'}
+                      onClick={() => setLeyendo(a)}
+                    >
+                      Ver
+                    </button>
+                    {a.estado !== 'APROBADO' && (
+                      <button
+                        type="button"
+                        className="adm-btn adm-btn-sm"
+                        disabled={procesandoId === a.id}
+                        onClick={() => aprobar(a.id)}
+                      >
+                        Aprobar
+                      </button>
+                    )}
+                    {a.estado !== 'RECHAZADO' && rechazandoId !== a.id && (
+                      <button
+                        type="button"
+                        className="adm-btn adm-btn-sm"
+                        disabled={procesandoId === a.id}
+                        onClick={() => {
+                          setRechazandoId(a.id);
+                          setMotivoRechazo(a.motivo_rechazo ?? '');
+                        }}
+                      >
+                        Rechazar
+                      </button>
+                    )}
+                    {rechazandoId === a.id && (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          className="adm-input"
+                          placeholder="Motivo del rechazo (1-500 caracteres)"
+                          maxLength={500}
+                          value={motivoRechazo}
+                          onChange={e => setMotivoRechazo(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="adm-btn adm-btn-sm adm-btn-danger"
+                          disabled={procesandoId === a.id || !motivoRechazo.trim()}
+                          onClick={() => confirmarRechazo(a.id)}
+                        >
+                          Confirmar
+                        </button>
+                        <button
+                          type="button"
+                          className="adm-btn adm-btn-sm"
+                          onClick={() => {
+                            setRechazandoId(null);
+                            setMotivoRechazo('');
+                          }}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      className="adm-btn adm-btn-sm adm-btn-danger"
+                      onClick={() => borrar(a.id)}
+                    >
+                      Borrar
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
+            {articulos.length === 0 && (
+              <tr>
+                <td colSpan={6} className="adm-vacio">
+                  No hay recursos en este estado.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+      {leyendo?.pdf_url && (
+        <Suspense fallback={<div className="fb-backdrop fb-cargando-visor" aria-busy="true"><div className="fb-spinner" /></div>}>
+          <FlipbookViewer
+            articleId={leyendo.id}
+            title={leyendo.title}
+            authors={leyendo.authors}
+            pdfUrl={leyendo.pdf_url}
+            onClose={() => setLeyendo(null)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

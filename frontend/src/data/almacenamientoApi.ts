@@ -20,10 +20,28 @@ export const TIPOS_PERMITIDOS = [
   'image/gif',
   'text/plain',
   'text/csv',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'audio/mpeg',
+  'audio/wav',
 ];
 
-export const MAX_FILE_BYTES = 100 * 1024 * 1024;
+/** Máximo por archivo: 2 GB (la subida va directo a R2, no pasa por el backend). */
+export const MAX_FILE_BYTES = 2 * 1024 ** 3;
 export const QUOTA_BYTES = 5 * 1024 ** 3;
+
+/** Por qué no se puede subir el archivo, o null si se puede (tipo y tamaño). */
+export function problemaDeArchivo(file: File): string | null {
+  const tipo = file.type || 'application/octet-stream';
+  if (!TIPOS_PERMITIDOS.includes(tipo)) {
+    return `"${file.name}" no es de un tipo permitido (PDF, Office, imágenes, texto, video o audio).`;
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    return `"${file.name}" supera el máximo de 2 GB por archivo.`;
+  }
+  return null;
+}
 
 export interface ArchivoR2 {
   id: string;
@@ -73,6 +91,7 @@ function confirmarSubida(id: string): Promise<{ archivo: ArchivoR2 }> {
 export async function subirArchivo(
   file: File,
   carpetaId: string | null,
+  alProgresar?: (fraccion: number) => void,
 ): Promise<ArchivoR2> {
   const { id, upload_url, headers } = await iniciarSubida({
     nombre: file.name,
@@ -81,10 +100,20 @@ export async function subirArchivo(
     carpeta_id: carpetaId,
   });
 
-  const res = await fetch(upload_url, { method: 'PUT', headers, body: file });
-  if (!res.ok) {
-    throw new Error('No se pudo subir el archivo a Cloudflare R2.');
-  }
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', upload_url);
+    Object.entries(headers || {}).forEach(([k, v]) => xhr.setRequestHeader(k, String(v)));
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) alProgresar?.(e.loaded / e.total);
+    };
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300
+      ? resolve()
+      : reject(new Error('No se pudo subir el archivo a Cloudflare R2.')));
+    xhr.onerror = () => reject(new Error('Se cortó la conexión mientras se subía el archivo.'));
+    xhr.send(file);
+  });
+  alProgresar?.(1);
 
   const { archivo } = await confirmarSubida(id);
   return archivo;
@@ -112,9 +141,14 @@ export interface PublicarPayload {
   titulo?: string;
   descripcion?: string;
   specialty?: string;
+  autores?: string;
+  ano?: number;
+  paginas?: number;
+  tipo?: 'LIBRO' | 'GUIA' | 'ENSAYO' | 'PROTOCOLO' | 'CASO';
+  idioma?: 'es' | 'en';
 }
 
-export function publicarEnBiblioteca(id: string, payload: PublicarPayload): Promise<{ article: unknown }> {
+export function publicarEnBiblioteca(id: string, payload: PublicarPayload): Promise<{ article: import('./articulosApi').Articulo }> {
   return apiFetch(`/api/almacenamiento/archivos/${id}/publicar`, {
     method: 'POST',
     body: JSON.stringify(payload),
