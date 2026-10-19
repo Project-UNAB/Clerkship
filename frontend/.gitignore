@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Resultados de las pruebas e2e (Playwright)
+test-results/
+playwright-report/
