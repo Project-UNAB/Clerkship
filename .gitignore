@@ -38,6 +38,10 @@ next-env.d.ts
 #temporal
 /docs/contexto
 
+# Biblioteca de PDF de acceso abierto (~760 MB): ya está publicada en la
+# plataforma (R2 + Supabase); no se versiona.
+/docs/libros/
+
 #claude
 .claude
 
