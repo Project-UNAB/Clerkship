@@ -2951,3 +2951,6 @@ html.theme-animating .crono-gantt-card {
 }
 
 
+
+/* Mientras se descarga una pantalla: fondo del tema, sin parpadeo. */
+.app-cargando { min-height: 100vh; background: var(--bg, #FAFBFC); }

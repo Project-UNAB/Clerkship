@@ -1,0 +1,447 @@
+/* Estilos de la vista de seguimiento del docente en el simulador clínico */
+
+/* Tokens de la página, derivados del tema de la plataforma (theme.css). */
+.seguimiento-page {
+  --text-primary: var(--ink, #0F172A);
+  --text-secondary: var(--ink2, #475569);
+  --text-tertiary: var(--ink3, #64748B);
+  --border-subtle: var(--border, #E2E8F0);
+  --border-medium: var(--border2, #CBD5E1);
+  --surface-base: var(--bg, #FAFBFC);
+  --surface-card: var(--surface, #FFFFFF);
+  --surface-elevated: var(--surface, #FFFFFF);
+  --surface-sunken: var(--surface2, #F1F5F9);
+  --surface-hover: var(--surface2, #F1F5F9);
+  --accent-primary: #0284C7;
+  --accent-subtle: rgba(2, 132, 199, 0.12);
+  --semantic-warning: #B45309;
+  --semantic-warning-bg: #FEF3C7;
+  --semantic-error: #DC2626;
+  --semantic-error-bg: #FEE2E2;
+  --semantic-success: #15803D;
+  --semantic-success-bg: #DCFCE7;
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+[data-theme="dark"] .seguimiento-page {
+  --accent-primary: #38BDF8;
+  --accent-subtle: rgba(56, 189, 248, 0.16);
+  --semantic-warning: #FBBF24;
+  --semantic-warning-bg: rgba(251, 191, 36, 0.14);
+  --semantic-error: #F87171;
+  --semantic-error-bg: rgba(248, 113, 113, 0.14);
+  --semantic-success: #4ADE80;
+  --semantic-success-bg: rgba(74, 222, 128, 0.14);
+  --shadow-sm: none;
+}
+
+.seguimiento-page {
+  flex: 1;
+  min-height: 100vh;
+  overflow-y: auto;
+  background-color: var(--surface-base);
+  color: var(--text-primary);
+  padding: 2rem 2.25rem 3.5rem;
+}
+
+.seguimiento-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.seguimiento-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.seguimiento-title-block h1 {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+.seguimiento-title-block p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+.seguimiento-course-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.seguimiento-course-selector label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.seguimiento-select {
+  appearance: none;
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  padding: 0.55rem 2.2rem 0.55rem 0.9rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  min-width: 250px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.seguimiento-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+/* Resumen KPIs */
+.seguimiento-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+.seguimiento-kpi-card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 1.15rem 1.35rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.seguimiento-kpi-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+
+.seguimiento-kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.seguimiento-kpi-sub {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* Paneles y tarjetas */
+.seguimiento-card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 1.35rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.seguimiento-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.seguimiento-card-title {
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.seguimiento-card-subtitle {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  margin: 0.15rem 0 0;
+}
+
+.seguimiento-chart-box {
+  width: 100%;
+  height: 270px;
+}
+
+/* Tabla de estudiantes */
+.seguimiento-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.seguimiento-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.seguimiento-table th {
+  background-color: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.seguimiento-sort-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.seguimiento-sort-btn:hover {
+  color: var(--text-primary);
+}
+
+.seguimiento-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.seguimiento-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.14s ease;
+}
+
+.seguimiento-table tbody tr:hover {
+  background-color: var(--surface-hover);
+}
+
+.seguimiento-table tbody tr.seguimiento-row-selected {
+  background-color: var(--accent-subtle);
+}
+
+/* Resaltado en ámbar para promedio menor de 60 */
+.seguimiento-table tbody tr.seguimiento-row-alerta {
+  background-color: rgba(217, 119, 6, 0.1);
+}
+
+.seguimiento-table tbody tr.seguimiento-row-alerta:hover {
+  background-color: rgba(217, 119, 6, 0.16);
+}
+
+[data-theme="dark"] .seguimiento-table tbody tr.seguimiento-row-alerta {
+  background-color: rgba(245, 158, 11, 0.14);
+}
+
+[data-theme="dark"] .seguimiento-table tbody tr.seguimiento-row-alerta:hover {
+  background-color: rgba(245, 158, 11, 0.22);
+}
+
+.seguimiento-student-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.seguimiento-student-email {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+}
+
+.seguimiento-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.seguimiento-badge--amber {
+  background-color: var(--semantic-warning-bg);
+  color: var(--semantic-warning);
+}
+
+.seguimiento-badge--ok {
+  background-color: var(--semantic-success-bg);
+  color: var(--semantic-success);
+}
+
+.seguimiento-badge--neutral {
+  background-color: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .seguimiento-badge--amber {
+  background-color: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .seguimiento-badge--ok {
+  background-color: rgba(34, 197, 94, 0.16);
+  color: #4ade80;
+}
+
+/* Paginación */
+.seguimiento-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.seguimiento-pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.seguimiento-btn {
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.seguimiento-btn:hover:not(:disabled) {
+  background-color: var(--surface-hover);
+  border-color: var(--accent-primary);
+}
+
+.seguimiento-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Panel de detalle del estudiante */
+.seguimiento-detail-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 960px) {
+  .seguimiento-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.seguimiento-dimension-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.seguimiento-dimension-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.seguimiento-dimension-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.seguimiento-dimension-bar-bg {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background-color: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.seguimiento-dimension-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background-color: var(--accent-primary);
+  transition: width 0.25s ease;
+}
+
+.seguimiento-dimension-bar-fill--amber {
+  background-color: var(--semantic-warning);
+}
+
+.seguimiento-consultas-list {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.seguimiento-consulta-item {
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  background-color: var(--surface-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.seguimiento-consulta-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.seguimiento-consulta-Chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.seguimiento-empty {
+  text-align: center;
+  padding: 2.25rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.seguimiento-error {
+  background-color: var(--semantic-error-bg);
+  color: var(--semantic-error);
+  border: 1px solid var(--semantic-error);
+  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
+  font-size: 0.9rem;
+}

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './styles/landing.css';
 import './styles/auth.css';
@@ -5,39 +6,45 @@ import './styles/inner.css';
 import './styles/dashboard.css';
 import './styles/theme.css';
 
-import LandingPage from './pages/landing/LandingPage';
-import ProyectoPage from './pages/landing/ProyectoPage';
-import LoginPage from './pages/auth/LoginPage';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ValidacionExpertoPage from './pages/validacion/ValidacionExpertoPage';
-import AdminPage from './pages/admin/AdminPage';
-import CursosPage from './pages/cursos/CursosPage';
-import CursoDetallePage from './pages/cursos/CursoDetallePage';
-import RegisterPage from './pages/auth/RegisterPage';
-import ConsentPage from './pages/auth/ConsentPage';
-import DashboardPage from './pages/dashboard/DashboardPage';
+// Cada pantalla se descarga cuando se abre por primera vez, no todas al entrar.
+const LandingPage = lazy(() => import('./pages/landing/LandingPage'));
+const ProyectoPage = lazy(() => import('./pages/landing/ProyectoPage'));
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ValidacionExpertoPage = lazy(() => import('./pages/validacion/ValidacionExpertoPage'));
+const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
+const CursosPage = lazy(() => import('./pages/cursos/CursosPage'));
+const CursoDetallePage = lazy(() => import('./pages/cursos/CursoDetallePage'));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
+const ConsentPage = lazy(() => import('./pages/auth/ConsentPage'));
+const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 
-import ExplorarPage from './pages/explorar/ExplorarPage';
-import DesarrolladoresPage from './pages/equipo/DesarrolladoresPage';
-import DireccionPage from './pages/equipo/DireccionPage';
-import InstitucionPage from './pages/equipo/InstitucionPage';
-import TerminosPage from './pages/legal/TerminosPage';
-import PrivacidadPage from './pages/legal/PrivacidadPage';
-import LicenciaPage from './pages/legal/LicenciaPage';
-import DocumentacionPage from './pages/contenido/DocumentacionPage';
-import BibliotecaPage from './pages/contenido/BibliotecaPage';
-import SimulacionPage from './pages/simulacion/SimulacionPage';
-import CasosPage from './pages/simulacion/CasosPage';
-import HistorialPage from './pages/simulacion/HistorialPage';
-import CuestionarioPage from './pages/cuestionario/CuestionarioPage';
-import CronogramaPage from './pages/cronograma/CronogramaPage';
-import DesarrolloPage from './pages/desarrollo/DesarrolloPage';
+const ExplorarPage = lazy(() => import('./pages/explorar/ExplorarPage'));
+const DesarrolladoresPage = lazy(() => import('./pages/equipo/DesarrolladoresPage'));
+const DireccionPage = lazy(() => import('./pages/equipo/DireccionPage'));
+const InstitucionPage = lazy(() => import('./pages/equipo/InstitucionPage'));
+const TerminosPage = lazy(() => import('./pages/legal/TerminosPage'));
+const PrivacidadPage = lazy(() => import('./pages/legal/PrivacidadPage'));
+const LicenciaPage = lazy(() => import('./pages/legal/LicenciaPage'));
+const DocumentacionPage = lazy(() => import('./pages/contenido/DocumentacionPage'));
+const BibliotecaPage = lazy(() => import('./pages/contenido/BibliotecaPage'));
+const SimulacionPage = lazy(() => import('./pages/simulacion/SimulacionPage'));
+const CasosPage = lazy(() => import('./pages/simulacion/CasosPage'));
+const HistorialPage = lazy(() => import('./pages/simulacion/HistorialPage'));
+const CuestionarioPage = lazy(() => import('./pages/cuestionario/CuestionarioPage'));
+const CronogramaPage = lazy(() => import('./pages/cronograma/CronogramaPage'));
+const DesarrolloPage = lazy(() => import('./pages/desarrollo/DesarrolloPage'));
+const SeguimientoPage = lazy(() => import('./pages/seguimiento/SeguimientoPage'));
 import ThemeToggleFloating from './components/shared/ThemeToggleFloating';
 import { isAuthenticated, hasUserAcceptedConsent } from './utils/authConsent';
 import { getStoredUser } from './data/mainAuth';
 
 function isAdmin(): boolean {
   return getStoredUser()?.role === 'ADMIN';
+}
+
+function isTeacher(): boolean {
+  return getStoredUser()?.role === 'TEACHER';
 }
 
 /**
@@ -57,6 +64,29 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!hasUserAcceptedConsent()) {
     return <Navigate to="/consent" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+/**
+ * 🔒 Guard exclusivo para vistas de docente (/seguimiento)
+ */
+function TeacherRoute({ children }: { children: React.ReactNode }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (isAdmin()) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  if (!hasUserAcceptedConsent()) {
+    return <Navigate to="/consent" replace />;
+  }
+
+  if (!isTeacher()) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
@@ -105,7 +135,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 /** Rutas cuyas páginas ya traen su propio <Sidebar/> con toggle de tema en
  *  el riel — ahí el botón flotante global queda de más. */
-const SIDEBAR_ROUTE_PREFIXES = ['/dashboard', '/biblioteca', '/casos', '/historial', '/desarrollo', '/mis-cursos'];
+const SIDEBAR_ROUTE_PREFIXES = ['/dashboard', '/biblioteca', '/casos', '/historial', '/desarrollo', '/mis-cursos', '/seguimiento'];
 
 function GlobalThemeToggle() {
   const { pathname } = useLocation();
@@ -137,6 +167,7 @@ export default function App() {
           (el Sidebar ya trae su propio toggle de tema en el riel). */}
       <GlobalThemeToggle />
 
+      <Suspense fallback={<div className="app-cargando" aria-busy="true" />}>
       <Routes>
         {/* Landing Public Pages */}
         <Route path="/"                       element={<LandingPage />} />
@@ -162,6 +193,8 @@ export default function App() {
         <Route path="/biblioteca"             element={<ProtectedRoute><BibliotecaPage /></ProtectedRoute>} />
         <Route path="/mis-cursos"             element={<ProtectedRoute><CursosPage /></ProtectedRoute>} />
         <Route path="/mis-cursos/:id"         element={<ProtectedRoute><CursoDetallePage /></ProtectedRoute>} />
+        <Route path="/seguimiento"            element={<TeacherRoute><SeguimientoPage /></TeacherRoute>} />
+        <Route path="/seguimiento/:courseId"  element={<TeacherRoute><SeguimientoPage /></TeacherRoute>} />
         <Route path="/admin"                  element={<AdminRoute><AdminPage /></AdminRoute>} />
         <Route path="/simulacion"             element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
         <Route path="/simulacion/:id"         element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
@@ -180,6 +213,7 @@ export default function App() {
         {/* Catch-all → landing */}
         <Route path="*"                       element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

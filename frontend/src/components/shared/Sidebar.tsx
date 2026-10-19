@@ -22,12 +22,13 @@ import {
   Volume2,
   Zap,
   Globe,
+  BarChart3,
 } from 'lucide-react';
 import { auth } from '../../data/firebase';
 import { getInitialTheme, triggerThemeToggle, type ThemeMode } from '../../utils/themeHelper';
 import { logoutUserSession } from '../../utils/authConsent';
 import { useCurrentUser } from '../../utils/currentUser';
-import { logoutMainSession } from '../../data/mainAuth';
+import { getStoredUser, logoutMainSession } from '../../data/mainAuth';
 import { listConsultations, listMyCourses } from '../../data/consultasApi';
 import logoUrl from '../../assets/Logo Clerkship.svg';
 import NotificacionesCampana from './NotificacionesCampana';
@@ -53,6 +54,7 @@ function getActiveSectionId(pathname: string): string {
   if (pathname.startsWith('/casos')) return 'casos';
   if (pathname.startsWith('/historial')) return 'historial';
   if (pathname.startsWith('/biblioteca')) return 'biblioteca';
+  if (pathname.startsWith('/seguimiento')) return 'seguimiento';
   if (pathname.startsWith('/mis-cursos') || pathname.startsWith('/explorar')) return 'mis-cursos';
   return 'overview';
 }
@@ -63,6 +65,7 @@ function isChildActive(childRoute: string, pathname: string, searchParams: URLSe
 
   const isBaseMatch =
     (baseRoute === '/dashboard' && (pathname === '/dashboard' || pathname === '/')) ||
+    (baseRoute === '/seguimiento' && pathname.startsWith('/seguimiento')) ||
     pathname === baseRoute;
 
   if (!isBaseMatch) return false;
@@ -284,6 +287,8 @@ export default function Sidebar() {
     return () => document.removeEventListener('mousedown', handler);
   }, [profileOpen, settingsOpen]);
 
+  const esDocente = getStoredUser()?.role === 'TEACHER';
+
   // Definición completa de las secciones reales del sistema
   const treeSections: TreeSection[] = useMemo(() => [
     {
@@ -353,7 +358,20 @@ export default function Sidebar() {
         { label: 'Explorar catálogo', route: '/explorar' },
       ],
     },
-  ], [counts]);
+    ...(esDocente
+      ? [
+          {
+            id: 'seguimiento',
+            label: 'Seguimiento',
+            Icon: BarChart3,
+            route: '/seguimiento',
+            children: [
+              { label: 'Simulador por curso', route: '/seguimiento' },
+            ],
+          },
+        ]
+      : []),
+  ], [counts, esDocente]);
 
   function handleParentClick(section: TreeSection) {
     if (section.children && section.children.length > 0) {
