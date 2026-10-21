@@ -271,6 +271,58 @@ def publicar_en_biblioteca(file_id, validated_body: PublicarRequest):
     return jsonify({"article": articulo.to_dict(tags=[])}), 201
 
 
+def _nombre_de_archivo(titulo: str) -> str:
+    """Nombre legible para «Mi nube»: el título del recurso, sin caracteres raros, con .pdf."""
+    limpio = "".join(c for c in titulo if c not in '\\/:*?"<>|').strip() or "Recurso de la biblioteca"
+    return f"{limpio[:240].rstrip()}.pdf"
+
+
+@almacenamiento_bp.post("/biblioteca/<article_id>/guardar")
+@jwt_required()
+@limiter.limit(limites.SUBIDA_MATERIAL, key_func=limites.usuario_o_ip)
+def guardar_en_mi_nube(article_id):
+    """Copia el PDF de un recurso de la biblioteca a «Mi nube» del usuario (dentro de
+    R2, sin pasar por el navegador). Cuenta para su cuota de 5 GB."""
+    try:
+        articulo = Article.query.get(uuid.UUID(article_id))
+    except ValueError:
+        articulo = None
+    owner_id = _usuario_id()
+    if articulo is None or not articulo.archivo_key or not articulo.visible_para(owner_id, get_jwt().get("role")):
+        return _error(404, "Este recurso no tiene archivo para guardar.")
+
+    try:
+        tamano = storage.tamano_real(articulo.archivo_key)
+    except storage.StorageNotConfigured as err:
+        return _error(503, str(err))
+    if tamano is None:
+        return _error(404, "El archivo del recurso no está en el almacenamiento.")
+    if _espacio_usado(owner_id) + tamano > storage.QUOTA_BYTES_PER_USER:
+        return _error(413, "No tienes espacio suficiente en tu nube. Tu límite es de 5 GB.")
+
+    clave = storage.nueva_clave(str(owner_id), "application/pdf")
+    try:
+        storage.copiar(articulo.archivo_key, clave)
+    except storage.StorageNotConfigured as err:
+        return _error(503, str(err))
+    archivo = UserFile(
+        owner_id=owner_id,
+        nombre=_nombre_de_archivo(articulo.title),
+        storage_key=clave,
+        mime_type="application/pdf",
+        size_bytes=tamano,
+        estado="LISTO",
+    )
+    try:
+        db.session.add(archivo)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        storage.borrar(clave)
+        raise
+    return jsonify({"archivo": archivo.to_dict()}), 201
+
+
 @almacenamiento_bp.get("/biblioteca/<article_id>/descarga")
 @jwt_required()
 def descargar_de_biblioteca(article_id):

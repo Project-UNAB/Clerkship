@@ -9,7 +9,7 @@ desactualizado o si aparece una ruta sin control.
   rol del token sea el rol actual del usuario.
 - **Propiedad**: cómo se comprueba que el recurso de la URL le pertenece a quien lo pide.
 
-Total: **186** rutas — 154 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 18 públicas, **0 sin control**.
+Total: **190** rutas — 158 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 18 públicas, **0 sin control**.
 
 ## Públicas a propósito
 
@@ -81,6 +81,7 @@ Total: **186** rutas — 154 con rol y propiedad, 14 con sesión pero sin restri
 | PATCH | `/api/almacenamiento/archivos/<file_id>` | Cualquiera con sesión | Solo datos del propio usuario |
 | GET | `/api/almacenamiento/archivos/<file_id>/descarga` | Cualquiera con sesión | Solo datos del propio usuario |
 | POST | `/api/almacenamiento/archivos/<file_id>/publicar` | Cualquiera con sesión | Solo datos del propio usuario |
+| POST | `/api/almacenamiento/biblioteca/<article_id>/guardar` | Cualquiera con sesión | Copia a la nube del propio usuario (identidad del token) un recurso que puede ver (Article.visible_para) |
 | POST | `/api/almacenamiento/subidas` | Cualquiera con sesión | Solo datos del propio usuario |
 | POST | `/api/almacenamiento/subidas/<file_id>/confirmar` | Cualquiera con sesión | Solo datos del propio usuario |
 | GET | `/api/almacenamiento/uso` | Cualquiera con sesión | Solo datos del propio usuario |
@@ -105,9 +106,12 @@ Total: **186** rutas — 154 con rol y propiedad, 14 con sesión pero sin restri
 | PATCH | `/api/articulos/<article_id>` | Cualquiera con sesión | Autor del recurso o administrador (Article.es_autor) |
 | DELETE | `/api/articulos/<article_id>/estante` | STUDENT | Solo datos del propio usuario |
 | POST | `/api/articulos/<article_id>/estante` | STUDENT | Solo datos del propio usuario |
+| DELETE | `/api/articulos/<article_id>/favorito` | Cualquiera con sesión | Solo los favoritos del propio usuario (identidad del token) |
+| PUT | `/api/articulos/<article_id>/favorito` | Cualquiera con sesión | Solo los favoritos del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para) |
 | DELETE | `/api/articulos/<article_id>/portada` | Cualquiera con sesión | Autor del recurso o administrador (Article.es_autor) |
 | POST | `/api/articulos/<article_id>/portada` | Cualquiera con sesión | Autor del recurso o administrador (Article.es_autor) |
 | GET | `/api/articulos/estante` | STUDENT | Solo datos del propio usuario |
+| GET | `/api/articulos/favoritos` | Cualquiera con sesión | Solo los favoritos del propio usuario (identidad del token) |
 
 ## Con rol y propiedad — auth
 

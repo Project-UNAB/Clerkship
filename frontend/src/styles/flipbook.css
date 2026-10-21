@@ -2209,3 +2209,453 @@
 @media (prefers-reduced-motion: reduce) {
   .fb-notas-panel { animation: none; }
 }
+
+/* ═══════════ Menú del clic derecho, diálogo y avisos ═══════════ */
+.bib-book-etiquetas-der {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.bib-book-favorito {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #E11D48;
+  color: #FFFFFF;
+}
+.bib-menu {
+  position: fixed;
+  z-index: 100000;
+  min-width: 240px;
+  max-width: 300px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface, #FFFFFF);
+  border: 1px solid var(--border, #E2E8F0);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08);
+  animation: bibMenuIn 0.12s ease;
+}
+@keyframes bibMenuIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+.bib-menu-titulo {
+  margin: 0;
+  padding: 6px 10px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink3, #64748B);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bib-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border, #E2E8F0);
+}
+.bib-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink, #0F172A);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.bib-menu-item:hover:not(:disabled),
+.bib-menu-item:focus-visible {
+  background: var(--surface2, #F1F5F9);
+  outline: none;
+}
+.bib-menu-item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.bib-menu-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--surface2, #F1F5F9);
+  color: var(--ink2, #334155);
+  flex: none;
+}
+.bib-menu-txt {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.bib-menu-txt small {
+  font-size: 0.72rem;
+  color: var(--ink3, #64748B);
+}
+[data-theme="dark"] .bib-menu {
+  background: #0F172A;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+[data-theme="dark"] .bib-menu-item { color: #E2E8F0; }
+[data-theme="dark"] .bib-menu-item:hover:not(:disabled),
+[data-theme="dark"] .bib-menu-item:focus-visible,
+[data-theme="dark"] .bib-menu-ico { background: rgba(30, 41, 59, 0.9); color: #E2E8F0; }
+[data-theme="dark"] .bib-menu-sep { background: rgba(255, 255, 255, 0.1); }
+
+.bib-dialogo-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 100001;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+}
+.bib-dialogo {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--surface, #FFFFFF);
+  color: var(--ink, #0F172A);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+}
+.bib-dialogo h3 {
+  margin: 12px 0 6px;
+  font-size: 1.05rem;
+}
+.bib-dialogo p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink2, #334155);
+}
+.bib-dialogo-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #E0F2FE;
+  color: #0369A1;
+}
+.bib-dialogo-cerrar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink3, #64748B);
+  cursor: pointer;
+}
+.bib-dialogo-cerrar:hover { background: var(--surface2, #F1F5F9); }
+.bib-dialogo-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.bib-dialogo-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #E2E8F0);
+  background: var(--surface, #FFFFFF);
+  color: var(--ink, #0F172A);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bib-dialogo-btn.is-principal {
+  background: #0284C7;
+  border-color: #0284C7;
+  color: #FFFFFF;
+}
+.bib-dialogo-btn.is-principal:hover { background: #0369A1; }
+[data-theme="dark"] .bib-dialogo { background: #0F172A; color: #F8FAFC; }
+[data-theme="dark"] .bib-dialogo p { color: #CBD5E1; }
+[data-theme="dark"] .bib-dialogo-btn:not(.is-principal) { background: rgba(30, 41, 59, 0.9); border-color: rgba(255, 255, 255, 0.12); color: #E2E8F0; }
+[data-theme="dark"] .bib-dialogo-ico { background: rgba(2, 132, 199, 0.2); color: #7DD3FC; }
+
+.bib-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 100002;
+  max-width: min(560px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 16px;
+  border-radius: 14px;
+  background: #0F172A;
+  color: #F8FAFC;
+  font-size: 0.86rem;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.3);
+  animation: bibToastIn 0.18s ease;
+}
+.bib-toast.is-error { background: #991B1B; }
+@keyframes bibToastIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.bib-toast-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  animation: fbSpin 0.8s linear infinite;
+  flex: none;
+}
+.bib-toast-enlace {
+  color: #7DD3FC;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.bib-toast-cerrar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  flex: none;
+}
+.bib-toast-cerrar:hover { opacity: 1; background: rgba(255, 255, 255, 0.12); }
+@media (prefers-reduced-motion: reduce) {
+  .bib-menu, .bib-toast { animation: none; }
+}
+
+/* ═══════════ Texto seleccionable (capa de texto de PDF.js) ═══════════ */
+.textLayer.fb-capa-texto {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: clip;
+  line-height: 1;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+  -webkit-user-select: text;
+  user-select: text;
+}
+.fb-capa-texto :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+.fb-capa-texto > :not(.markedContent),
+.fb-capa-texto .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.fb-capa-texto .markedContent { display: contents; }
+.fb-capa-texto span[role="img"] { user-select: none; cursor: default; }
+.fb-capa-texto ::selection { background: rgba(2, 132, 199, 0.32); }
+.fb-capa-texto br::selection { background: transparent; }
+.fb-capa-texto .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+}
+.fb-capa-texto.selecting .endOfContent { top: 0; }
+
+/* Botones junto al texto seleccionado */
+.fb-menu-seleccion {
+  position: fixed;
+  z-index: 100003;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #0F172A;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.32);
+  transform: translate(-50%, -100%);
+  animation: fbSeleccionIn 0.12s ease;
+}
+.fb-menu-seleccion[data-arriba="false"] { transform: translate(-50%, 0); }
+.fb-menu-seleccion button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #F8FAFC;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fb-menu-seleccion button:hover { background: rgba(255, 255, 255, 0.12); }
+@keyframes fbSeleccionIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fb-menu-seleccion { animation: none; }
+}
+
+/* ═══════════ Texto citado de una nota (compacto, completo o escondido) ═══════════ */
+.fb-cita {
+  --nota-color: #94A3B8;
+  position: relative;
+  margin: 8px 0;
+  padding: 8px 10px 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--nota-color) 8%, var(--fb-campo));
+  border: 1px solid color-mix(in srgb, var(--nota-color) 22%, transparent);
+  border-left: 3px solid var(--nota-color);
+  cursor: default;
+}
+.fb-cita.is-oculta {
+  padding-bottom: 6px;
+}
+.fb-cita-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+.fb-cita-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--nota-color) 70%, var(--fb-texto));
+}
+.fb-cita-palabras {
+  font-size: 0.68rem;
+  color: var(--fb-texto-2);
+  white-space: nowrap;
+}
+.fb-cita-acciones {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+}
+.fb-cita-acciones button,
+.fb-cita-ver-mas {
+  border: none;
+  background: transparent;
+  color: var(--fb-texto-2);
+  font: inherit;
+  cursor: pointer;
+}
+.fb-cita-acciones button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+}
+.fb-cita-acciones button:hover,
+.fb-cita-ver-mas:hover {
+  background: color-mix(in srgb, var(--nota-color) 16%, transparent);
+  color: var(--fb-texto);
+}
+.fb-cita-acciones button:focus-visible,
+.fb-cita-ver-mas:focus-visible {
+  outline: 2px solid var(--fb-acento);
+  outline-offset: 1px;
+}
+.fb-cita-texto {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--fb-texto);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+/* Compacta: unas líneas con un degradado que indica que hay más */
+.fb-cita.is-compacta .fb-cita-texto {
+  max-height: calc(1.55em * 3);
+  overflow: hidden;
+}
+/* El degradado solo cuando de verdad hay más texto escondido */
+.fb-cita.is-compacta.desborda .fb-cita-texto {
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+/* Completa: todo el texto; si es muy largo, se desplaza dentro del recuadro */
+.fb-cita.is-completa .fb-cita-texto {
+  max-height: min(42vh, 360px);
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+.fb-cita-ver-mas {
+  margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--nota-color) 75%, var(--fb-texto));
+}
+[data-theme="dark"] .fb-cita {
+  background: color-mix(in srgb, var(--nota-color) 12%, rgba(30, 41, 59, 0.85));
+}
+@media (max-width: 900px) {
+  .fb-cita-texto { font-size: 0.86rem; }
+  .fb-cita.is-completa .fb-cita-texto { max-height: 30vh; }
+}
+@media (max-width: 380px) {
+  .fb-cita-palabras { display: none; }
+}
+
+/* La cabecera de la cita no se parte: la etiqueta queda en una línea y el conteo
+   de palabras cede espacio; el color se oscurece para que se lea también en amarillo. */
+.fb-cita-etiqueta {
+  white-space: nowrap;
+  flex: none;
+  color: color-mix(in srgb, var(--nota-color) 45%, var(--fb-texto));
+}
+.fb-cita-palabras {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fb-cita-ver-mas {
+  color: color-mix(in srgb, var(--nota-color) 45%, var(--fb-texto));
+}

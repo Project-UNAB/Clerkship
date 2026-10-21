@@ -207,3 +207,21 @@ export function editarNota(articleId: string, notaId: string, cambios: { texto?:
 export function borrarNota(articleId: string, notaId: string): Promise<{ mensaje: string }> {
   return apiFetch(`/api/articulos/${articleId}/notas/${notaId}`, { method: 'DELETE' });
 }
+
+/** Ids de los recursos que el usuario marcó como favoritos. */
+export function listarFavoritos(): Promise<{ favoritos: string[] }> {
+  return apiFetch('/api/articulos/favoritos');
+}
+
+export function marcarFavorito(articleId: string): Promise<{ article_id: string; favorito: boolean }> {
+  return apiFetch(`/api/articulos/${articleId}/favorito`, { method: 'PUT' });
+}
+
+export function quitarFavorito(articleId: string): Promise<{ article_id: string; favorito: boolean }> {
+  return apiFetch(`/api/articulos/${articleId}/favorito`, { method: 'DELETE' });
+}
+
+/** Copia el PDF del recurso a «Mi nube» del usuario (dentro de R2; cuenta para su cuota). */
+export function guardarEnMiNube(articleId: string): Promise<{ archivo: { id: string; nombre: string; size_bytes: number } }> {
+  return apiFetch(`/api/almacenamiento/biblioteca/${articleId}/guardar`, { method: 'POST' });
+}

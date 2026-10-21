@@ -4,7 +4,7 @@ from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 
 from app import db, limiter, storage
-from app.models import Article, ArticleTag, StudentLibrary
+from app.models import Article, ArticleFavorite, ArticleTag, StudentLibrary
 from app.models.article import ARTICLE_TYPES
 from app.models.student_library import SHELF_STATUSES
 from app.schemas import (
@@ -245,6 +245,52 @@ def retirar(article_id):
     db.session.commit()
     borrar_de_r2(claves)
     return jsonify({"message": "Artículo retirado correctamente"}), 200
+
+
+@articulos_bp.get("/favoritos")
+@jwt_required()
+def listar_favoritos():
+    """Ids de los recursos que el usuario marcó como favoritos (solo los que puede ver)."""
+    uid, rol = _quien()
+    favoritos = ArticleFavorite.query.filter_by(user_id=uid).all()
+    visibles = []
+    for f in favoritos:
+        articulo = Article.query.get(f.article_id)
+        if articulo is not None and articulo.visible_para(uid, rol):
+            visibles.append(str(f.article_id))
+    return jsonify({"favoritos": visibles}), 200
+
+
+@articulos_bp.put("/<article_id>/favorito")
+@jwt_required()
+def marcar_favorito(article_id):
+    try:
+        aid = uuid.UUID(article_id)
+    except (ValueError, AttributeError):
+        return _no_encontrado()
+    uid, rol = _quien()
+    articulo = Article.query.get(aid)
+    if articulo is None or not articulo.visible_para(uid, rol):
+        return _no_encontrado()
+    if ArticleFavorite.query.get((uid, aid)) is None:
+        db.session.add(ArticleFavorite(user_id=uid, article_id=aid))
+        db.session.commit()
+    return jsonify({"article_id": str(aid), "favorito": True}), 200
+
+
+@articulos_bp.delete("/<article_id>/favorito")
+@jwt_required()
+def quitar_favorito(article_id):
+    try:
+        aid = uuid.UUID(article_id)
+    except (ValueError, AttributeError):
+        return _no_encontrado()
+    uid, _rol = _quien()
+    favorito = ArticleFavorite.query.get((uid, aid))
+    if favorito is not None:
+        db.session.delete(favorito)
+        db.session.commit()
+    return jsonify({"article_id": str(aid), "favorito": False}), 200
 
 
 @articulos_bp.get("/estante")

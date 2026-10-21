@@ -1370,6 +1370,64 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/articulos/favoritos:
+    get:
+      tags:
+      - Biblioteca Médica
+      summary: Ids de los recursos que el usuario marcó como favoritos
+      operationId: listarFavoritos
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de ids
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  favoritos:
+                    type: array
+                    items: {type: string, format: uuid}
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/articulos/{id}/favorito:
+    put:
+      tags:
+      - Biblioteca Médica
+      summary: Marca un recurso como favorito (idempotente)
+      operationId: marcarFavorito
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Marcado como favorito
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags:
+      - Biblioteca Médica
+      summary: Quita un recurso de los favoritos (idempotente)
+      operationId: quitarFavorito
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Quitado de favoritos
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /api/articulos/estante:
     get:
       tags:
@@ -2173,6 +2231,29 @@ paths:
           description: Datos inválidos
         '404':
           description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/almacenamiento/biblioteca/{article_id}/guardar:
+    post:
+      tags:
+      - Almacenamiento
+      summary: Copia el PDF de un recurso de la biblioteca a «Mi nube» del usuario
+      description: La copia se hace dentro de R2 y cuenta para la cuota de 5 GB del usuario.
+      operationId: guardarRecursoEnMiNube
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: article_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '201':
+          description: Archivo creado en «Mi nube»
+        '404':
+          description: El recurso no existe, no es visible o no tiene PDF
+        '413':
+          description: No hay espacio suficiente en la nube del usuario
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   /api/almacenamiento/biblioteca/{article_id}/descarga:

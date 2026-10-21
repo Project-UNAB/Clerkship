@@ -90,6 +90,14 @@ PROPIEDAD_EXACTA = {
     ("DELETE", "/api/articulos/<article_id>"): "Autor del recurso o administrador (Article.es_autor)",
     ("GET", "/api/articulos/<article_id>/anotaciones"):
         "Solo las anotaciones del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para)",
+    ("GET", "/api/articulos/favoritos"):
+        "Solo los favoritos del propio usuario (identidad del token)",
+    ("PUT", "/api/articulos/<article_id>/favorito"):
+        "Solo los favoritos del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para)",
+    ("DELETE", "/api/articulos/<article_id>/favorito"):
+        "Solo los favoritos del propio usuario (identidad del token)",
+    ("POST", "/api/almacenamiento/biblioteca/<article_id>/guardar"):
+        "Copia a la nube del propio usuario (identidad del token) un recurso que puede ver (Article.visible_para)",
     ("GET", "/api/articulos/<article_id>/notas"):
         "Solo las notas del propio usuario (identidad del token), en un libro que puede ver (Article.visible_para)",
     ("POST", "/api/articulos/<article_id>/notas"):

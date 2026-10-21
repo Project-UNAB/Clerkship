@@ -19,13 +19,15 @@ import { getStoredUser, mainAuthErrorMessage } from '../../data/mainAuth';
 import {
   listarArticulos, obtenerEstante, guardarEnEstante, quitarDeEstante, descargarArticulo,
   editarArticulo, retirarArticulo,
-  type Articulo, type ItemEstante,
+  listarFavoritos, marcarFavorito, quitarFavorito, guardarEnMiNube, obtenerAnotaciones, listarNotas,
+  type Articulo, type ItemEstante, type TrazoAnotacion, type NotaLibro,
 } from '../../data/articulosApi';
-import { MAX_FILE_BYTES } from '../../data/almacenamientoApi';
+import { MAX_FILE_BYTES, subirArchivo } from '../../data/almacenamientoApi';
 import PublicarLibroModal from '../../components/biblioteca/PublicarLibroModal';
 import { IDIOMAS, type IdiomaDocumento } from '../../components/biblioteca/idiomas';
 import { useZoomBiblioteca, ZOOM_MIN, ZOOM_MAX, ZOOM_PREDETERMINADO } from '../../components/biblioteca/useZoomBiblioteca';
 import CarruselEstante from '../../components/biblioteca/CarruselEstante';
+import { MenuLibro, DialogoIncluirNotas, type AccionMenuLibro } from '../../components/biblioteca/MenuLibro';
 
 /* ── Tipos de recurso ────────────────────────────────────── */
 const TYPES = [
@@ -134,6 +136,13 @@ export default function BibliotecaPage() {
   const [orden, setOrden] = useState<Orden>('recientes');
   // En el móvil los filtros, el zoom y «Subir PDF» se despliegan con un botón.
   const [controlesAbiertos, setControlesAbiertos] = useState(false);
+  // Menú del clic derecho, favoritos y avisos de las acciones (guardar, descargar…)
+  const [favoritos, setFavoritos] = useState<Set<string>>(new Set());
+  const [menu, setMenu] = useState<{ articulo: Articulo; x: number; y: number } | null>(null);
+  const [preguntaNotas, setPreguntaNotas] = useState<{
+    articulo: Articulo; destino: 'nube' | 'descargar'; trazos: Record<string, TrazoAnotacion[]>; notas: NotaLibro[];
+  } | null>(null);
+  const [aviso, setAviso] = useState<{ texto: string; tipo: 'ok' | 'error' | 'cargando'; enlace?: boolean } | null>(null);
   // La estantería completa se dibuja por partes: unas filas y más al bajar.
   const [filasVisibles, setFilasVisibles] = useState(FILAS_INICIALES);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -175,6 +184,17 @@ export default function BibliotecaPage() {
     setEstante(prev => prev.filter(e => e.article_id !== retirandoArticulo.id));
     setRetirandoArticulo(null);
   }
+
+  useEffect(() => {
+    listarFavoritos().then(r => setFavoritos(new Set(r.favoritos))).catch(() => undefined);
+  }, []);
+
+  // El aviso de una acción terminada se va solo.
+  useEffect(() => {
+    if (!aviso || aviso.tipo === 'cargando') return;
+    const id = window.setTimeout(() => setAviso(null), aviso.enlace ? 7000 : 4500);
+    return () => window.clearTimeout(id);
+  }, [aviso]);
 
   useEffect(() => {
     setLoading(true);
@@ -271,13 +291,12 @@ export default function BibliotecaPage() {
   }
   const langLabel = IDIOMAS.find(i => i.id === langFilter)?.label ?? 'Idioma';
 
+  /** Descargar desde el visor o desde la tarjeta: igual que en el menú del clic
+   * derecho, si el usuario tiene notas o trazos en el libro se le pregunta si incluirlos. */
   async function handleDescargar(articulo: Articulo) {
     setDescargandoId(articulo.id);
     try {
-      const { url } = await descargarArticulo(articulo.id);
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch (err) {
-      setError(mainAuthErrorMessage(err));
+      await prepararCopia(articulo, 'descargar');
     } finally {
       setDescargandoId(null);
     }
@@ -358,6 +377,72 @@ export default function BibliotecaPage() {
     });
   }
 
+  async function alternarFavorito(a: Articulo) {
+    const era = favoritos.has(a.id);
+    setFavoritos(prev => { const s = new Set(prev); if (era) s.delete(a.id); else s.add(a.id); return s; });
+    try {
+      await (era ? quitarFavorito(a.id) : marcarFavorito(a.id));
+      setAviso({ texto: era ? `«${a.title}» salió de tus favoritos.` : `«${a.title}» está en tus favoritos.`, tipo: 'ok' });
+    } catch (err) {
+      setFavoritos(prev => { const s = new Set(prev); if (era) s.add(a.id); else s.delete(a.id); return s; });
+      setAviso({ texto: mainAuthErrorMessage(err), tipo: 'error' });
+    }
+  }
+
+  /** Nube o dispositivo: si el usuario tiene trazos o notas en el libro, se le pregunta si incluirlos. */
+  async function prepararCopia(a: Articulo, destino: 'nube' | 'descargar') {
+    setAviso({ texto: 'Revisando tus notas del libro…', tipo: 'cargando' });
+    const [anot, nts] = await Promise.all([
+      obtenerAnotaciones(a.id).catch(() => ({ paginas: {} as Record<string, TrazoAnotacion[]> })),
+      listarNotas(a.id).catch(() => ({ notas: [] as NotaLibro[] })),
+    ]);
+    const trazos = Object.fromEntries(Object.entries(anot.paginas || {}).filter(([, t]) => t?.length));
+    if (Object.keys(trazos).length || nts.notas.length) {
+      setAviso(null);
+      setPreguntaNotas({ articulo: a, destino, trazos, notas: nts.notas });
+      return;
+    }
+    await copiar(a, destino, null);
+  }
+
+  async function copiar(a: Articulo, destino: 'nube' | 'descargar', conNotas: { trazos: Record<string, TrazoAnotacion[]>; notas: NotaLibro[] } | null) {
+    const nombre = `${a.title.replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 200) || 'Recurso'}${conNotas ? ' (con mis notas)' : ''}.pdf`;
+    try {
+      if (!conNotas) {
+        if (destino === 'nube') {
+          setAviso({ texto: 'Guardando en tu nube…', tipo: 'cargando' });
+          await guardarEnMiNube(a.id);
+          setAviso({ texto: `«${a.title}» se guardó en tu nube de Clerkship.`, tipo: 'ok', enlace: true });
+        } else {
+          const { url } = await descargarArticulo(a.id);
+          window.open(url, '_blank', 'noopener,noreferrer');
+          setAviso(null);
+        }
+        return;
+      }
+      setAviso({ texto: 'Preparando el PDF con tus notas…', tipo: 'cargando' });
+      const { url } = await descargarArticulo(a.id);
+      const { pdfConAnotaciones, descargarBlob } = await import('../../utils/pdfConAnotaciones');
+      const blob = await pdfConAnotaciones(url, conNotas.trazos, conNotas.notas, a.title);
+      if (destino === 'descargar') {
+        descargarBlob(blob, nombre);
+        setAviso({ texto: 'Listo: se descargó el PDF con tus notas.', tipo: 'ok' });
+      } else {
+        await subirArchivo(new File([blob], nombre, { type: 'application/pdf' }), null,
+          f => setAviso({ texto: `Guardando en tu nube… ${Math.round(f * 100)} %`, tipo: 'cargando' }));
+        setAviso({ texto: `«${a.title}» (con tus notas) se guardó en tu nube de Clerkship.`, tipo: 'ok', enlace: true });
+      }
+    } catch (err) {
+      setAviso({ texto: err instanceof Error ? err.message : mainAuthErrorMessage(err), tipo: 'error' });
+    }
+  }
+
+  function alElegirDelMenu(a: Articulo, accion: AccionMenuLibro) {
+    if (accion === 'abrir') handleOpenFlipbook(a);
+    if (accion === 'favorito') void alternarFavorito(a);
+    if (accion === 'nube' || accion === 'descargar') void prepararCopia(a, accion);
+  }
+
   function renderLibro(a: Articulo, i: number) {
     return (
       <BookCard
@@ -373,6 +458,8 @@ export default function BibliotecaPage() {
         puedeEditar={puedeEditarArticulo(a)}
         onEditar={() => setEditandoArticulo(a)}
         onRetirar={() => setRetirandoArticulo(a)}
+        onMenu={(art, x, y) => setMenu({ articulo: art, x, y })}
+        esFavorito={favoritos.has(a.id)}
       />
     );
   }
@@ -765,6 +852,7 @@ export default function BibliotecaPage() {
               {!loading && renderOrden()}
             </div>
           )}
+          {!loading && vistaPorTipo && renderFila('Favoritos', filtered.filter(a => favoritos.has(a.id)), { color: '#E11D48' })}
           {!loading && esEstudiante && renderFila('Mi estante', nextShelf)}
           {!loading && esEstudiante && renderFila('Terminados', finishedShelf)}
           {!loading && vistaPorTipo && porTipo.map(t =>
@@ -794,6 +882,42 @@ export default function BibliotecaPage() {
           )}
         </div>
       </div>
+
+      {/* ══ Clic derecho sobre un libro ══ */}
+      {menu && (
+        <MenuLibro
+          articulo={menu.articulo}
+          x={menu.x}
+          y={menu.y}
+          esFavorito={favoritos.has(menu.articulo.id)}
+          onAccion={accion => alElegirDelMenu(menu.articulo, accion)}
+          onClose={() => setMenu(null)}
+        />
+      )}
+      {preguntaNotas && (
+        <DialogoIncluirNotas
+          articulo={preguntaNotas.articulo}
+          destino={preguntaNotas.destino}
+          paginasConTrazos={Object.keys(preguntaNotas.trazos).length}
+          notas={preguntaNotas.notas.length}
+          onCancelar={() => setPreguntaNotas(null)}
+          onElegir={incluir => {
+            const p = preguntaNotas;
+            setPreguntaNotas(null);
+            void copiar(p.articulo, p.destino, incluir ? { trazos: p.trazos, notas: p.notas } : null);
+          }}
+        />
+      )}
+      {aviso && (
+        <div className={`bib-toast is-${aviso.tipo}`} role={aviso.tipo === 'error' ? 'alert' : 'status'}>
+          {aviso.tipo === 'cargando' && <span className="bib-toast-spinner" aria-hidden="true" />}
+          <span>{aviso.texto}</span>
+          {aviso.enlace && <a href="/dashboard" className="bib-toast-enlace">Ir a Mi nube</a>}
+          {aviso.tipo !== 'cargando' && (
+            <button type="button" className="bib-toast-cerrar" onClick={() => setAviso(null)} aria-label="Cerrar el aviso"><X size={13} /></button>
+          )}
+        </div>
+      )}
 
       {/* ══ Visor Flipbook a Pantalla Completa ══ */}
       {selectedBook && (

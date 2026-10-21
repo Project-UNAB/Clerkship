@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Download, BookmarkPlus, Check, X, Loader2, BookOpen, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Download, BookmarkPlus, Check, X, Loader2, BookOpen, MoreVertical, Pencil, Trash2, Heart } from 'lucide-react';
 import type { Articulo } from '../../data/articulosApi';
 
 /* ── Estilos por tipo de recurso clínico ─────────────────── */
@@ -31,6 +31,9 @@ export interface BookCardProps {
   puedeEditar?: boolean;
   onEditar?: (res: Articulo) => void;
   onRetirar?: (res: Articulo) => void;
+  /** Clic derecho (o tecla de menú) sobre el libro: abre el menú propio de la biblioteca. */
+  onMenu?: (res: Articulo, x: number, y: number) => void;
+  esFavorito?: boolean;
 }
 
 /**
@@ -48,6 +51,8 @@ export default function BookCard({
   puedeEditar = false,
   onEditar,
   onRetirar,
+  onMenu,
+  esFavorito = false,
 }: BookCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -77,6 +82,12 @@ export default function BookCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, delay, ease: 'easeOut' }}
       onClick={() => onOpenFlipbook(res)}
+      onContextMenu={onMenu ? e => {
+        e.preventDefault();
+        // Con la tecla de menú no hay coordenadas del puntero: se abre junto al libro.
+        const r = e.currentTarget.getBoundingClientRect();
+        onMenu(res, e.clientX || r.left + r.width / 2, e.clientY || r.top + r.height / 2);
+      } : undefined}
       role="button"
       tabIndex={0}
       onKeyDown={e => {
@@ -100,11 +111,18 @@ export default function BookCard({
         {/* Fila superior: tipo a la izquierda, idioma a la derecha */}
         <div className="bib-book-cover-top">
           <span className="bib-book-badge">{ts.label}</span>
-          {res.idioma && (
-            <span className="bib-book-idioma" title={res.idioma === 'es' ? 'En español' : 'En inglés'}>
-              {res.idioma.toUpperCase()}
-            </span>
-          )}
+          <span className="bib-book-etiquetas-der">
+            {esFavorito && (
+              <span className="bib-book-favorito" title="En tus favoritos" aria-label="En tus favoritos">
+                <Heart size={9} strokeWidth={2.6} fill="currentColor" />
+              </span>
+            )}
+            {res.idioma && (
+              <span className="bib-book-idioma" title={res.idioma === 'es' ? 'En español' : 'En inglés'}>
+                {res.idioma.toUpperCase()}
+              </span>
+            )}
+          </span>
         </div>
 
         {res.estado === 'PENDIENTE' && (
