@@ -541,6 +541,12 @@ def finalizar_consulta(consultation_id, validated_body: FinishConsultationReques
                 "finished_at": datetime.now(timezone.utc).isoformat(),
                 "ai_evaluation": evaluacion,
                 "provider_used": resultado["provider_used"],
+                # Lo que entregó el estudiante: lo necesita el experto que revisa el caso.
+                "respuesta_estudiante": {
+                    "hipotesis": final_diagnosis,
+                    "diferenciales": list(validated_body.differential_diagnoses or []),
+                    "plan": validated_body.treatment_plan or "",
+                },
             }},
         )
     except Exception:  # noqa: BLE001
