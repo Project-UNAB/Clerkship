@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, type MouseEvent as MouseEventReact, type FocusEvent as FocusEventReact } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { signOut } from 'firebase/auth';
 import {
-  ChevronLeft,
   ChevronDown,
   Settings,
   LogOut,
@@ -23,6 +23,8 @@ import {
   Zap,
   Globe,
   BarChart3,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { auth } from '../../data/firebase';
 import { getInitialTheme, triggerThemeToggle, type ThemeMode } from '../../utils/themeHelper';
@@ -32,8 +34,9 @@ import { getStoredUser, logoutMainSession } from '../../data/mainAuth';
 import { listConsultations, listMyCourses } from '../../data/consultasApi';
 import logoUrl from '../../assets/Logo Clerkship.svg';
 import NotificacionesCampana from './NotificacionesCampana';
+import '../../styles/sidebar.css';
 
-/* ── Types ─────────────────────────────────────────────────── */
+/* ── Tipos ─────────────────────────────────────────────────── */
 interface TreeChild {
   label: string;
   route: string;
@@ -49,7 +52,7 @@ interface TreeSection {
   children?: TreeChild[];
 }
 
-/* ── Helpers ────────────────────────────────────────────────── */
+/* ── Utilidades ────────────────────────────────────────────── */
 function getActiveSectionId(pathname: string): string {
   if (pathname.startsWith('/casos')) return 'casos';
   if (pathname.startsWith('/historial')) return 'historial';
@@ -77,103 +80,84 @@ function isChildActive(childRoute: string, pathname: string, searchParams: URLSe
     return true;
   }
 
-  if (baseRoute === '/casos') {
-    return !searchParams.get('tab') && !searchParams.get('nuevo');
-  }
-  if (baseRoute === '/biblioteca') {
-    return !searchParams.get('modulo');
-  }
-  if (baseRoute === '/historial') {
-    return !searchParams.get('tab');
-  }
-
+  if (baseRoute === '/casos') return !searchParams.get('tab') && !searchParams.get('nuevo');
+  if (baseRoute === '/biblioteca') return !searchParams.get('modulo');
+  if (baseRoute === '/historial') return !searchParams.get('tab');
   return true;
 }
 
-/* ════════════════════════════════════════════════════════════
-   Sidebar — Contenedor Único Auto-Expansible
-   ════════════════════════════════════════════════════════════ */
+/** Grupos del menú, en orden. Las secciones que no existan para el rol se omiten. */
+const GRUPOS: { titulo: string; ids: string[] }[] = [
+  { titulo: 'General', ids: ['overview', 'casos', 'historial'] },
+  { titulo: 'Aprendizaje', ids: ['biblioteca', 'mis-cursos', 'seguimiento'] },
+];
+
+const ANCHO_ABIERTO = 264;
+const ANCHO_CERRADO = 72;
 const STORAGE_KEY = 'clerkship_sb_expanded';
 
+/* ════════════════════════════════════════════════════════════
+   Barra lateral: se abre y se cierra (escritorio) y es un cajón
+   deslizable en pantallas de hasta 1024 px.
+   ════════════════════════════════════════════════════════════ */
 export default function Sidebar() {
   const navigate       = useNavigate();
   const { pathname }   = useLocation();
   const [searchParams] = useSearchParams();
   const currentUser    = useCurrentUser();
+  const sinMovimiento  = useReducedMotion();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isExpanded, setIsExpandedRaw] = useState<boolean>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === null ? true : saved === 'true';
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved === null ? true : saved === 'true';
+    } catch {
+      return true;
+    }
   });
 
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
+  const [tip, setTip] = useState<{ texto: string; x: number; y: number } | null>(null);
 
-  // Mockup de preferencias — solo UI por ahora (no persisten ni llaman al
-  // backend). Sirven para mostrar cómo quedaría el panel de Configuración
-  // completo; cada una se conecta de verdad más adelante.
+  // Preferencias de muestra: solo interfaz por ahora (no persisten ni llaman
+  // al backend). Cada una se conecta de verdad más adelante.
   const [mockLang, setMockLang] = useState<'es' | 'en'>('es');
   const [mockPushNotif, setMockPushNotif] = useState(true);
   const [mockEmailDigest, setMockEmailDigest] = useState(false);
   const [mockReduceMotion, setMockReduceMotion] = useState(false);
   const [mockSounds, setMockSounds] = useState(true);
 
-  // Métricas reales para los badges (en curso, completados, cursos)
-  const [counts, setCounts] = useState<{
-    inProgress: number;
-    completed: number;
-    courses: number;
-  }>({ inProgress: 0, completed: 0, courses: 0 });
+  // Métricas reales para los contadores (en curso, completados, cursos)
+  const [counts, setCounts] = useState({ inProgress: 0, completed: 0, courses: 0 });
 
   useEffect(() => {
     let cancelled = false;
-    async function loadCounts() {
-      try {
-        const [consultasRes, cursosRes] = await Promise.allSettled([
-          listConsultations(),
-          listMyCourses(),
-        ]);
-        if (cancelled) return;
-        let inProg = 0;
-        let comp = 0;
-        let crs = 0;
-        if (consultasRes.status === 'fulfilled' && Array.isArray(consultasRes.value)) {
-          inProg = consultasRes.value.filter(c => c.status === 'IN_PROGRESS').length;
-          comp = consultasRes.value.filter(c => c.status === 'COMPLETED').length;
-        }
-        if (cursosRes.status === 'fulfilled' && Array.isArray(cursosRes.value)) {
-          crs = cursosRes.value.length;
-        }
-        setCounts({ inProgress: inProg, completed: comp, courses: crs });
-      } catch {
-        // Silencioso
+    Promise.allSettled([listConsultations(), listMyCourses()]).then(([consultasRes, cursosRes]) => {
+      if (cancelled) return;
+      let inProgress = 0;
+      let completed = 0;
+      let courses = 0;
+      if (consultasRes.status === 'fulfilled' && Array.isArray(consultasRes.value)) {
+        inProgress = consultasRes.value.filter(c => c.status === 'IN_PROGRESS').length;
+        completed = consultasRes.value.filter(c => c.status === 'COMPLETED').length;
       }
-    }
-    loadCounts();
+      if (cursosRes.status === 'fulfilled' && Array.isArray(cursosRes.value)) courses = cursosRes.value.length;
+      setCounts({ inProgress, completed, courses });
+    });
     return () => { cancelled = true; };
   }, [pathname]);
 
-  // Secciones expandidas tipo árbol
+  // Secciones abiertas tipo acordeón
   const currentSectionId = getActiveSectionId(pathname);
   const [activeId, setActiveId] = useState(currentSectionId);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {
-      casos: true,
-      overview: true,
-      historial: false,
-      biblioteca: false,
-      'mis-cursos': false,
-    };
-    init[currentSectionId] = true;
-    return init;
-  });
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => ({ [currentSectionId]: true }));
 
-  // Sincronizar ruta activa y sección correspondiente
+  // Al cambiar de ruta: se cierra el cajón y se abre la sección de la ruta.
   useEffect(() => {
     setMobileOpen(false);
     const secId = getActiveSectionId(pathname);
@@ -190,73 +174,39 @@ export default function Sidebar() {
     return () => window.removeEventListener('clerkship-theme-change', handleThemeChange);
   }, []);
 
+  // El cajón móvil bloquea el desplazamiento de la página y se cierra con Escape.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(false); };
+    document.addEventListener('keydown', onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = overflow; };
+  }, [mobileOpen]);
+
+  /* Cerrar los menús emergentes al hacer clic fuera o con Escape */
+  useEffect(() => {
+    if (!profileOpen && !settingsOpen) return;
+    setTip(null);
+    const handler = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setSettingsOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setProfileOpen(false); setSettingsOpen(false); } };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', onKey); };
+  }, [profileOpen, settingsOpen]);
+
   function handleToggleTheme() {
-    const next = triggerThemeToggle(theme);
-    setTheme(next);
-  }
-
-  /** Contenido del popover de Configuración. Sin cabecera ni acciones de
-   * cuenta (ya están en el menú de perfil, al lado) — solo las
-   * preferencias propias, compactas y sin scroll. Son mockup (useState
-   * local, no persiste) hasta que se conecten a un endpoint de verdad. */
-  function renderSettingsBody() {
-    return (
-      <div className="sb-settings-card-scroll">
-        <div className="sb-settings-section">
-          <span className="sb-settings-group-title">Idioma</span>
-          <div className="sb-theme-pill-group">
-            <button
-              type="button"
-              className={`sb-theme-pill ${mockLang === 'es' ? 'is-active' : ''}`}
-              onClick={() => setMockLang('es')}
-            >
-              <Globe size={13} /> Español
-            </button>
-            <button
-              type="button"
-              className={`sb-theme-pill ${mockLang === 'en' ? 'is-active' : ''}`}
-              onClick={() => setMockLang('en')}
-            >
-              <Globe size={13} /> English
-            </button>
-          </div>
-        </div>
-
-        <div className="sb-settings-divider" />
-
-        <div className="sb-settings-section">
-          <span className="sb-settings-group-title">Notificaciones</span>
-          <button type="button" className="sb-settings-row" onClick={() => setMockPushNotif(v => !v)}>
-            <span className="sb-settings-row-label"><Bell size={14} /> Notificaciones push</span>
-            <span className={`sb-switch ${mockPushNotif ? 'is-on' : ''}`} />
-          </button>
-          <button type="button" className="sb-settings-row" onClick={() => setMockEmailDigest(v => !v)}>
-            <span className="sb-settings-row-label"><Mail size={14} /> Resumen semanal</span>
-            <span className={`sb-switch ${mockEmailDigest ? 'is-on' : ''}`} />
-          </button>
-        </div>
-
-        <div className="sb-settings-divider" />
-
-        <div className="sb-settings-section">
-          <span className="sb-settings-group-title">Accesibilidad & Interfaz</span>
-          <button type="button" className="sb-settings-row" onClick={() => setMockReduceMotion(v => !v)}>
-            <span className="sb-settings-row-label"><Zap size={14} /> Reducir movimiento</span>
-            <span className={`sb-switch ${mockReduceMotion ? 'is-on' : ''}`} />
-          </button>
-          <button type="button" className="sb-settings-row" onClick={() => setMockSounds(v => !v)}>
-            <span className="sb-settings-row-label"><Volume2 size={14} /> Efectos de sonido</span>
-            <span className={`sb-switch ${mockSounds ? 'is-on' : ''}`} />
-          </button>
-        </div>
-      </div>
-    );
+    setTheme(triggerThemeToggle(theme));
   }
 
   function setIsExpanded(value: boolean | ((prev: boolean) => boolean)) {
+    setTip(null);
     setIsExpandedRaw(prev => {
       const next = typeof value === 'function' ? value(prev) : value;
-      localStorage.setItem(STORAGE_KEY, String(next));
+      try { localStorage.setItem(STORAGE_KEY, String(next)); } catch { /* sin almacenamiento local */ }
       return next;
     });
   }
@@ -273,243 +223,296 @@ export default function Sidebar() {
     navigate('/', { replace: true });
   }
 
-  /* Cerrar dropdowns al hacer clic fuera */
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
-        setProfileOpen(false);
-      }
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false);
-      }
-    };
-    if (profileOpen || settingsOpen) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [profileOpen, settingsOpen]);
-
   const esDocente = getStoredUser()?.role === 'TEACHER';
 
-  // Definición completa de las secciones reales del sistema
+  // Secciones reales del sistema
   const treeSections: TreeSection[] = useMemo(() => [
     {
-      id: 'overview',
-      label: 'Dashboard',
-      Icon: LayoutGrid,
-      route: '/dashboard',
+      id: 'overview', label: 'Dashboard', Icon: LayoutGrid, route: '/dashboard',
       children: [
         { label: 'Vista general', route: '/dashboard' },
         { label: 'Documentos clínicos', route: '/dashboard' },
       ],
     },
     {
-      id: 'casos',
-      label: 'Casos clínicos',
-      Icon: Briefcase,
-      route: '/casos',
+      id: 'casos', label: 'Casos clínicos', Icon: Briefcase, route: '/casos',
       children: [
         { label: 'Todos los casos', route: '/casos' },
-        {
-          label: 'En curso',
-          route: '/casos?tab=IN_PROGRESS',
-          badge: counts.inProgress > 0 ? counts.inProgress : undefined,
-          badgeType: 'orange',
-        },
-        {
-          label: 'Completados',
-          route: '/casos?tab=COMPLETED',
-          badge: counts.completed > 0 ? counts.completed : undefined,
-          badgeType: 'green',
-        },
+        { label: 'En curso', route: '/casos?tab=IN_PROGRESS', badge: counts.inProgress > 0 ? counts.inProgress : undefined, badgeType: 'orange' },
+        { label: 'Completados', route: '/casos?tab=COMPLETED', badge: counts.completed > 0 ? counts.completed : undefined, badgeType: 'green' },
         { label: 'Nuevo caso', route: '/casos?nuevo=1' },
       ],
     },
     {
-      id: 'historial',
-      label: 'Historial',
-      Icon: Clock,
-      route: '/historial',
+      id: 'historial', label: 'Historial', Icon: Clock, route: '/historial',
       children: [
         { label: 'Sesiones clínicas', route: '/historial' },
         { label: 'Evaluaciones de IA', route: '/historial' },
       ],
     },
     {
-      id: 'biblioteca',
-      label: 'Biblioteca',
-      Icon: Library,
-      route: '/biblioteca',
+      id: 'biblioteca', label: 'Biblioteca', Icon: Library, route: '/biblioteca',
       children: [
         { label: 'Todos los recursos', route: '/biblioteca' },
         { label: 'Guías clínicas', route: '/biblioteca?modulo=guias' },
       ],
     },
     {
-      id: 'mis-cursos',
-      label: 'Mis cursos',
-      Icon: GraduationCap,
-      route: '/mis-cursos',
+      id: 'mis-cursos', label: 'Mis cursos', Icon: GraduationCap, route: '/mis-cursos',
       children: [
-        {
-          label: 'Cursos matriculados',
-          route: '/mis-cursos',
-          badge: counts.courses > 0 ? counts.courses : undefined,
-          badgeType: 'blue',
-        },
+        { label: 'Cursos matriculados', route: '/mis-cursos', badge: counts.courses > 0 ? counts.courses : undefined, badgeType: 'blue' },
         { label: 'Explorar catálogo', route: '/explorar' },
       ],
     },
     ...(esDocente
-      ? [
-          {
-            id: 'seguimiento',
-            label: 'Seguimiento',
-            Icon: BarChart3,
-            route: '/seguimiento',
-            children: [
-              { label: 'Simulador por curso', route: '/seguimiento' },
-            ],
-          },
-        ]
+      ? [{ id: 'seguimiento', label: 'Seguimiento', Icon: BarChart3, route: '/seguimiento', children: [{ label: 'Simulador por curso', route: '/seguimiento' }] }]
       : []),
   ], [counts, esDocente]);
 
-  function handleParentClick(section: TreeSection) {
-    if (section.children && section.children.length > 0) {
-      setExpandedSections(prev => ({
-        ...prev,
-        [section.id]: !prev[section.id],
-      }));
+  const grupos = useMemo(() => GRUPOS
+    .map(g => ({ titulo: g.titulo, secciones: g.ids.map(id => treeSections.find(s => s.id === id)).filter(Boolean) as TreeSection[] }))
+    .filter(g => g.secciones.length), [treeSections]);
+
+  /** Clic en una sección: abierta, despliega o pliega su submenú y navega;
+   *  cerrada (solo iconos), solo navega. */
+  function alPulsarSeccion(section: TreeSection, conSubmenu: boolean) {
+    if (conSubmenu && section.children?.length) {
+      setExpandedSections(prev => ({ ...prev, [section.id]: section.id === activeId ? !prev[section.id] : true }));
     }
     setActiveId(section.id);
-    if (section.route !== pathname) {
-      navigate(section.route);
-    }
+    if (section.route !== pathname) navigate(section.route);
   }
+
+  // Globo con el nombre de la sección cuando la barra está cerrada.
+  const mostrarTip = (texto: string) => (e: MouseEventReact<HTMLElement> | FocusEventReact<HTMLElement>) => {
+    if (isExpanded || profileOpen || settingsOpen) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setTip({ texto, x: r.right + 12, y: r.top + r.height / 2 });
+  };
+  const ocultarTip = () => setTip(null);
+
+  const transicion = sinMovimiento ? { duration: 0 } : { type: 'spring' as const, stiffness: 420, damping: 36 };
+  const inicial = (currentUser?.name || 'U').trim().charAt(0).toUpperCase();
+  const avatar = (clase: string) => (currentUser?.avatarUrl
+    ? <img src={currentUser.avatarUrl} alt="" className={clase} />
+    : <span className={`${clase} nv-avatar-letra`}>{inicial}</span>);
+
+  /** Menú de secciones. `cajon` = el del celular (siempre con textos y submenús). */
+  function renderNav(cajon: boolean) {
+    const abierto = cajon || isExpanded;
+    return grupos.map((grupo, gi) => (
+      <div key={grupo.titulo} className="nv-grupo">
+        {abierto
+          ? <span className="nv-grupo-titulo">{grupo.titulo}</span>
+          : gi > 0 && <span className="nv-grupo-linea" aria-hidden="true" />}
+        <ul className="nv-lista">
+          {grupo.secciones.map(section => {
+            const conHijos = !!section.children?.length;
+            const desplegada = abierto && conHijos && !!expandedSections[section.id];
+            const activa = activeId === section.id;
+            const hijoActivo = section.children?.findIndex(c => isChildActive(c.route, pathname, searchParams)) ?? -1;
+            return (
+              <li key={section.id} className={`nv-seccion${activa ? ' is-activa' : ''}`}>
+                <button
+                  type="button"
+                  className={`nv-item${activa ? ' is-activo' : ''}`}
+                  aria-current={activa ? 'page' : undefined}
+                  aria-expanded={conHijos && abierto ? desplegada : undefined}
+                  aria-label={abierto ? undefined : section.label}
+                  onClick={() => alPulsarSeccion(section, abierto)}
+                  onMouseEnter={mostrarTip(section.label)}
+                  onMouseLeave={ocultarTip}
+                  onFocus={mostrarTip(section.label)}
+                  onBlur={ocultarTip}
+                >
+                  {activa && (
+                    <motion.span layoutId={cajon ? 'nv-activo-cajon' : 'nv-activo'} className="nv-item-fondo" transition={transicion} />
+                  )}
+                  <span className="nv-item-icono"><section.Icon size={18} strokeWidth={activa ? 2.2 : 1.8} /></span>
+                  {abierto && <span className="nv-item-txt">{section.label}</span>}
+                  {abierto && conHijos && (
+                    <motion.span className="nv-chevron" animate={{ rotate: desplegada ? 180 : 0 }} transition={{ duration: sinMovimiento ? 0 : 0.22 }}>
+                      <ChevronDown size={15} strokeWidth={2} />
+                    </motion.span>
+                  )}
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {desplegada && (
+                    <motion.ul
+                      key="sub"
+                      className="nv-sub"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1, transition: { duration: sinMovimiento ? 0 : 0.26, ease: [0.22, 1, 0.36, 1], staggerChildren: sinMovimiento ? 0 : 0.035 } }}
+                      exit={{ height: 0, opacity: 0, transition: { duration: sinMovimiento ? 0 : 0.2, ease: 'easeInOut' } }}
+                    >
+                      {section.children!.map((child, i) => {
+                        const activo = i === hijoActivo;
+                        return (
+                          <motion.li
+                            key={child.label}
+                            variants={{ hidden: { opacity: 0, x: -6 }, show: { opacity: 1, x: 0 } }}
+                            initial="hidden"
+                            animate="show"
+                            transition={{ duration: sinMovimiento ? 0 : 0.2, delay: sinMovimiento ? 0 : 0.04 + i * 0.035 }}
+                          >
+                            <button
+                              type="button"
+                              className={`nv-sub-item${activo ? ' is-activo' : ''}`}
+                              aria-current={activo ? 'page' : undefined}
+                              onClick={() => { navigate(child.route); if (cajon) setMobileOpen(false); }}
+                            >
+                              {activo && <motion.span layoutId={cajon ? 'nv-marca-cajon' : 'nv-marca'} className="nv-sub-marca" transition={transicion} />}
+                              <span className="nv-sub-txt">{child.label}</span>
+                              {child.badge !== undefined && <span className={`nv-contador is-${child.badgeType || 'orange'}`}>{child.badge}</span>}
+                            </button>
+                          </motion.li>
+                        );
+                      })}
+                    </motion.ul>
+                  )}
+                </AnimatePresence>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ));
+  }
+
+  /** Preferencias (de muestra) del menú de configuración. */
+  function renderAjustes() {
+    return (
+      <div className="nv-ajustes">
+        <div className="nv-ajustes-grupo">
+          <span className="nv-ajustes-titulo">Idioma</span>
+          <div className="nv-segmento" role="radiogroup" aria-label="Idioma">
+            {(['es', 'en'] as const).map(l => (
+              <button key={l} type="button" role="radio" aria-checked={mockLang === l}
+                className={mockLang === l ? 'is-activo' : ''} onClick={() => setMockLang(l)}>
+                <Globe size={13} /> {l === 'es' ? 'Español' : 'English'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="nv-ajustes-grupo">
+          <span className="nv-ajustes-titulo">Notificaciones</span>
+          <button type="button" className="nv-ajuste" role="switch" aria-checked={mockPushNotif} onClick={() => setMockPushNotif(v => !v)}>
+            <span><Bell size={14} /> Notificaciones push</span><span className={`nv-interruptor${mockPushNotif ? ' is-on' : ''}`} />
+          </button>
+          <button type="button" className="nv-ajuste" role="switch" aria-checked={mockEmailDigest} onClick={() => setMockEmailDigest(v => !v)}>
+            <span><Mail size={14} /> Resumen semanal</span><span className={`nv-interruptor${mockEmailDigest ? ' is-on' : ''}`} />
+          </button>
+        </div>
+        <div className="nv-ajustes-grupo">
+          <span className="nv-ajustes-titulo">Accesibilidad e interfaz</span>
+          <button type="button" className="nv-ajuste" role="switch" aria-checked={mockReduceMotion} onClick={() => setMockReduceMotion(v => !v)}>
+            <span><Zap size={14} /> Reducir movimiento</span><span className={`nv-interruptor${mockReduceMotion ? ' is-on' : ''}`} />
+          </button>
+          <button type="button" className="nv-ajuste" role="switch" aria-checked={mockSounds} onClick={() => setMockSounds(v => !v)}>
+            <span><Volume2 size={14} /> Efectos de sonido</span><span className={`nv-interruptor${mockSounds ? ' is-on' : ''}`} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const animacionPop = {
+    initial: { opacity: 0, y: 6, scale: 0.97 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    exit: { opacity: 0, y: 6, scale: 0.97 },
+    transition: { duration: sinMovimiento ? 0 : 0.16, ease: 'easeOut' as const },
+  };
+
+  /** Interruptor claro / oscuro con la pastilla que se desliza. */
+  const interruptorTema = (
+    <div className="nv-tema" role="radiogroup" aria-label="Tema de la pantalla">
+      {(['light', 'dark'] as const).map(t => (
+        <button key={t} type="button" role="radio" aria-checked={theme === t} aria-label={t === 'light' ? 'Modo claro' : 'Modo oscuro'}
+          className={theme === t ? 'is-activo' : ''} onClick={() => { if (theme !== t) handleToggleTheme(); }}>
+          {theme === t && <motion.span layoutId="nv-tema-pastilla" className="nv-tema-pastilla" transition={transicion} />}
+          {t === 'light' ? <Sun size={14} /> : <Moon size={14} />}
+          <span>{t === 'light' ? 'Claro' : 'Oscuro'}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  const botonAjustes = (
+    <div className="nv-ancla" ref={settingsRef}>
+      <button type="button" className={`nv-icono${settingsOpen ? ' is-activo' : ''}`} aria-label="Configuración" aria-expanded={settingsOpen}
+        onClick={() => { setProfileOpen(false); setSettingsOpen(v => !v); }}
+        onMouseEnter={mostrarTip('Configuración')} onMouseLeave={ocultarTip}>
+        <Settings size={17} strokeWidth={1.8} />
+      </button>
+      <AnimatePresence>
+        {settingsOpen && (
+          <motion.div className="nv-pop" role="dialog" aria-label="Configuración" {...animacionPop}>
+            <p className="nv-pop-titulo">Configuración</p>
+            {renderAjustes()}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 
   return (
     <>
-      {/* ── Barra Superior Móvil y Hamburguesa (Pantallas <= 1024px) ── */}
-      <header className="sb-mobile-header-bar">
-        <div
-          className="sb-mobile-brand"
-          onClick={() => navigate('/dashboard')}
-          role="button"
-          tabIndex={0}
-        >
-          <img src={logoUrl} alt="Clerkship" className="sb-mobile-logo" />
-          <span className="sb-mobile-title">Clerkship</span>
-        </div>
-        <NotificacionesCampana className="noti-campana-movil" />
-        <button
-          type="button"
-          className="sb-mobile-toggle-btn"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Abrir menú de navegación"
-        >
-          <Menu size={22} />
+      {/* ── Barra superior del celular (hasta 1024 px) ── */}
+      <header className="nv-barra-movil">
+        <button type="button" className="nv-marca" onClick={() => navigate('/dashboard')}>
+          <img src={logoUrl} alt="Clerkship" className="nv-logo" />
+          <span className="nv-marca-txt">Clerkship</span>
+        </button>
+        <NotificacionesCampana className="nv-campana" />
+        <button type="button" className="nv-icono" onClick={() => setMobileOpen(true)} aria-label="Abrir el menú">
+          <Menu size={20} />
         </button>
       </header>
 
-      {/* ── Drawer y Backdrop Móvil ── */}
+      {/* ── Cajón del celular ── */}
       <AnimatePresence>
         {mobileOpen && (
           <>
             <motion.div
-              className="sb-mobile-backdrop"
+              className="nv-velo"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: sinMovimiento ? 0 : 0.2 }}
               onClick={() => setMobileOpen(false)}
             />
             <motion.aside
-              className="sb-mobile-drawer"
+              className="nv-cajon"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menú"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+              transition={sinMovimiento ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 36 }}
             >
-              <div className="sb-mobile-drawer-header">
-                <div
-                  className="sb-mobile-brand"
-                  onClick={() => {
-                    navigate('/dashboard');
-                    setMobileOpen(false);
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <img src={logoUrl} alt="Clerkship" className="sb-mobile-logo" />
-                  <span className="sb-mobile-title">Clerkship</span>
-                </div>
-                <button
-                  type="button"
-                  className="sb-mobile-close-btn"
-                  onClick={() => setMobileOpen(false)}
-                  aria-label="Cerrar menú"
-                >
+              <div className="nv-cabeza">
+                <button type="button" className="nv-marca" onClick={() => { navigate('/dashboard'); setMobileOpen(false); }}>
+                  <img src={logoUrl} alt="Clerkship" className="nv-logo" />
+                  <span className="nv-marca-txt">Clerkship</span>
+                </button>
+                <button type="button" className="nv-icono" onClick={() => setMobileOpen(false)} aria-label="Cerrar el menú">
                   <X size={18} />
                 </button>
               </div>
-
-              <div className="sb-mobile-drawer-body">
-                <nav className="sb-mobile-nav-list">
-                  {treeSections.map(({ id, label, Icon, route }) => {
-                    const active = (pathname === route) || (route === '/dashboard' && pathname === '/');
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        className={`sb-mobile-nav-item ${active ? 'active' : ''}`}
-                        onClick={() => {
-                          if (route) navigate(route);
-                          setMobileOpen(false);
-                        }}
-                      >
-                        <Icon size={20} />
-                        <span>{label}</span>
-                      </button>
-                    );
-                  })}
-                </nav>
-
-                <div className="sb-mobile-user-section">
-                  <div className="sb-mobile-divider" />
-                  {currentUser && (
-                    <div className="sb-mobile-user-row">
-                      {currentUser.avatarUrl ? (
-                        <img src={currentUser.avatarUrl} alt={currentUser.name} className="sb-mobile-user-avatar" />
-                      ) : (
-                        <div className="sb-mobile-user-avatar-text">
-                          {currentUser.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="sb-mobile-user-info">
-                        <p className="sb-mobile-user-name">{currentUser.name}</p>
-                        <p className="sb-mobile-user-role">{currentUser.role || 'Estudiante'}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="sb-mobile-actions-row">
-                    <button
-                      type="button"
-                      className="sb-mobile-action-btn"
-                      onClick={handleToggleTheme}
-                    >
-                      {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                      <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="sb-mobile-action-btn danger"
-                      onClick={handleLogout}
-                    >
-                      <LogOut size={16} />
-                      <span>Cerrar sesión</span>
-                    </button>
+              <nav className="nv-cuerpo" aria-label="Secciones">{renderNav(true)}</nav>
+              <div className="nv-pie">
+                {interruptorTema}
+                <div className="nv-usuario">
+                  {avatar('nv-avatar')}
+                  <div className="nv-usuario-txt">
+                    <strong>{currentUser?.name || 'Estudiante'}</strong>
+                    <span>{currentUser?.role || 'Clínico'}</span>
                   </div>
+                  <button type="button" className="nv-icono is-peligro" onClick={handleLogout} aria-label="Cerrar sesión">
+                    <LogOut size={16} strokeWidth={1.8} />
+                  </button>
                 </div>
               </div>
             </motion.aside>
@@ -517,349 +520,132 @@ export default function Sidebar() {
         )}
       </AnimatePresence>
 
-      {/* ── Desktop: UN SOLO CONTENEDOR AUTO-EXPANSIBLE (Despliegue Físico) ── */}
+      {/* ── Escritorio ── */}
       <motion.aside
-        className={`sb ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}
-        animate={{ width: isExpanded ? 260 : 68 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 30, mass: 0.8 }}
-        title={!isExpanded ? 'Doble clic o clic en espacio vacío para desplegar' : undefined}
-        onDoubleClick={() => setIsExpanded(prev => !prev)}
-        onClick={(e) => {
-          // Solo se despliega al hacer clic en el espacio vacío (no sobre botones interactivos)
-          if (!isExpanded && !(e.target as HTMLElement).closest('button, a, input, select')) {
-            setIsExpanded(true);
-          }
-        }}
+        className={`nv ${isExpanded ? 'is-abierta' : 'is-cerrada'}`}
+        initial={false}
+        animate={{ width: isExpanded ? ANCHO_ABIERTO : ANCHO_CERRADO }}
+        transition={sinMovimiento ? { duration: 0 } : { type: 'spring', stiffness: 340, damping: 34, mass: 0.8 }}
+        onDoubleClick={e => { if (!(e.target as HTMLElement).closest('button, a, input, select')) setIsExpanded(prev => !prev); }}
+        aria-label="Barra lateral"
       >
-        {/* 1. Cabecera */}
-        <div className="sb-head">
-          {!isExpanded ? (
-            <button
-              className="sb-logo-btn"
-              onClick={() => {
-                navigate('/dashboard');
-              }}
-              title="Clerkship - Doble clic para desplegar"
-            >
-              <img src={logoUrl} alt="Clerkship" />
-            </button>
-          ) : (
-            <div className="sb-head-expanded">
-              <div
-                className="sb-head-brand"
-                onClick={() => navigate('/dashboard')}
-                role="button"
-                tabIndex={0}
-              >
-                <img src={logoUrl} alt="Clerkship" className="sb-head-logo" />
-                <div className="sb-head-titles">
-                  <span className="sb-head-name">Clerkship</span>
-                  <span className="sb-head-badge">CLÍNICO</span>
-                </div>
-              </div>
-              <NotificacionesCampana />
-              <button
-                type="button"
-                className="sb-collapse-btn"
-                onClick={() => setIsExpanded(false)}
-                title="Colapsar menú lateral"
-                aria-label="Colapsar menú lateral"
-              >
-                <ChevronLeft size={16} />
+        <div className="nv-cabeza">
+          <button type="button" className="nv-marca" onClick={() => navigate('/dashboard')} aria-label="Ir al inicio"
+            onMouseEnter={mostrarTip('Clerkship')} onMouseLeave={ocultarTip}>
+            <img src={logoUrl} alt="Clerkship" className="nv-logo" />
+            {isExpanded && <span className="nv-marca-txt">Clerkship</span>}
+          </button>
+          {isExpanded && (
+            <div className="nv-cabeza-acciones">
+              <NotificacionesCampana className="nv-campana" />
+              <button type="button" className="nv-icono" onClick={() => setIsExpanded(false)} aria-label="Cerrar la barra lateral" title="Cerrar la barra lateral">
+                <PanelLeftClose size={17} strokeWidth={1.8} />
               </button>
             </div>
           )}
         </div>
 
-        {/* 2. Cuerpo de Navegación Unificado (Sin desvanecimiento, Despliegue Físico) */}
-        <div className="sb-body">
-          <div className="sb-tree-nav">
-            {treeSections.map((section) => {
-              const isSecExpanded = !!expandedSections[section.id];
-              const hasChildren = !!section.children && section.children.length > 0;
-              const isSectionActive = activeId === section.id;
-
-              return (
-                <div key={section.id} className="sb-tree-parent">
-                  {/* Fila del Padre */}
-                  <button
-                    type="button"
-                    className={`sb-tree-parent-btn${isSectionActive ? ' sb-tree-parent-btn-active' : ''}`}
-                    title={!isExpanded ? section.label : undefined}
-                    onClick={() => {
-                      if (!isExpanded) {
-                        // 🔒 En modo colapsado: NO se despliega automáticamente. Solo navega y activa el distintivo!
-                        setActiveId(section.id);
-                        setExpandedSections(prev => ({ ...prev, [section.id]: true }));
-                        if (section.route !== pathname) {
-                          navigate(section.route);
-                        }
-                      } else {
-                        // 🔓 En modo extendido: colapsa/expande ramas y navega
-                        handleParentClick(section);
-                      }
-                    }}
-                  >
-                    <div className="sb-tree-parent-left">
-                      <span className="sb-tree-parent-icon">
-                        <section.Icon size={19} strokeWidth={isSectionActive ? 2.2 : 1.75} />
-                      </span>
-                      <span className="sb-tree-parent-label">{section.label}</span>
-                    </div>
-
-                    {hasChildren && isExpanded && (
-                      <motion.span
-                        className="sb-tree-chevron"
-                        animate={{ rotate: isSecExpanded ? 180 : 0 }}
-                        transition={{ duration: 0.2 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setExpandedSections(prev => ({
-                            ...prev,
-                            [section.id]: !prev[section.id],
-                          }));
-                        }}
-                      >
-                        <ChevronDown size={15} strokeWidth={2} />
-                      </motion.span>
-                    )}
-                  </button>
-
-                  {/* Rama con Sub-ítems en Árbol (visible cuando está extendido) */}
-                  <AnimatePresence initial={false}>
-                    {isExpanded && hasChildren && isSecExpanded && (
-                      <motion.div
-                        className="sb-tree-branch"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.22, ease: 'easeOut' }}
-                        style={{ overflow: 'hidden' }}
-                      >
-                        {section.children!.map((child) => {
-                          const active = isChildActive(child.route, pathname, searchParams);
-
-                          return (
-                            <button
-                              key={child.label}
-                              type="button"
-                              className={`sb-tree-child-btn${active ? ' active' : ''}`}
-                              onClick={() => navigate(child.route)}
-                            >
-                              <span className="sb-tree-child-label">{child.label}</span>
-                              {child.badge !== undefined && (
-                                <span className={`sb-tree-badge sb-tree-badge-${child.badgeType || 'orange'}`}>
-                                  {child.badge}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
+        {!isExpanded && (
+          <div className="nv-cerrada-acciones">
+            <button type="button" className="nv-icono" onClick={() => setIsExpanded(true)} aria-label="Abrir la barra lateral"
+              onMouseEnter={mostrarTip('Abrir la barra lateral')} onMouseLeave={ocultarTip}>
+              <PanelLeftOpen size={17} strokeWidth={1.8} />
+            </button>
+            <NotificacionesCampana className="nv-campana" />
           </div>
-        </div>
+        )}
 
-        {/* 3. Pie de Barra */}
-        <div className="sb-foot">
-          {!isExpanded ? (
-            <div className="sb-foot-collapsed">
-              {/* Botón directo de tema */}
-              <motion.button
-                whileTap={{ scale: 0.80, rotate: 180 }}
-                whileHover={{ scale: 1.08 }}
-                className="sb-icon-btn"
-                title={theme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
-                onClick={handleToggleTheme}
-              >
-                {theme === 'dark' ? (
-                  <Sun size={19} strokeWidth={1.8} className="sb-sun-icon" />
-                ) : (
-                  <Moon size={19} strokeWidth={1.8} className="sb-moon-icon" />
-                )}
-              </motion.button>
+        <nav className="nv-cuerpo" aria-label="Secciones">{renderNav(false)}</nav>
 
-              {/* Configuración Popover */}
-              <div className="sb-settings-wrap" ref={settingsRef}>
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  whileHover={{ scale: 1.08 }}
-                  className={`sb-foot-settings-btn${settingsOpen ? ' active' : ''}`}
-                  title="Opciones y Configuración"
-                  aria-label="Opciones y Configuración"
-                  onClick={() => setSettingsOpen(v => !v)}
-                >
-                  <Settings size={18} strokeWidth={1.8} />
-                </motion.button>
-
-                <AnimatePresence>
-                  {settingsOpen && (
-                    <motion.div
-                      className="sb-profile-menu sb-settings-popover"
-                      initial={{ opacity: 0, x: -8, scale: 0.96 }}
-                      animate={{ opacity: 1, x: 0,  scale: 1    }}
-                      exit={{    opacity: 0, x: -8, scale: 0.96 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      {renderSettingsBody()}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+        <div className="nv-pie">
+          {isExpanded ? (
+            <>
+              <div className="nv-pie-fila">
+                {interruptorTema}
+                {botonAjustes}
               </div>
-
-              {/* Avatar de Usuario */}
-              <div className="sb-profile-wrap" ref={profileRef}>
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  whileHover={{ scale: 1.08 }}
-                  className={`sb-avatar-btn${profileOpen ? ' sb-avatar-btn-open' : ''}`}
-                  onClick={() => setProfileOpen(v => !v)}
-                  title={currentUser?.name || 'Perfil'}
-                >
-                  {currentUser?.avatarUrl ? (
-                    <img src={currentUser.avatarUrl} alt={currentUser.name} className="sb-avatar-btn-img" />
-                  ) : (
-                    '··'
-                  )}
-                </motion.button>
-
-                <AnimatePresence>
-                  {profileOpen && (
-                    <motion.div
-                      className="sb-profile-menu"
-                      initial={{ opacity: 0, x: -8, scale: 0.96 }}
-                      animate={{ opacity: 1, x: 0,  scale: 1    }}
-                      exit={{    opacity: 0, x: -8, scale: 0.96 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <div className="sb-profile-head">
-                        <div className="sb-profile-avatar sb-profile-avatar-img-wrap">
-                          {currentUser ? (
-                            <img src={currentUser.avatarUrl} alt={currentUser.name} className="sb-profile-avatar-img" />
-                          ) : (
-                            '··'
-                          )}
-                        </div>
-                        <div>
-                          <p className="sb-profile-name">{currentUser?.name || 'Invitado'}</p>
-                          <p className="sb-profile-role">{currentUser?.role || 'Sin sesión activa'}</p>
-                        </div>
-                      </div>
-                      <div className="sb-profile-divider" />
-                      <button
-                        className="sb-profile-item"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          navigate('/dashboard');
-                        }}
-                      >
-                        <User size={14} strokeWidth={1.8} /> Mi perfil
-                      </button>
-                      <button
-                        className="sb-profile-item"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          setSettingsOpen(true);
-                        }}
-                      >
-                        <Settings size={14} strokeWidth={1.8} /> Configuración
-                      </button>
-                      <button className="sb-profile-item" onClick={handleToggleTheme}>
-                        {theme === 'dark' ? <Sun size={14} strokeWidth={1.8} /> : <Moon size={14} strokeWidth={1.8} />}
-                        Modo {theme === 'dark' ? 'Claro' : 'Oscuro'}
-                      </button>
-                      <div className="sb-profile-divider" />
-                      <button
-                        className="sb-profile-item sb-profile-item-danger"
-                        onClick={handleLogout}
-                      >
-                        <LogOut size={14} strokeWidth={1.8} /> Cerrar sesión
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          ) : (
-            <div className="sb-foot-expanded">
-              <div className="sb-foot-actions">
-                <button
-                  type="button"
-                  className="sb-foot-theme-btn"
-                  onClick={handleToggleTheme}
-                  title="Alternar modo de pantalla"
-                >
-                  {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-                  <span>Modo {theme === 'dark' ? 'Claro' : 'Oscuro'}</span>
+              <div className="nv-usuario">
+                <button type="button" className="nv-usuario-btn" onClick={() => navigate('/dashboard')} title="Ver perfil">
+                  {avatar('nv-avatar')}
+                  <span className="nv-usuario-txt">
+                    <strong>{currentUser?.name || 'Estudiante'}</strong>
+                    <span>{currentUser?.role || 'Clínico'}</span>
+                  </span>
                 </button>
-
-                <div className="sb-settings-wrap" ref={settingsRef}>
-                  <button
-                    type="button"
-                    className={`sb-foot-settings-btn${settingsOpen ? ' active' : ''}`}
-                    onClick={() => setSettingsOpen(v => !v)}
-                    title="Opciones y Configuración"
-                    aria-label="Opciones y Configuración"
-                  >
-                    <Settings size={17} strokeWidth={1.8} />
-                  </button>
-
-                  <AnimatePresence>
-                    {settingsOpen && (
-                      <motion.div
-                        className="sb-profile-menu sb-settings-popover"
-                        initial={{ opacity: 0, x: -8, scale: 0.96 }}
-                        animate={{ opacity: 1, x: 0,  scale: 1    }}
-                        exit={{    opacity: 0, x: -8, scale: 0.96 }}
-                        transition={{ duration: 0.15 }}
-                      >
-                        {renderSettingsBody()}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Fila de usuario expandida */}
-              <div className="sb-foot-user-row">
-                <div
-                  className="sb-foot-user-info"
-                  onClick={() => navigate('/dashboard')}
-                  role="button"
-                  tabIndex={0}
-                  title="Ver perfil"
-                >
-                  {currentUser?.avatarUrl ? (
-                    <img src={currentUser.avatarUrl} alt={currentUser.name} className="sb-foot-avatar-img" />
-                  ) : (
-                    <div className="sb-foot-avatar-fallback">
-                      {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  )}
-                  <div className="sb-foot-user-text">
-                    <p className="sb-foot-user-name">{currentUser?.name || 'Estudiante'}</p>
-                    <p className="sb-foot-user-role">{currentUser?.role || 'Clínico'}</p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="sb-foot-logout-btn"
-                  onClick={handleLogout}
-                  title="Cerrar sesión"
-                  aria-label="Cerrar sesión"
-                >
+                <button type="button" className="nv-icono is-peligro" onClick={handleLogout} aria-label="Cerrar sesión" title="Cerrar sesión">
                   <LogOut size={16} strokeWidth={1.8} />
                 </button>
+              </div>
+            </>
+          ) : (
+            <div className="nv-pie-columna">
+              <button type="button" className="nv-icono" onClick={handleToggleTheme}
+                aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                onMouseEnter={mostrarTip(theme === 'dark' ? 'Modo claro' : 'Modo oscuro')} onMouseLeave={ocultarTip}>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.span key={theme} className="nv-icono-tema"
+                    initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}
+                    transition={{ duration: sinMovimiento ? 0 : 0.18 }}>
+                    {theme === 'dark' ? <Sun size={17} strokeWidth={1.8} /> : <Moon size={17} strokeWidth={1.8} />}
+                  </motion.span>
+                </AnimatePresence>
+              </button>
+              {botonAjustes}
+              <div className="nv-ancla" ref={profileRef}>
+                <button type="button" className={`nv-avatar-btn${profileOpen ? ' is-activo' : ''}`} aria-label="Mi cuenta" aria-expanded={profileOpen}
+                  onClick={() => { setSettingsOpen(false); setProfileOpen(v => !v); }}
+                  onMouseEnter={mostrarTip(currentUser?.name || 'Mi cuenta')} onMouseLeave={ocultarTip}>
+                  {avatar('nv-avatar')}
+                </button>
+                <AnimatePresence>
+                  {profileOpen && (
+                    <motion.div className="nv-pop is-cuenta" role="menu" {...animacionPop}>
+                      <div className="nv-usuario is-plano">
+                        {avatar('nv-avatar')}
+                        <span className="nv-usuario-txt">
+                          <strong>{currentUser?.name || 'Invitado'}</strong>
+                          <span>{currentUser?.role || 'Sin sesión activa'}</span>
+                        </span>
+                      </div>
+                      <div className="nv-pop-linea" />
+                      <button type="button" role="menuitem" className="nv-pop-item" onClick={() => { setProfileOpen(false); navigate('/dashboard'); }}>
+                        <User size={15} strokeWidth={1.8} /> Mi perfil
+                      </button>
+                      <button type="button" role="menuitem" className="nv-pop-item" onClick={() => { setProfileOpen(false); setSettingsOpen(true); }}>
+                        <Settings size={15} strokeWidth={1.8} /> Configuración
+                      </button>
+                      <div className="nv-pop-linea" />
+                      <button type="button" role="menuitem" className="nv-pop-item is-peligro" onClick={handleLogout}>
+                        <LogOut size={15} strokeWidth={1.8} /> Cerrar sesión
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           )}
         </div>
       </motion.aside>
+
+      {/* Globo con el nombre de cada icono cuando la barra está cerrada */}
+      {createPortal(
+        <AnimatePresence>
+          {tip && !isExpanded && (
+            <motion.div
+              key={tip.texto}
+              className="nv-tip"
+              style={{ left: tip.x, top: tip.y }}
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: sinMovimiento ? 0 : 0.12 }}
+            >
+              {tip.texto}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </>
   );
 }
