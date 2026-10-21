@@ -5,8 +5,8 @@
  * Las notas se listan en un panel a la derecha; al tocar una, el visor va a su
  * página. Son privadas y se guardan en /api/articulos/<id>/notas.
  */
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Check, MessageSquareText, Pencil, Trash2, X } from 'lucide-react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { Check, ChevronDown, ChevronUp, Eye, EyeOff, MessageSquareText, Pencil, Quote, Trash2, X } from 'lucide-react';
 import {
   borrarNota, crearNota, editarNota, listarNotas,
   type ColorNota, type NotaLibro, type ZonaNota,
@@ -357,6 +357,56 @@ export function CapaDeNotas({ pagina, activa }: { pagina: number; activa: boolea
 
 /* ══════════════════════ Panel lateral ══════════════════════ */
 
+/** Texto citado del PDF: compacto (unas líneas, con degradado), completo o escondido. */
+function CitaNota({ texto, color }: { texto: string; color?: string }) {
+  const [modo, setModo] = useState<'compacta' | 'completa' | 'oculta'>('compacta');
+  const [desborda, setDesborda] = useState(false);
+  const cuerpoRef = useRef<HTMLParagraphElement>(null);
+  const palabras = texto.trim().split(/\s+/).length;
+
+  // El botón de agrandar solo aparece si el texto no cabe en la vista compacta.
+  useLayoutEffect(() => {
+    const el = cuerpoRef.current;
+    if (!el || modo !== 'compacta') return;
+    const medir = () => setDesborda(el.scrollHeight > el.clientHeight + 2);
+    medir();
+    const obs = new ResizeObserver(medir);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [texto, modo]);
+
+  const parar = (e: React.SyntheticEvent) => e.stopPropagation();
+  return (
+    <div className={`fb-cita is-${modo}${desborda ? ' desborda' : ''}`} style={color ? { ['--nota-color' as string]: color } : undefined}
+      onClick={parar} onKeyDown={parar}>
+      <div className="fb-cita-cabecera">
+        <span className="fb-cita-etiqueta"><Quote size={12} /> Texto seleccionado</span>
+        <span className="fb-cita-palabras">{palabras} {palabras === 1 ? 'palabra' : 'palabras'}</span>
+        <span className="fb-cita-acciones">
+          {modo !== 'oculta' && (desborda || modo === 'completa') && (
+            <button type="button" onClick={() => setModo(modo === 'completa' ? 'compacta' : 'completa')}
+              aria-expanded={modo === 'completa'} title={modo === 'completa' ? 'Achicar' : 'Ver todo el texto'}
+              aria-label={modo === 'completa' ? 'Achicar el texto citado' : 'Ver todo el texto citado'}>
+              {modo === 'completa' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          )}
+          <button type="button" onClick={() => setModo(modo === 'oculta' ? 'compacta' : 'oculta')}
+            title={modo === 'oculta' ? 'Mostrar el texto' : 'Esconder el texto'}
+            aria-label={modo === 'oculta' ? 'Mostrar el texto citado' : 'Esconder el texto citado'}>
+            {modo === 'oculta' ? <Eye size={14} /> : <EyeOff size={14} />}
+          </button>
+        </span>
+      </div>
+      {modo !== 'oculta' && (
+        <p ref={cuerpoRef} className="fb-cita-texto">{texto}</p>
+      )}
+      {modo === 'compacta' && desborda && (
+        <button type="button" className="fb-cita-ver-mas" onClick={() => setModo('completa')}>Ver todo</button>
+      )}
+    </div>
+  );
+}
+
 function SelectorColor({ valor, onCambio }: { valor: ColorNota; onCambio: (c: ColorNota) => void }) {
   return (
     <div className="fb-nota-colores" role="radiogroup" aria-label="Color de la nota">
@@ -433,7 +483,7 @@ export function PanelDeNotas({ notas: nl, onIrAPagina }: { notas: NotasDelLibro;
           <div className="fb-nota-card is-nueva">
             <div className="fb-nota-card-meta">Nueva nota · página {nl.borrador.pagina}</div>
             {nl.borrador.cita
-              ? <blockquote className="fb-nota-cita">{nl.borrador.cita}</blockquote>
+              ? <CitaNota texto={nl.borrador.cita} color="#0284C7" />
               : <p className="fb-nota-sin-cita">Zona sin texto (una imagen o un gráfico).</p>}
             <EditorNota
               textoInicial=""
@@ -485,7 +535,7 @@ export function PanelDeNotas({ notas: nl, onIrAPagina }: { notas: NotasDelLibro;
                       </button>
                     </span>
                   </div>
-                  {nota.cita && <blockquote className="fb-nota-cita">{nota.cita}</blockquote>}
+                  {nota.cita && <CitaNota texto={nota.cita} color={nota.color} />}
                   {editando === nota.id ? (
                     <EditorNota
                       textoInicial={nota.texto}

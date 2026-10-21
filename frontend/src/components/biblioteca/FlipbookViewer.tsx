@@ -33,6 +33,7 @@ import {
 import { apiFetch } from '../../data/apiClient';
 import { AnotacionesProvider, BotonLapiz, CapaDeAnotaciones, HerramientasDeDibujo, useAnotacionesDelLibro } from './AnotacionesLibro';
 import { CapaDeNotas, NotasProvider, PanelDeNotas, useNotasDelLibro } from './NotasLibro';
+import { CapaDeTexto, MenuDeSeleccion } from './CapaDeTexto';
 import '../../styles/flipbook.css';
 
 // Configuración segura del worker de PDF.js
@@ -311,6 +312,8 @@ const FlipbookPageNucleo = React.memo(
               className="fb-page-canvas"
               style={{ display: rendered ? 'block' : 'none' }}
             />
+            {/* Texto real del PDF, seleccionable y copiable */}
+            <CapaDeTexto pdfDoc={pdfDoc} pagina={pageNum} ancho={pageWidth} activa={isActive} />
             <CapaDeAnotaciones pagina={pageNum} activa={isActive} ancho={pageWidth} alto={pageHeight} nitidez={nitidez} />
             <CapaDeNotas pagina={pageNum} activa={isActive} />
 
@@ -1079,6 +1082,14 @@ export default function FlipbookViewer({
 
         {/* Notas y comentarios: panel a la derecha; al tocar una, se va a su página */}
         {listo && <PanelDeNotas notas={notas} onIrAPagina={handlePageJump} />}
+
+        {/* Con texto seleccionado: copiarlo o convertirlo en una nota */}
+        {listo && (
+          <MenuDeSeleccion
+            puedeAnotar={notas.disponible}
+            onNota={(pagina, rect, cita) => notas.iniciarBorrador({ pagina, rect, cita })}
+          />
+        )}
 
         {/* Herramientas del lápiz: barra flotante abajo, solo con el lápiz activo */}
         {listo && dibujando && (
