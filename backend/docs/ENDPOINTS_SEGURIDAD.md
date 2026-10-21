@@ -9,7 +9,7 @@ desactualizado o si aparece una ruta sin control.
   rol del token sea el rol actual del usuario.
 - **Propiedad**: cómo se comprueba que el recurso de la URL le pertenece a quien lo pide.
 
-Total: **192** rutas — 160 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 18 públicas, **0 sin control**.
+Total: **211** rutas — 171 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 26 públicas, **0 sin control**.
 
 ## Públicas a propósito
 
@@ -31,6 +31,14 @@ Total: **192** rutas — 160 con rol y propiedad, 14 con sesión pero sin restri
 | POST | `/api/validacion/casos` | Pública | — | Formulario de validación por expertos, que no tienen cuenta. Solo escribe; 20 por hora por IP. |
 | POST | `/api/validacion/historial` | Pública | — | Formulario de validación por expertos, que no tienen cuenta. Solo escribe; 20 por hora por IP. |
 | POST | `/api/validacion/inicio` | Pública | — | Formulario de validación por expertos, que no tienen cuenta. Solo escribe; 20 por hora por IP. |
+| GET | `/api/validacion/invitacion/<token>` | Pública | — | Portal del experto invitado (sin cuenta): el token aleatorio de 32 caracteres de su enlace es la credencial; solo ve y edita su propia invitación, un enlace revocado responde 404. Límite por IP. |
+| PATCH | `/api/validacion/invitacion/<token>` | Pública | — | Portal del experto invitado (sin cuenta): el token aleatorio de 32 caracteres de su enlace es la credencial; solo ve y edita su propia invitación, un enlace revocado responde 404. Límite por IP. |
+| GET | `/api/validacion/invitacion/<token>/casos/<revision_id>` | Pública | — | Caso clínico asignado al experto del token (solo los suyos): consulta completada anonimizada, sin datos del estudiante (su nombre se oculta también en la conversación). Autoguardado de su revisión. Límite por IP. |
+| PUT | `/api/validacion/invitacion/<token>/casos/<revision_id>` | Pública | — | Caso clínico asignado al experto del token (solo los suyos): consulta completada anonimizada, sin datos del estudiante (su nombre se oculta también en la conversación). Autoguardado de su revisión. Límite por IP. |
+| POST | `/api/validacion/invitacion/<token>/casos/<revision_id>/enviar` | Pública | — | El experto da por terminada la revisión de un caso asignado a su invitación. Límite por IP. |
+| POST | `/api/validacion/invitacion/<token>/finalizar` | Pública | — | El experto finaliza su evaluación; después queda de solo lectura. Límite por IP. |
+| PUT | `/api/validacion/invitacion/<token>/secciones/<seccion>` | Pública | — | Autoguardado de una sección del portal del experto; solo sobre la invitación del token y sus secciones asignadas. Límite por IP. |
+| POST | `/api/validacion/invitacion/<token>/secciones/<seccion>/enviar` | Pública | — | El experto da por terminada una sección de su invitación (exige todos los ítems calificados). Límite por IP. |
 | GET | `/docs` | Pública | — | Swagger UI. Solo se registra fuera de producción. |
 | GET | `/simulador` | Pública | — | Consola de desarrollo del simulador. Solo se registra en development y testing. |
 
@@ -72,6 +80,22 @@ Total: **192** rutas — 160 con rol y propiedad, 14 con sesión pero sin restri
 | GET | `/api/admin/usuarios` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | PATCH | `/api/admin/usuarios/<user_id>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | GET | `/api/admin/validacion/<pestana>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+
+## Con rol y propiedad — admin_validacion
+
+| Método | Ruta | Rol | Propiedad |
+|---|---|---|---|
+| GET | `/api/admin/validacion-expertos/casos` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+| GET | `/api/admin/validacion-expertos/casos/<consultation_id>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+| POST | `/api/admin/validacion-expertos/casos/<consultation_id>/asignaciones` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma (la asignación queda a nombre del administrador de la sesión) |
+| GET | `/api/admin/validacion-expertos/casos/resultados` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+| GET | `/api/admin/validacion-expertos/invitaciones` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+| POST | `/api/admin/validacion-expertos/invitaciones` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma (la invitación queda a nombre del administrador de la sesión) |
+| DELETE | `/api/admin/validacion-expertos/invitaciones/<invitacion_id>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+| PATCH | `/api/admin/validacion-expertos/invitaciones/<invitacion_id>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+| POST | `/api/admin/validacion-expertos/invitaciones/<invitacion_id>/nuevo-enlace` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+| GET | `/api/admin/validacion-expertos/resultados` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+| DELETE | `/api/admin/validacion-expertos/revisiones/<revision_id>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 
 ## Con rol y propiedad — almacenamiento
 

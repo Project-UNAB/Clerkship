@@ -9,7 +9,6 @@ import {
   getEstadisticas,
   listarPostsAdmin, borrarPostAdmin,
   borrarArticuloAdmin,
-  listarValidacionAdmin,
   getEstadisticasTokens,
   type Estadisticas, type EstadisticasTokens,
 } from '../../data/adminApi';
@@ -27,6 +26,7 @@ import AnalyticsDashboard from '../../components/admin/AnalyticsDashboard';
 import TokensDashboard from '../../components/admin/TokensDashboard';
 import UsersManagementDashboard from '../../components/admin/UsersManagementDashboard';
 import ResultadosOpinion from '../../components/admin/ResultadosOpinion';
+import ValidacionExpertos from '../../components/admin/ValidacionExpertos';
 import AdminSidebar, { type AdminTab } from '../../components/admin/AdminSidebar';
 import PublicarLibroModal, { type FuentePdf } from '../../components/biblioteca/PublicarLibroModal';
 import '../../styles/admin.css';
@@ -34,29 +34,6 @@ import '../../styles/flipbook.css';
 
 // El visor de libros (PDF.js) se descarga solo cuando el administrador abre uno.
 const FlipbookViewer = lazy(() => import('../../components/biblioteca/FlipbookViewer'));
-
-const PESTANAS = ['inicio', 'casos', 'historial', 'biblioteca'] as const;
-
-/** Tabla genérica: cada fila puede tener columnas distintas (feedback y
- *  validación cambian de pestaña a pestaña), así que se arman solas. */
-function TablaGenerica({ filas }: { filas: Record<string, any>[] }) {
-  if (filas.length === 0) return <p className="adm-vacio">Sin respuestas todavía.</p>;
-  const columnas = Object.keys(filas[0]);
-  return (
-    <div className="adm-tabla-wrap">
-      <table className="adm-tabla">
-        <thead><tr>{columnas.map(c => <th key={c}>{c}</th>)}</tr></thead>
-        <tbody>
-          {filas.map((fila, i) => (
-            <tr key={fila.id || i}>
-              {columnas.map(c => <td key={c}>{String(fila[c] ?? '')}</td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 function PanelResumen() {
   const [datos, setDatos] = useState<Estadisticas | null>(null);
@@ -480,28 +457,6 @@ function PanelBiblioteca() {
   );
 }
 
-function PanelValidacion() {
-  const [pestana, setPestana] = useState<typeof PESTANAS[number]>('inicio');
-  const [filas, setFilas] = useState<Record<string, any>[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    listarValidacionAdmin(pestana).then(r => setFilas(r.respuestas)).catch(err => setError(mainAuthErrorMessage(err)));
-  }, [pestana]);
-
-  return (
-    <div>
-      <div className="adm-toolbar">
-        {PESTANAS.map(p => (
-          <button key={p} type="button" className={`adm-btn adm-btn-sm ${pestana === p ? 'adm-btn-active' : ''}`} onClick={() => setPestana(p)}>{p}</button>
-        ))}
-      </div>
-      {error && <p className="adm-error">{error}</p>}
-      <TablaGenerica filas={filas} />
-    </div>
-  );
-}
-
 function PanelTokens() {
   const [datos, setDatos] = useState<EstadisticasTokens | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -570,7 +525,7 @@ export default function AdminPage() {
         {tab === 'comunidad' && <PanelComunidad />}
         {tab === 'biblioteca' && <PanelBiblioteca />}
         {tab === 'feedback' && <ResultadosOpinion />}
-        {tab === 'validacion' && <PanelValidacion />}
+        {tab === 'validacion' && <ValidacionExpertos />}
         {tab === 'tokens' && <PanelTokens />}
       </main>
     </div>

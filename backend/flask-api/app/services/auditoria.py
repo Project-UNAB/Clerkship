@@ -34,6 +34,8 @@ GRADE_POLICY_CHANGE = "GRADE_POLICY_CHANGE"
 GRADEBOOK_EXPORT = "GRADEBOOK_EXPORT"              # el docente descargó el libro de calificaciones
 USER_ROLE_CHANGE = "USER_ROLE_CHANGE"
 USER_ACTIVE_CHANGE = "USER_ACTIVE_CHANGE"
+VALIDATION_INVITE_REVOKE = "VALIDATION_INVITE_REVOKE"    # el administrador desactivó el enlace de un experto
+VALIDATION_INVITE_DELETE = "VALIDATION_INVITE_DELETE"    # y sus respuestas con él
 
 
 def _serializable(valor):

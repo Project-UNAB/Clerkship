@@ -2276,6 +2276,251 @@ paths:
           description: No encontrado
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/validacion/invitacion/{token}:
+    get:
+      tags:
+      - Validación por expertos
+      summary: Portal del experto - su invitación, secciones y respuestas guardadas
+      description: Ruta pública; el token del enlace personal es la credencial. La primera visita registra la apertura.
+      operationId: verInvitacionValidacion
+      parameters:
+      - name: token
+        in: path
+        required: true
+        description: Token del enlace personal del experto
+        schema: {type: string, minLength: 16, maxLength: 64}
+      responses:
+        '200':
+          description: Invitación con datos del experto, respuestas, observaciones, secciones enviadas y lo que falta para finalizar
+        '404':
+          description: Enlace inexistente o revocado
+        '409':
+          description: La evaluación ya fue finalizada
+        '429':
+          description: Demasiadas peticiones desde esta IP
+    patch:
+      tags:
+      - Validación por expertos
+      summary: El experto confirma sus datos, el consentimiento y su juicio de aplicabilidad (autoguardado)
+      operationId: actualizarPerfilExperto
+      parameters:
+      - name: token
+        in: path
+        required: true
+        description: Token del enlace personal del experto
+        schema: {type: string, minLength: 16, maxLength: 64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: {type: string, minLength: 2, maxLength: 120}
+                profesion: {type: string, minLength: 2, maxLength: 120}
+                especialidad: {type: string, maxLength: 120, nullable: true}
+                institucion: {type: string, maxLength: 160, nullable: true}
+                registro_profesional: {type: string, maxLength: 60, nullable: true}
+                anos_experiencia: {type: integer, minimum: 0, maximum: 80, nullable: true}
+                consentimiento: {type: boolean}
+                aplicabilidad: {type: string, enum: [APLICABLE, APLICABLE_CON_CAMBIOS, NO_APLICABLE], nullable: true}
+                comentario_final: {type: string, maxLength: 2000, nullable: true}
+      responses:
+        '200':
+          description: Invitación actualizada
+        '400':
+          description: Datos inválidos
+        '404':
+          description: Enlace inexistente o revocado
+        '409':
+          description: La evaluación ya fue finalizada
+        '429':
+          description: Demasiadas peticiones desde esta IP
+  /api/validacion/invitacion/{token}/secciones/{seccion}:
+    put:
+      tags:
+      - Validación por expertos
+      summary: Autoguardado de las calificaciones (1 a 4) y observaciones de una sección
+      description: Mezcla lo enviado con lo ya guardado. La clave «_general» de observaciones es la observación de toda la sección.
+      operationId: guardarSeccionExperto
+      parameters:
+      - name: token
+        in: path
+        required: true
+        description: Token del enlace personal del experto
+        schema: {type: string, minLength: 16, maxLength: 64}
+      - name: seccion
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [inicio, casos, historial, biblioteca]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                respuestas:
+                  type: object
+                  additionalProperties: {type: integer, minimum: 1, maximum: 4}
+                observaciones:
+                  type: object
+                  additionalProperties: {type: string, maxLength: 2000}
+      responses:
+        '200':
+          description: Sección guardada
+        '400':
+          description: Ítems inexistentes o calificación fuera de 1 a 4
+        '404':
+          description: Enlace inexistente o revocado
+        '409':
+          description: La evaluación ya fue finalizada
+        '429':
+          description: Demasiadas peticiones desde esta IP
+  /api/validacion/invitacion/{token}/secciones/{seccion}/enviar:
+    post:
+      tags:
+      - Validación por expertos
+      summary: El experto da por terminada una sección
+      operationId: enviarSeccionExperto
+      parameters:
+      - name: token
+        in: path
+        required: true
+        description: Token del enlace personal del experto
+        schema: {type: string, minLength: 16, maxLength: 64}
+      - name: seccion
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [inicio, casos, historial, biblioteca]
+      responses:
+        '200':
+          description: Sección marcada como enviada
+        '400':
+          description: Faltan ítems por calificar
+        '404':
+          description: Enlace inexistente o revocado
+        '409':
+          description: La evaluación ya fue finalizada
+        '429':
+          description: Demasiadas peticiones desde esta IP
+  /api/validacion/invitacion/{token}/finalizar:
+    post:
+      tags:
+      - Validación por expertos
+      summary: El experto finaliza su evaluación (queda de solo lectura)
+      operationId: finalizarValidacionExperto
+      parameters:
+      - name: token
+        in: path
+        required: true
+        description: Token del enlace personal del experto
+        schema: {type: string, minLength: 16, maxLength: 64}
+      responses:
+        '200':
+          description: Evaluación finalizada
+        '400':
+          description: Falta consentimiento, datos, secciones o el juicio de aplicabilidad
+        '404':
+          description: Enlace inexistente o revocado
+        '409':
+          description: La evaluación ya fue finalizada
+        '429':
+          description: Demasiadas peticiones desde esta IP
+  /api/validacion/invitacion/{token}/casos/{revision_id}:
+    get:
+      tags:
+      - Validación por expertos
+      summary: Caso clínico asignado al experto, anonimizado, con su revisión
+      description: Consulta completada sin datos del estudiante - caso, examen físico y paraclínicos, conversación, exámenes pedidos, respuesta del estudiante y evaluación automática.
+      operationId: verCasoExperto
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema: {type: string, minLength: 16, maxLength: 64}
+      - name: revision_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Revisión y caso
+        '404':
+          description: Enlace inexistente o revocado, o caso no asignado
+        '409':
+          description: La evaluación ya fue finalizada
+        '429':
+          description: Demasiadas peticiones desde esta IP
+    put:
+      tags:
+      - Validación por expertos
+      summary: Autoguardado de la revisión de un caso (criterios 1 a 4, observaciones y puntaje 0 a 100)
+      operationId: guardarRevisionCaso
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema: {type: string, minLength: 16, maxLength: 64}
+      - name: revision_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                respuestas:
+                  type: object
+                  additionalProperties: {type: integer, minimum: 1, maximum: 4}
+                observaciones:
+                  type: object
+                  additionalProperties: {type: string, maxLength: 2000}
+                puntaje_experto: {type: integer, minimum: 0, maximum: 100, nullable: true}
+      responses:
+        '200':
+          description: Revisión guardada
+        '400':
+          description: Criterios inexistentes o valores fuera de rango
+        '404':
+          description: Enlace inexistente o revocado, o caso no asignado
+        '409':
+          description: La evaluación ya fue finalizada
+        '429':
+          description: Demasiadas peticiones desde esta IP
+  /api/validacion/invitacion/{token}/casos/{revision_id}/enviar:
+    post:
+      tags:
+      - Validación por expertos
+      summary: El experto da por terminada la revisión de un caso
+      operationId: enviarRevisionCaso
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema: {type: string, minLength: 16, maxLength: 64}
+      - name: revision_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Revisión enviada; devuelve la invitación actualizada
+        '400':
+          description: Faltan criterios o el puntaje del experto
+        '404':
+          description: Enlace inexistente o revocado, o caso no asignado
+        '409':
+          description: La evaluación ya fue finalizada
+        '429':
+          description: Demasiadas peticiones desde esta IP
   /api/validacion/inicio:
     post:
       tags:
@@ -2289,9 +2534,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [nombre_experto, id_experto, profesion, anos_experiencia, claridad_informacion, pertinencia_informacion, organizacion_visual, jerarquia_navegacion, accesibilidad, coherencia_terminologia, suficiencia_accesos, utilidad_general]
+              required: [id_experto, profesion, anos_experiencia, claridad_informacion, pertinencia_informacion, organizacion_visual, jerarquia_navegacion, accesibilidad, coherencia_terminologia, suficiencia_accesos, utilidad_general]
               properties:
-                nombre_experto: {type: string, minLength: 2, maxLength: 120}
+                nombre_experto: {type: string, minLength: 2, maxLength: 120, nullable: true, description: Opcional; lo obligatorio es id_experto}
                 id_experto: {type: string, minLength: 2, maxLength: 60}
                 profesion: {type: string, minLength: 2, maxLength: 120}
                 anos_experiencia: {type: integer, minimum: 0, maximum: 80}
@@ -2325,9 +2570,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [nombre_experto, id_experto, profesion, anos_experiencia, pertinencia_clinica, redaccion_clara, coherencia_diagnostica, coherencia_examenes, realismo_paciente, dificultad_adecuada, utilidad_formativa, suficiencia_contenido]
+              required: [id_experto, profesion, anos_experiencia, pertinencia_clinica, redaccion_clara, coherencia_diagnostica, coherencia_examenes, realismo_paciente, dificultad_adecuada, utilidad_formativa, suficiencia_contenido]
               properties:
-                nombre_experto: {type: string, minLength: 2, maxLength: 120}
+                nombre_experto: {type: string, minLength: 2, maxLength: 120, nullable: true, description: Opcional; lo obligatorio es id_experto}
                 id_experto: {type: string, minLength: 2, maxLength: 60}
                 profesion: {type: string, minLength: 2, maxLength: 120}
                 anos_experiencia: {type: integer, minimum: 0, maximum: 80}
@@ -2361,9 +2606,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [nombre_experto, id_experto, profesion, anos_experiencia, claridad_puntajes, pertinencia_evaluacion, retroalimentacion_util, coherencia_dimensiones, suficiencia_informacion, utilidad_formativa, comprension_estudiante, presentacion]
+              required: [id_experto, profesion, anos_experiencia, claridad_puntajes, pertinencia_evaluacion, retroalimentacion_util, coherencia_dimensiones, suficiencia_informacion, utilidad_formativa, comprension_estudiante, presentacion]
               properties:
-                nombre_experto: {type: string, minLength: 2, maxLength: 120}
+                nombre_experto: {type: string, minLength: 2, maxLength: 120, nullable: true, description: Opcional; lo obligatorio es id_experto}
                 id_experto: {type: string, minLength: 2, maxLength: 60}
                 profesion: {type: string, minLength: 2, maxLength: 120}
                 anos_experiencia: {type: integer, minimum: 0, maximum: 80}
@@ -2397,9 +2642,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [nombre_experto, id_experto, profesion, anos_experiencia, pertinencia_recursos, actualidad_fuentes, calidad_fuentes, claridad_descripcion, organizacion_contenido, suficiencia_recursos, utilidad_formativa, accesibilidad_archivos]
+              required: [id_experto, profesion, anos_experiencia, pertinencia_recursos, actualidad_fuentes, calidad_fuentes, claridad_descripcion, organizacion_contenido, suficiencia_recursos, utilidad_formativa, accesibilidad_archivos]
               properties:
-                nombre_experto: {type: string, minLength: 2, maxLength: 120}
+                nombre_experto: {type: string, minLength: 2, maxLength: 120, nullable: true, description: Opcional; lo obligatorio es id_experto}
                 id_experto: {type: string, minLength: 2, maxLength: 60}
                 profesion: {type: string, minLength: 2, maxLength: 120}
                 anos_experiencia: {type: integer, minimum: 0, maximum: 80}
@@ -2929,6 +3174,273 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/admin/validacion-expertos/invitaciones:
+    get:
+      tags:
+      - Administración
+      summary: Invitaciones de validación por expertos, con su avance
+      operationId: adminListarInvitacionesValidacion
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Invitaciones y número de ítems por sección
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    post:
+      tags:
+      - Administración
+      summary: Invitar a un profesional de la salud a validar la plataforma
+      description: Crea su enlace personal (token aleatorio).
+      operationId: adminCrearInvitacionValidacion
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [registro_profesional, profesion]
+              properties:
+                nombre: {type: string, minLength: 2, maxLength: 120}
+                email: {type: string, maxLength: 160, nullable: true}
+                profesion: {type: string, minLength: 2, maxLength: 120}
+                especialidad: {type: string, maxLength: 120, nullable: true}
+                institucion: {type: string, maxLength: 160, nullable: true}
+                registro_profesional: {type: string, maxLength: 60, nullable: true}
+                anos_experiencia: {type: integer, minimum: 0, maximum: 80, nullable: true}
+                secciones:
+                  type: array
+                  minItems: 1
+                  items: {type: string, enum: [inicio, casos, historial, biblioteca]}
+      responses:
+        '201':
+          description: Invitación creada
+        '400':
+          description: Datos inválidos
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/validacion-expertos/invitaciones/{invitacion_id}:
+    patch:
+      tags:
+      - Administración
+      summary: Corregir datos o secciones, revocar, reactivar o reabrir una invitación
+      operationId: adminActualizarInvitacionValidacion
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: invitacion_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: {type: string, minLength: 2, maxLength: 120}
+                email: {type: string, maxLength: 160, nullable: true}
+                profesion: {type: string, minLength: 2, maxLength: 120}
+                especialidad: {type: string, maxLength: 120, nullable: true}
+                institucion: {type: string, maxLength: 160, nullable: true}
+                registro_profesional: {type: string, maxLength: 60, nullable: true}
+                anos_experiencia: {type: integer, minimum: 0, maximum: 80, nullable: true}
+                secciones:
+                  type: array
+                  minItems: 1
+                  items: {type: string, enum: [inicio, casos, historial, biblioteca]}
+                accion: {type: string, enum: [revocar, reactivar, reabrir]}
+      responses:
+        '200':
+          description: Invitación actualizada
+        '404':
+          description: La invitación no existe
+        '409':
+          description: La acción no aplica al estado actual
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    delete:
+      tags:
+      - Administración
+      summary: Borrar una invitación y sus respuestas
+      operationId: adminBorrarInvitacionValidacion
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: invitacion_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Invitación borrada
+        '404':
+          description: La invitación no existe
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/validacion-expertos/invitaciones/{invitacion_id}/nuevo-enlace:
+    post:
+      tags:
+      - Administración
+      summary: Generar un enlace nuevo (el anterior deja de funcionar)
+      operationId: adminNuevoEnlaceValidacion
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: invitacion_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Invitación con su nuevo token
+        '404':
+          description: La invitación no existe
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/validacion-expertos/resultados:
+    get:
+      tags:
+      - Administración
+      summary: Validez de contenido por juicio de expertos
+      description: Por ítem, sección y global - V de Aiken con IC 95 % (Penfield y Giacobbi), I-CVI, kappa modificado, S-CVI/Ave y S-CVI/UA; observaciones y juicio de aplicabilidad. Incluye las respuestas del formulario abierto.
+      operationId: adminResultadosValidacion
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Resultados de la validación
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/validacion-expertos/casos:
+    get:
+      tags:
+      - Administración
+      summary: Consultas completadas para revisión por expertos, con sus asignaciones
+      description: Sin datos del estudiante. Incluye los expertos disponibles (invitaciones no revocadas).
+      operationId: adminListarCasosRevision
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Casos, revisiones y expertos
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/validacion-expertos/casos/resultados:
+    get:
+      tags:
+      - Administración
+      summary: Resultados de la revisión de casos por expertos
+      description: V de Aiken e I-CVI por criterio, resumen por caso y concordancia del puntaje automático con el del experto (diferencia media, límites de Bland-Altman, error absoluto medio, Pearson).
+      operationId: adminResultadosCasos
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Resultados
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/validacion-expertos/casos/{consultation_id}:
+    get:
+      tags:
+      - Administración
+      summary: Vista previa del caso tal como lo verá el experto (anonimizado)
+      operationId: adminVerCasoRevision
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: consultation_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Caso anonimizado
+        '404':
+          description: La consulta no existe o no está completada
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/validacion-expertos/casos/{consultation_id}/asignaciones:
+    post:
+      tags:
+      - Administración
+      summary: Asignar una consulta completada a uno o varios expertos
+      description: Las asignaciones que ya existían se dejan igual. Un experto que ya había finalizado queda en curso para revisar el caso nuevo.
+      operationId: adminAsignarCaso
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: consultation_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invitaciones]
+              properties:
+                invitaciones:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items: {type: string, format: uuid}
+      responses:
+        '201':
+          description: Asignaciones creadas
+        '400':
+          description: Invitación inexistente o revocada
+        '404':
+          description: La consulta no existe o no está completada
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/admin/validacion-expertos/revisiones/{revision_id}:
+    delete:
+      tags:
+      - Administración
+      summary: Quitar la asignación de un caso a un experto (y su revisión)
+      operationId: adminQuitarRevision
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: revision_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Asignación quitada
+        '404':
+          description: La asignación no existe
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
   /api/admin/validacion/{pestana}:
     get:
       tags:

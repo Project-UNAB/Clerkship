@@ -50,7 +50,7 @@ export default function ValidacionExpertoPage() {
   const respondidas = formulario.items.filter(i => calificaciones[i.key] !== undefined).length;
   const anos = Number(anosTexto);
   const datosValidos =
-    experto.nombre_experto.trim().length >= 2 &&
+    (experto.nombre_experto.trim() === '' || experto.nombre_experto.trim().length >= 2) &&
     experto.id_experto.trim().length >= 2 &&
     experto.profesion.trim().length >= 2 &&
     anosTexto !== '' && Number.isInteger(anos) && anos >= 0 && anos <= 80;
@@ -101,7 +101,7 @@ export default function ValidacionExpertoPage() {
           <h2 className="vx-section-title">Datos del experto</h2>
           <div className="vx-datos">
             <label className="vx-field">
-              <span>Nombre completo *</span>
+              <span>Nombre y apellidos (opcional)</span>
               <input className="vx-input" value={experto.nombre_experto} onChange={e => setExperto({ ...experto, nombre_experto: e.target.value })} />
             </label>
             <label className="vx-field">

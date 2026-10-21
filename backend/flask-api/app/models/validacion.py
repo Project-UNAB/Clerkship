@@ -9,7 +9,7 @@ from app import db
 
 class _ValidacionBase:
     id = db.Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    nombre_experto = db.Column(db.String(120), nullable=False)
+    nombre_experto = db.Column(db.String(120))  # opcional: lo obligatorio es el ID
     id_experto = db.Column(db.String(60), nullable=False)
     profesion = db.Column(db.String(120), nullable=False)
     anos_experiencia = db.Column(db.SmallInteger, nullable=False)

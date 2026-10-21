@@ -66,3 +66,12 @@ def test_validacion_rechaza_anos_negativos(client, guardados):
     body["anos_experiencia"] = -1
     res = client.post("/api/validacion/casos", json=body)
     assert res.status_code == 400
+
+
+
+@pytest.mark.parametrize("pestana", ITEMS)
+def test_validacion_acepta_sin_nombre_pero_no_sin_id(client, guardados, pestana):
+    sin_nombre = {k: v for k, v in _cuerpo(pestana).items() if k != "nombre_experto"}
+    assert client.post(f"/api/validacion/{pestana}", json=sin_nombre).status_code == 201
+    sin_id = {k: v for k, v in _cuerpo(pestana).items() if k != "id_experto"}
+    assert client.post(f"/api/validacion/{pestana}", json=sin_id).status_code == 400

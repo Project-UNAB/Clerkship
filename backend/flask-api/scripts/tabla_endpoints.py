@@ -40,6 +40,12 @@ PUBLICAS = {
     "/api/validacion/casos": "Formulario de validación por expertos, que no tienen cuenta. Solo escribe; 20 por hora por IP.",
     "/api/validacion/historial": "Formulario de validación por expertos, que no tienen cuenta. Solo escribe; 20 por hora por IP.",
     "/api/validacion/biblioteca": "Formulario de validación por expertos, que no tienen cuenta. Solo escribe; 20 por hora por IP.",
+    "/api/validacion/invitacion/<token>": "Portal del experto invitado (sin cuenta): el token aleatorio de 32 caracteres de su enlace es la credencial; solo ve y edita su propia invitación, un enlace revocado responde 404. Límite por IP.",
+    "/api/validacion/invitacion/<token>/secciones/<seccion>": "Autoguardado de una sección del portal del experto; solo sobre la invitación del token y sus secciones asignadas. Límite por IP.",
+    "/api/validacion/invitacion/<token>/secciones/<seccion>/enviar": "El experto da por terminada una sección de su invitación (exige todos los ítems calificados). Límite por IP.",
+    "/api/validacion/invitacion/<token>/finalizar": "El experto finaliza su evaluación; después queda de solo lectura. Límite por IP.",
+    "/api/validacion/invitacion/<token>/casos/<revision_id>": "Caso clínico asignado al experto del token (solo los suyos): consulta completada anonimizada, sin datos del estudiante (su nombre se oculta también en la conversación). Autoguardado de su revisión. Límite por IP.",
+    "/api/validacion/invitacion/<token>/casos/<revision_id>/enviar": "El experto da por terminada la revisión de un caso asignado a su invitación. Límite por IP.",
 }
 
 # Qué comprobación de propiedad hace una vista, según lo que aparece en su código.
@@ -119,6 +125,8 @@ PROPIEDAD_EXACTA = {
     ("DELETE", "/api/cursos/<course_id>/avisos/<announcement_id>/comentarios/<comment_id>"):
         "Autor del comentario, o docente dueño del curso",
     ("POST", "/api/cursos"): "No aplica: el curso nuevo queda a nombre del docente de la sesión",
+    ("POST", "/api/admin/validacion-expertos/casos/<consultation_id>/asignaciones"): "No aplica: el rol ADMIN administra toda la plataforma (la asignación queda a nombre del administrador de la sesión)",
+    ("POST", "/api/admin/validacion-expertos/invitaciones"): "No aplica: el rol ADMIN administra toda la plataforma (la invitación queda a nombre del administrador de la sesión)",
 }
 
 ROLES_ADMIN = "ADMIN"

@@ -12,6 +12,7 @@ const ProyectoPage = lazy(() => import('./pages/landing/ProyectoPage'));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
 const ValidacionExpertoPage = lazy(() => import('./pages/validacion/ValidacionExpertoPage'));
+const PortalExpertoPage = lazy(() => import('./pages/validacion/PortalExpertoPage'));
 const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
 const CursosPage = lazy(() => import('./pages/cursos/CursosPage'));
 const CursoDetallePage = lazy(() => import('./pages/cursos/CursoDetallePage'));
@@ -206,6 +207,7 @@ export default function App() {
         <Route path="/equipo/direccion"       element={<DireccionPage />} />
         <Route path="/equipo/institucion"     element={<InstitucionPage />} />
         <Route path="/validacion/:pestana"    element={<ValidacionExpertoPage />} />
+        <Route path="/evaluacion-experto/:token" element={<PortalExpertoPage />} />
         <Route path="/legal/terminos"         element={<TerminosPage />} />
         <Route path="/legal/privacidad"       element={<PrivacidadPage />} />
         <Route path="/legal/licencia"         element={<LicenciaPage />} />

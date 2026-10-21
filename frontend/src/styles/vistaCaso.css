@@ -1,0 +1,125 @@
+/* Caso clínico anonimizado para revisión por expertos. Prefijo vc-.
+   Toma los colores del portal del experto (--vp-*) o del panel (--surface, --ink…). */
+
+.vc {
+  --vc-sup: var(--vp-sup, var(--surface, #fff));
+  --vc-sup2: var(--vp-sup2, var(--surface2, #f1f5f9));
+  --vc-tinta: var(--vp-tinta, var(--ink, #0f172a));
+  --vc-tinta2: var(--vp-tinta2, var(--ink2, #334155));
+  --vc-tinta3: var(--vp-tinta3, var(--ink3, #64748b));
+  --vc-borde: var(--vp-borde, var(--border, #e2e8f0));
+  --vc-marca: var(--vp-marca, #0369a1);
+  --vc-bien: #16a34a;
+  --vc-mal: #dc2626;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--vc-tinta);
+}
+
+.vc-cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.vc-kicker { font-size: 11.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--vc-marca); }
+.vc-cabecera h3 { margin: 2px 0 4px; font-size: 20px; font-weight: 800; }
+.vc-cabecera p { margin: 0; font-size: 13.5px; color: var(--vc-tinta3); }
+.vc-diagnostico {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 320px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border-left: 4px solid var(--vc-marca);
+  background: var(--vc-sup2);
+}
+.vc-diagnostico span { font-size: 11.5px; font-weight: 700; color: var(--vc-tinta3); }
+.vc-diagnostico strong { font-size: 14.5px; line-height: 1.35; }
+
+.vc-pestanas { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--vc-sup2); overflow-x: auto; scrollbar-width: none; }
+.vc-pestanas button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1 0 auto;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--vc-tinta2);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.vc-pestanas button.is-activa { background: var(--vc-sup); color: var(--vc-marca); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12); }
+
+.vc-cuerpo { display: flex; flex-direction: column; gap: 12px; }
+.vc-bloque { padding: 14px 16px; border: 1px solid var(--vc-borde); border-radius: 14px; background: var(--vc-sup); }
+.vc-bloque h4 { display: flex; align-items: center; gap: 7px; margin: 0 0 10px; font-size: 14.5px; font-weight: 800; }
+.vc-texto { margin: 0; font-size: 14px; line-height: 1.6; color: var(--vc-tinta2); white-space: pre-wrap; }
+.vc-nota { margin: 6px 0 0; font-size: 12.5px; color: var(--vc-tinta3); }
+.vc-dos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+.vc-lista { padding: 12px 14px; border: 1px solid var(--vc-borde); border-radius: 12px; background: var(--vc-sup); }
+.vc-bloque .vc-lista { padding: 0; border: none; margin-top: 10px; }
+.vc-lista h5 { margin: 0 0 6px; font-size: 12.5px; font-weight: 800; color: var(--vc-tinta2); }
+.vc-lista ul { margin: 0; padding-left: 18px; list-style: disc; font-size: 13.5px; line-height: 1.55; color: var(--vc-tinta2); }
+.vc-lista.is-bien h5 { color: var(--vc-bien); }
+.vc-lista.is-mal h5 { color: var(--vc-mal); }
+
+.vc-signos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.vc-signos div { display: flex; flex-direction: column; padding: 8px 10px; border-radius: 10px; background: var(--vc-sup2); }
+.vc-signos span { font-size: 11.5px; color: var(--vc-tinta3); }
+.vc-signos strong { font-size: 14px; }
+
+.vc-hallazgos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.vc-hallazgos div { padding: 8px 10px; border-radius: 10px; background: var(--vc-sup2); border-left: 3px solid transparent; }
+.vc-hallazgos div.is-alterado { border-left-color: var(--vc-mal); }
+.vc-hallazgos dt { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; color: var(--vc-tinta2); }
+.vc-hallazgos dd { margin: 3px 0 0; font-size: 13px; line-height: 1.45; color: var(--vc-tinta2); }
+.vc-chip-alterado { padding: 0 6px; border-radius: 999px; background: rgba(220, 38, 38, 0.12); color: var(--vc-mal); font-size: 10.5px; font-weight: 800; }
+
+.vc-chat { display: flex; flex-direction: column; gap: 8px; max-height: 520px; margin: 8px 0 0; padding: 0 4px 0 0; overflow-y: auto; list-style: none; }
+.vc-msg { max-width: 82%; padding: 8px 12px; border-radius: 14px; background: var(--vc-sup2); }
+.vc-msg p { margin: 2px 0 0; font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.vc-msg-quien { font-size: 11px; font-weight: 800; color: var(--vc-tinta3); }
+.vc-msg.is-estudiante { align-self: flex-end; background: var(--vp-marca-suave, rgba(25, 118, 210, 0.1)); border-bottom-right-radius: 4px; }
+.vc-msg.is-paciente { align-self: flex-start; border-bottom-left-radius: 4px; }
+.vc-msg.is-exploracion { align-self: center; max-width: 100%; background: transparent; border: 1px dashed var(--vc-borde); text-align: center; }
+.vc-msg.is-sistema { align-self: center; background: transparent; color: var(--vc-tinta3); }
+
+.vc-acciones { display: flex; flex-wrap: wrap; gap: 6px; }
+.vc-acciones span { padding: 3px 10px; border-radius: 999px; background: var(--vc-sup2); font-size: 12.5px; font-weight: 600; color: var(--vc-tinta2); }
+.vc-acciones span.is-paraclinico { background: rgba(124, 58, 237, 0.12); color: #7c3aed; }
+.vc-respuesta dl { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.vc-respuesta dt { font-size: 12px; font-weight: 800; color: var(--vc-tinta3); }
+.vc-respuesta dd { margin: 2px 0 0; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+
+.vc-bloqueada { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 20px; border: 1.5px dashed var(--vc-borde); border-radius: 14px; text-align: center; color: var(--vc-tinta3); }
+.vc-bloqueada h4 { margin: 0; font-size: 16px; color: var(--vc-tinta); }
+.vc-bloqueada p { margin: 0; max-width: 440px; font-size: 13.5px; line-height: 1.5; }
+
+.vc-puntaje { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.vc-puntaje-global { display: flex; align-items: baseline; gap: 4px; }
+.vc-puntaje-global strong { font-size: 44px; font-weight: 800; color: var(--vc-marca); font-variant-numeric: tabular-nums; }
+.vc-puntaje-global span { font-size: 15px; color: var(--vc-tinta3); }
+.vc-desglose { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 6px; }
+.vc-desglose div { display: grid; grid-template-columns: minmax(150px, 1.2fr) 2fr 34px; align-items: center; gap: 10px; font-size: 13px; }
+.vc-desglose small { color: var(--vc-tinta3); }
+.vc-desglose strong { text-align: right; font-variant-numeric: tabular-nums; }
+.vc-barra { height: 8px; border-radius: 999px; background: var(--vc-sup2); overflow: hidden; }
+.vc-barra i { display: block; height: 100%; border-radius: inherit; background: var(--vc-marca); }
+.vc-juicios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.vc-juicios div { display: flex; flex-direction: column; gap: 2px; }
+.vc-juicios span { font-size: 11.5px; font-weight: 700; color: var(--vc-tinta3); }
+.vc-juicios strong { font-size: 15px; }
+.vc-juicios p { margin: 2px 0 0; font-size: 13px; line-height: 1.5; color: var(--vc-tinta2); }
+
+@media (max-width: 700px) {
+  .vc-dos, .vc-hallazgos, .vc-juicios { grid-template-columns: minmax(0, 1fr); }
+  .vc-desglose div { grid-template-columns: minmax(0, 1fr) 90px 30px; }
+  .vc-msg { max-width: 92%; }
+  .vc-pestanas button { flex: 1 0 auto; padding: 0 10px; font-size: 12.5px; }
+}
