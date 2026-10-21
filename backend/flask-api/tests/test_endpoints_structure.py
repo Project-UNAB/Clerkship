@@ -183,3 +183,22 @@ def test_public_endpoints_accessible_without_auth(client):
     assert res_simulador.status_code == 200
     assert "ClinicAI UNAB" in res_simulador.get_data(as_text=True)
 
+
+
+
+def test_registro_exige_correo_institucional(client):
+    """Solo @unab.edu.co: con otro dominio se rechaza antes de crear nada."""
+    for correo in ("ana@gmail.com", "ana@unab.edu.co.falso.com", "ana@estudiantes.unab.com"):
+        res = client.post("/api/auth/register", json={
+            "role": "TEACHER", "first_name": "Ana", "last_name": "Ríos", "email": correo, "password": "Segura2026*",
+        })
+        assert res.status_code == 400, correo
+        assert "@unab.edu.co" in res.get_json()["message"]
+
+
+def test_correo_institucional_sin_importar_mayusculas():
+    from app.routes.auth import es_correo_institucional
+    assert es_correo_institucional("Ana.Rios@UNAB.edu.co")
+    assert es_correo_institucional("  ana@unab.edu.co ")
+    assert not es_correo_institucional("ana@unab.edu.co.co")
+    assert not es_correo_institucional("ana@gmail.com")

@@ -101,6 +101,15 @@ def _seconds_since_last_code(user: User, expires_field: str = "verification_code
     return VERIFICATION_CODE_TTL_MINUTES * 60 - seconds_left
 
 
+# Solo se crean cuentas con el correo institucional: ahí llegan el código de
+# verificación y los avisos por correo.
+DOMINIO_INSTITUCIONAL = "unab.edu.co"
+
+
+def es_correo_institucional(email: str) -> bool:
+    return email.strip().lower().endswith("@" + DOMINIO_INSTITUCIONAL)
+
+
 @auth_bp.post("/register")
 @limiter.limit("5 per hour")
 @validate_body(RegisterRequest)
@@ -109,6 +118,13 @@ def register(validated_body: RegisterRequest):
     role = validated_body.role
     password = validated_body.password
     student_code = validated_body.student_code
+
+    if not es_correo_institucional(email):
+        return jsonify({
+            "error": "Bad Request",
+            "message": f"Usa tu correo institucional @{DOMINIO_INSTITUCIONAL} para crear la cuenta.",
+            "status_code": 400
+        }), 400
 
     if role == "STUDENT":
         if not student_code or not student_code.strip():

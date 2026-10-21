@@ -190,6 +190,12 @@
   margin-top: 4px;
 }
 
+.auth-field-ayuda {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--ink3, #64748b);
+}
+
 /* Fila de dos campos lado a lado (Nombre + Apellido) */
 .auth-field-row {
   display: flex;

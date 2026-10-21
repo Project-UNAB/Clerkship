@@ -13,7 +13,7 @@ class RegisterRequest(BaseSchema):
     role: Literal["STUDENT", "TEACHER"]
     first_name: str = Field(..., min_length=1, max_length=100, description="Nombre(s) del usuario")
     last_name: str = Field(..., min_length=1, max_length=100, description="Apellido(s) del usuario")
-    email: EmailStr = Field(..., description="Correo institucional o personal")
+    email: EmailStr = Field(..., description="Correo institucional @unab.edu.co (obligatorio)")
     password: str = Field(..., min_length=8, description="Contraseña de al menos 8 caracteres")
     student_code: Optional[str] = Field(None, max_length=50, description="Código de estudiante si aplica")
 

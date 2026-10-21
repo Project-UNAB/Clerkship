@@ -45,8 +45,10 @@ function validate(form: FormState): FormErrors {
     errors.lastName = 'El apellido es requerido.';
   if (!form.email.trim())
     errors.email = 'El correo es requerido.';
-  else if (!emailRx.test(form.email))
+  else if (!emailRx.test(form.email.trim()))
     errors.email = 'Ingresa un correo electrónico válido.';
+  else if (!form.email.trim().toLowerCase().endsWith('@unab.edu.co'))
+    errors.email = 'Usa tu correo institucional @unab.edu.co.';
   if (!form.password)
     errors.password = 'La contraseña es requerida.';
   else if (form.password.length < 8)
@@ -320,12 +322,15 @@ export default function RegisterPage() {
                       id="auth-email"
                       type="email"
                       className="auth-input"
-                      placeholder="correo@institucion.edu.co"
+                      placeholder="tucorreo@unab.edu.co"
                       value={form.email}
                       onChange={e => patch('email', e.target.value)}
                       autoComplete="email"
                     />
                   </div>
+                  {!errors.email && (
+                    <p className="auth-field-ayuda">Solo correos @unab.edu.co. Ahí te llegará el código de verificación.</p>
+                  )}
                   <AnimatePresence>
                     {errors.email && (
                       <motion.p className="auth-field-error"
