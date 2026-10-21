@@ -9,7 +9,7 @@ desactualizado o si aparece una ruta sin control.
   rol del token sea el rol actual del usuario.
 - **Propiedad**: cómo se comprueba que el recurso de la URL le pertenece a quien lo pide.
 
-Total: **190** rutas — 158 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 18 públicas, **0 sin control**.
+Total: **192** rutas — 160 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 18 públicas, **0 sin control**.
 
 ## Públicas a propósito
 
@@ -67,6 +67,7 @@ Total: **190** rutas — 158 con rol y propiedad, 14 con sesión pero sin restri
 | DELETE | `/api/admin/comunidad/posts/<post_id>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | GET | `/api/admin/estadisticas` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | GET | `/api/admin/feedback/<pestana>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
+| GET | `/api/admin/feedback/<pestana>/resumen` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | GET | `/api/admin/tokens` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | GET | `/api/admin/usuarios` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
 | PATCH | `/api/admin/usuarios/<user_id>` | ADMIN | No aplica: el rol ADMIN administra toda la plataforma |
@@ -266,6 +267,7 @@ Total: **190** rutas — 158 con rol y propiedad, 14 con sesión pero sin restri
 
 | Método | Ruta | Rol | Propiedad |
 |---|---|---|---|
+| GET | `/api/feedback/<pestana>/mia` | Cualquiera con sesión | Solo datos del propio usuario |
 | POST | `/api/feedback/biblioteca` | Cualquiera con sesión | Solo datos del propio usuario |
 | POST | `/api/feedback/casos` | Cualquiera con sesión | Solo datos del propio usuario |
 | POST | `/api/feedback/historial` | Cualquiera con sesión | Solo datos del propio usuario |

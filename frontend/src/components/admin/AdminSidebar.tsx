@@ -41,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'tokens', label: 'Tokens de agentes', icon: Bot, group: 'principal' },
   { id: 'biblioteca', label: 'Biblioteca', icon: BookOpen, group: 'contenido' },
   { id: 'comunidad', label: 'Comunidad', icon: MessageSquare, group: 'contenido' },
-  { id: 'feedback', label: 'Retroalimentación', icon: HelpCircle, group: 'auditoria' },
+  { id: 'feedback', label: 'Opinión de usuarios', icon: HelpCircle, group: 'auditoria' },
   { id: 'validacion', label: 'Validación expertos', icon: ShieldCheck, group: 'auditoria' },
 ];
 

@@ -2662,6 +2662,31 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+  /api/admin/feedback/{pestana}/resumen:
+    get:
+      tags:
+      - Administración
+      summary: Resultados de la «Opinión» (1 a 5) de una pestaña
+      description: Promedio y distribución por pregunta, promedio general y comentarios.
+      operationId: adminResumenFeedback
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: pestana
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [inicio, casos, historial, biblioteca]
+      responses:
+        '200':
+          description: Resumen de resultados
+        '404':
+          description: Pestaña no válida
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
   /api/notificaciones:
     get:
       tags:
@@ -4826,6 +4851,28 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
         '404':
           description: No encontrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/feedback/{pestana}/mia:
+    get:
+      tags:
+      - Retroalimentación
+      summary: La respuesta del usuario en esa pestaña (para mostrarla y actualizarla)
+      operationId: miFeedback
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: pestana
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [inicio, casos, historial, biblioteca]
+      responses:
+        '200':
+          description: La respuesta guardada, o respuesta nula si aún no respondió
+        '404':
+          description: Pestaña no válida
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   /api/feedback/inicio:

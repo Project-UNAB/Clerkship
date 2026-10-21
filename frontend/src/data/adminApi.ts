@@ -66,6 +66,19 @@ export function listarFeedbackAdmin(pestana: string): Promise<{ respuestas: Reco
   return apiFetch(`/api/admin/feedback/${pestana}`);
 }
 
+export interface ResumenOpinion {
+  pestana: string;
+  total: number;
+  promedio_general: number | null;
+  preguntas: { key: string; promedio: number | null; distribucion: Record<'1' | '2' | '3' | '4' | '5', number>; respuestas: number }[];
+  comentarios: { texto: string; usuario: string | null; fecha: string | null }[];
+}
+
+/** Resultados de la «Opinión» (1 a 5) de una pestaña, ya calculados en el servidor. */
+export function resumenFeedbackAdmin(pestana: string): Promise<ResumenOpinion> {
+  return apiFetch(`/api/admin/feedback/${pestana}/resumen`);
+}
+
 export function listarValidacionAdmin(pestana: string): Promise<{ respuestas: Record<string, any>[] }> {
   return apiFetch(`/api/admin/validacion/${pestana}`);
 }

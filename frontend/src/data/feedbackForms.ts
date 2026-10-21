@@ -5,6 +5,15 @@
  */
 import type { PestanaFeedback } from './feedbackApi';
 
+/** Escala de 1 a 5 con su significado: así nadie duda de qué es un «3». */
+export const ESCALA_OPINION = [
+  { valor: 1, texto: 'Muy malo' },
+  { valor: 2, texto: 'Malo' },
+  { valor: 3, texto: 'Regular' },
+  { valor: 4, texto: 'Bueno' },
+  { valor: 5, texto: 'Excelente' },
+];
+
 export interface PreguntaFeedback {
   key: string;
   label: string;

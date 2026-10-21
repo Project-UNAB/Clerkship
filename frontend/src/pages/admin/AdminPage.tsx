@@ -9,7 +9,7 @@ import {
   getEstadisticas,
   listarPostsAdmin, borrarPostAdmin,
   borrarArticuloAdmin,
-  listarFeedbackAdmin, listarValidacionAdmin,
+  listarValidacionAdmin,
   getEstadisticasTokens,
   type Estadisticas, type EstadisticasTokens,
 } from '../../data/adminApi';
@@ -26,6 +26,7 @@ import { formatFileSize } from '../../utils/fileUpload';
 import AnalyticsDashboard from '../../components/admin/AnalyticsDashboard';
 import TokensDashboard from '../../components/admin/TokensDashboard';
 import UsersManagementDashboard from '../../components/admin/UsersManagementDashboard';
+import ResultadosOpinion from '../../components/admin/ResultadosOpinion';
 import AdminSidebar, { type AdminTab } from '../../components/admin/AdminSidebar';
 import PublicarLibroModal, { type FuentePdf } from '../../components/biblioteca/PublicarLibroModal';
 import '../../styles/admin.css';
@@ -479,28 +480,6 @@ function PanelBiblioteca() {
   );
 }
 
-function PanelFeedback() {
-  const [pestana, setPestana] = useState<typeof PESTANAS[number]>('inicio');
-  const [filas, setFilas] = useState<Record<string, any>[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    listarFeedbackAdmin(pestana).then(r => setFilas(r.respuestas)).catch(err => setError(mainAuthErrorMessage(err)));
-  }, [pestana]);
-
-  return (
-    <div>
-      <div className="adm-toolbar">
-        {PESTANAS.map(p => (
-          <button key={p} type="button" className={`adm-btn adm-btn-sm ${pestana === p ? 'adm-btn-active' : ''}`} onClick={() => setPestana(p)}>{p}</button>
-        ))}
-      </div>
-      {error && <p className="adm-error">{error}</p>}
-      <TablaGenerica filas={filas} />
-    </div>
-  );
-}
-
 function PanelValidacion() {
   const [pestana, setPestana] = useState<typeof PESTANAS[number]>('inicio');
   const [filas, setFilas] = useState<Record<string, any>[]>([]);
@@ -590,7 +569,7 @@ export default function AdminPage() {
         {tab === 'usuarios' && <PanelUsuarios />}
         {tab === 'comunidad' && <PanelComunidad />}
         {tab === 'biblioteca' && <PanelBiblioteca />}
-        {tab === 'feedback' && <PanelFeedback />}
+        {tab === 'feedback' && <ResultadosOpinion />}
         {tab === 'validacion' && <PanelValidacion />}
         {tab === 'tokens' && <PanelTokens />}
       </main>

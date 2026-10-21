@@ -291,8 +291,46 @@ def listar_feedback_admin(pestana):
     modelo = FEEDBACK_MODELOS.get(pestana)
     if modelo is None:
         return _error(404, "Pestaña no válida.")
-    filas = modelo.query.order_by(modelo.created_at.desc()).limit(200).all()
+    filas = modelo.query.order_by(modelo.created_at.desc()).limit(5000).all()
     return jsonify({"respuestas": [_fila_a_dict(f) for f in filas]}), 200
+
+
+def resumir_opinion(claves, filas) -> dict:
+    """Promedio y distribución (1 a 5) de cada pregunta, promedio general y comentarios."""
+    preguntas = []
+    for clave in claves:
+        distribucion = {str(n): 0 for n in range(1, 6)}
+        for f in filas:
+            valor = getattr(f, clave, None)
+            if isinstance(valor, int) and 1 <= valor <= 5:
+                distribucion[str(valor)] += 1
+        respondidas = sum(distribucion.values())
+        promedio = sum(int(n) * c for n, c in distribucion.items()) / respondidas if respondidas else None
+        preguntas.append({"key": clave, "promedio": round(promedio, 2) if promedio is not None else None,
+                          "distribucion": distribucion, "respuestas": respondidas})
+    con_promedio = [p["promedio"] for p in preguntas if p["promedio"] is not None]
+    comentarios = sorted((f for f in filas if (f.comentario or "").strip()),
+                         key=lambda f: f.created_at.isoformat() if f.created_at else "", reverse=True)
+    return {
+        "total": len(filas),
+        "promedio_general": round(sum(con_promedio) / len(con_promedio), 2) if con_promedio else None,
+        "preguntas": preguntas,
+        "comentarios": [{"texto": f.comentario, "usuario": f.id_usuario,
+                         "fecha": f.created_at.isoformat() if f.created_at else None} for f in comentarios[:200]],
+    }
+
+
+@admin_bp.get("/feedback/<pestana>/resumen")
+@role_required("ADMIN")
+def resumen_feedback_admin(pestana):
+    """Resultados de la «Opinión» de una pestaña: promedio y distribución (1 a 5)
+    por pregunta, promedio general y los comentarios, del más reciente al más viejo."""
+    from app.routes.feedback import preguntas_de
+
+    modelo = FEEDBACK_MODELOS.get(pestana)
+    if modelo is None:
+        return _error(404, "Pestaña no válida.")
+    return jsonify({"pestana": pestana, **resumir_opinion(preguntas_de(modelo), modelo.query.all())}), 200
 
 
 @admin_bp.get("/auditoria")
@@ -328,7 +366,7 @@ def listar_validacion_admin(pestana):
     modelo = VALIDACION_MODELOS.get(pestana)
     if modelo is None:
         return _error(404, "Pestaña no válida.")
-    filas = modelo.query.order_by(modelo.created_at.desc()).limit(200).all()
+    filas = modelo.query.order_by(modelo.created_at.desc()).limit(5000).all()
     return jsonify({"respuestas": [_fila_a_dict(f) for f in filas]}), 200
 
 
