@@ -97,13 +97,6 @@
   outline-offset: -2px;
 }
 .nv-icono-tema { display: inline-grid; place-items: center; }
-.nv .nv-campana, .nv-barra-movil .nv-campana {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  color: var(--nv-tinta2);
-}
-.nv .nv-campana:hover, .nv-barra-movil .nv-campana:hover { background: var(--nv-hover); color: var(--nv-tinta); }
 
 /* ── Cuerpo: grupos y secciones ── */
 .nv-cuerpo {
@@ -115,7 +108,8 @@
   scrollbar-width: thin;
   scrollbar-color: var(--nv-borde) transparent;
 }
-.nv.is-cerrada .nv-cuerpo { padding: 6px 0 12px; }
+.nv.is-cerrada .nv-cuerpo { display: flex; flex-direction: column; align-items: center; padding: 6px 0 12px; }
+.nv.is-cerrada .nv-grupo { width: 100%; }
 .nv-grupo + .nv-grupo { margin-top: 14px; }
 .nv-grupo-titulo {
   display: block;

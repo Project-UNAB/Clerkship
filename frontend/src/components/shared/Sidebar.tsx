@@ -290,6 +290,11 @@ export default function Sidebar() {
     setTip({ texto, x: r.right + 12, y: r.top + r.height / 2 });
   };
   const ocultarTip = () => setTip(null);
+  const tipEn = (texto: string) => (el: HTMLElement | null) => {
+    if (!el || isExpanded || profileOpen || settingsOpen) { setTip(null); return; }
+    const r = el.getBoundingClientRect();
+    setTip({ texto, x: r.right + 12, y: r.top + r.height / 2 });
+  };
 
   const transicion = sinMovimiento ? { duration: 0 } : { type: 'spring' as const, stiffness: 420, damping: 36 };
   const inicial = (currentUser?.name || 'U').trim().charAt(0).toUpperCase();
@@ -537,7 +542,6 @@ export default function Sidebar() {
           </button>
           {isExpanded && (
             <div className="nv-cabeza-acciones">
-              <NotificacionesCampana className="nv-campana" />
               <button type="button" className="nv-icono" onClick={() => setIsExpanded(false)} aria-label="Cerrar la barra lateral" title="Cerrar la barra lateral">
                 <PanelLeftClose size={17} strokeWidth={1.8} />
               </button>
@@ -551,11 +555,13 @@ export default function Sidebar() {
               onMouseEnter={mostrarTip('Abrir la barra lateral')} onMouseLeave={ocultarTip}>
               <PanelLeftOpen size={17} strokeWidth={1.8} />
             </button>
-            <NotificacionesCampana className="nv-campana" />
           </div>
         )}
 
-        <nav className="nv-cuerpo" aria-label="Secciones">{renderNav(false)}</nav>
+        <nav className="nv-cuerpo" aria-label="Secciones">
+          <NotificacionesCampana variante={isExpanded ? 'fila' : 'fila-compacta'} onHover={tipEn('Notificaciones')} />
+          {renderNav(false)}
+        </nav>
 
         <div className="nv-pie">
           {isExpanded ? (

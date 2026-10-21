@@ -1,32 +1,61 @@
-/* Campana de notificaciones y su panel. */
+/* Notificaciones: el botón (campana o fila del menú lateral) y su panel flotante.
+   Paleta de Clerkship: azul #1976D2 / #E3F2FD (modo oscuro #42A5F5). */
+
+.noti-campana, .noti-panel, .noti-fila {
+  --nt-fondo: #ffffff;
+  --nt-fondo2: #f6f8fa;
+  --nt-borde: #e7ebf0;
+  --nt-tinta: #1a1a1a;
+  --nt-tinta2: #4b5563;
+  --nt-tinta3: #9aa3ae;
+  --nt-hover: #f3f5f8;
+  --nt-marca: #1976d2;
+  --nt-marca-suave: #e3f2fd;
+  --nt-rojo: #e53935;
+  --nt-sombra: 0 18px 48px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+[data-theme="dark"] .noti-campana, [data-theme="dark"] .noti-panel, [data-theme="dark"] .noti-fila {
+  --nt-fondo: #11161d;
+  --nt-fondo2: #0d1117;
+  --nt-borde: #1f2937;
+  --nt-tinta: #e6edf3;
+  --nt-tinta2: #a3afbd;
+  --nt-tinta3: #66727f;
+  --nt-hover: rgba(255, 255, 255, 0.05);
+  --nt-marca: #42a5f5;
+  --nt-marca-suave: rgba(66, 165, 245, 0.13);
+  --nt-rojo: #ef5350;
+  --nt-sombra: 0 22px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* ── Campana (barra superior del celular) ── */
 .noti-campana {
   position: relative;
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
-  color: var(--ink2, #475569);
+  color: var(--nt-tinta2);
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-.noti-campana:hover { background: rgba(226, 232, 240, 0.8); color: var(--ink, #0f172a); }
-.noti-campana:focus-visible { outline: 2px solid #0284c7; outline-offset: 2px; }
-[data-theme="dark"] .noti-campana { color: #94a3b8; }
-[data-theme="dark"] .noti-campana:hover { background: rgba(255, 255, 255, 0.08); color: #f8fafc; }
+.noti-campana:hover, .noti-campana[aria-expanded="true"] { background: var(--nt-hover); color: var(--nt-tinta); }
+.noti-campana:focus-visible { outline: 2px solid var(--nt-marca); outline-offset: 2px; }
 
 .noti-globo {
   position: absolute;
-  top: -3px;
-  right: -4px;
+  top: 2px;
+  right: 2px;
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: #dc2626;
+  background: var(--nt-rojo);
+  box-shadow: 0 0 0 2px var(--nv-fondo, var(--nt-fondo));
   color: #fff;
   font-size: 10px;
   font-weight: 800;
@@ -34,132 +63,293 @@
   text-align: center;
 }
 
-.noti-fondo {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: rgba(15, 23, 42, 0.25);
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 56px 16px 16px;
+/* ── Fila del menú lateral ── */
+.noti-fila-icono { position: relative; }
+.noti-fila .noti-globo { top: -6px; right: -8px; }
+.noti-fila.is-abierta { color: var(--nt-marca); background: var(--nt-marca-suave); }
+.noti-contador {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--nt-rojo);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
+.nv.is-cerrada .noti-fila { width: 44px; height: 44px; justify-content: center; padding: 0; border-radius: 12px; }
+.nv .noti-fila { margin-bottom: 14px; }
+
+/* ── Capa y panel ── */
+.noti-capa { position: fixed; inset: 0; z-index: 1200; }
 .noti-panel {
-  width: min(380px, 100%);
-  max-height: min(560px, calc(100vh - 80px));
+  position: fixed;
   display: flex;
   flex-direction: column;
-  background: var(--surface, #fff);
-  color: var(--ink, #0f172a);
-  border: 1px solid var(--border, #e2e8f0);
+  width: 400px;
+  max-height: 600px;
+  overflow: hidden;
+  border: 1px solid var(--nt-borde);
   border-radius: 16px;
-  box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.35);
+  background: var(--nt-fondo);
+  color: var(--nt-tinta);
+  box-shadow: var(--nt-sombra);
+  font-family: var(--font-family, 'Outfit', system-ui, sans-serif);
+  transform-origin: top left;
+}
+
+.noti-cabecera { display: flex; flex-direction: column; gap: 10px; padding: 16px 16px 12px; border-bottom: 1px solid var(--nt-borde); }
+.noti-cabecera-fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.noti-cabecera h3 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.noti-nuevas {
+  margin-right: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--nt-marca-suave);
+  color: var(--nt-marca);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.noti-icono-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--nt-tinta3);
+  cursor: pointer;
+}
+.noti-nuevas + .noti-icono-btn { margin-left: 0; }
+.noti-icono-btn:hover { background: var(--nt-hover); color: var(--nt-tinta); }
+
+.noti-filtro { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--nt-hover); }
+.noti-filtro button {
+  position: relative;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--nt-tinta3);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  isolation: isolate;
+}
+.noti-filtro button.is-activo { color: var(--nt-tinta); }
+.noti-filtro-pastilla {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 7px;
+  background: var(--nt-fondo);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+[data-theme="dark"] .noti-filtro-pastilla { background: #1f2937; box-shadow: none; }
+.noti-enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--nt-marca);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.noti-enlace:hover { background: var(--nt-marca-suave); }
+
+/* Lista */
+.noti-lista { flex: 1; min-height: 120px; overflow-y: auto; padding: 6px 8px 10px; scrollbar-width: thin; }
+.noti-grupo + .noti-grupo { margin-top: 6px; }
+.noti-grupo-titulo {
+  display: block;
+  padding: 10px 10px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--nt-tinta3);
+}
+.noti-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 28px 10px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.noti-item.sin-enlace { cursor: default; }
+.noti-item:hover { background: var(--nt-hover); }
+.noti-item:focus-visible { outline: 2px solid var(--nt-marca); outline-offset: -2px; }
+
+.noti-icono {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--nt-marca-suave);
+  color: var(--nt-marca);
+}
+.noti-icono-assignment_graded { background: color-mix(in srgb, #2e7d32 12%, transparent); color: #2e7d32; }
+.noti-icono-due_soon { background: color-mix(in srgb, #ef6c00 13%, transparent); color: #e65100; }
+.noti-icono-announcement { background: color-mix(in srgb, #7c3aed 12%, transparent); color: #7c3aed; }
+[data-theme="dark"] .noti-icono-assignment_graded { color: #81c784; }
+[data-theme="dark"] .noti-icono-due_soon { color: #ffb74d; }
+[data-theme="dark"] .noti-icono-announcement { color: #b39ddb; }
+
+.noti-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.noti-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.noti-tipo { font-size: 11.5px; font-weight: 600; color: var(--nt-tinta3); }
+.noti-fecha { font-size: 11.5px; color: var(--nt-tinta3); white-space: nowrap; }
+.noti-titulo { font-size: 13.5px; font-weight: 500; line-height: 1.35; color: var(--nt-tinta2); overflow-wrap: anywhere; }
+.noti-item.is-nueva .noti-titulo { font-weight: 650; color: var(--nt-tinta); }
+.noti-cuerpo {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--nt-tinta3);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.noti-cabecera {
+.noti-cierre {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  margin-top: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #ef6c00 11%, transparent);
+  color: #e65100;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+[data-theme="dark"] .noti-cierre { color: #ffb74d; }
+.noti-cierre.is-cerrada { background: var(--nt-hover); color: var(--nt-tinta3); }
+.noti-punto {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--nt-marca);
+  box-shadow: 0 0 0 3px var(--nt-marca-suave);
+}
+
+/* Estados: cargando, vacío, error */
+.noti-esqueleto { display: flex; flex-direction: column; gap: 6px; padding: 8px 2px; }
+.noti-esqueleto div { display: flex; gap: 12px; padding: 8px; }
+.noti-esqueleto span { width: 36px; height: 36px; flex: none; border-radius: 10px; }
+.noti-esqueleto p { flex: 1; display: flex; flex-direction: column; gap: 8px; margin: 2px 0 0; }
+.noti-esqueleto i { display: block; height: 10px; border-radius: 5px; }
+.noti-esqueleto i:last-child { width: 60%; }
+.noti-esqueleto span, .noti-esqueleto i {
+  background: linear-gradient(90deg, var(--nt-hover) 0%, var(--nt-borde) 50%, var(--nt-hover) 100%);
+  background-size: 200% 100%;
+  animation: noti-brillo 1.2s ease-in-out infinite;
+}
+@keyframes noti-brillo { to { background-position: -200% 0; } }
+.noti-vacio { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 32px 24px 28px; text-align: center; }
+.noti-vacio > span {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+  background: var(--nt-marca-suave);
+  color: var(--nt-marca);
+}
+.noti-vacio strong { font-size: 14px; color: var(--nt-tinta); }
+.noti-vacio p { margin: 0; max-width: 280px; font-size: 12.5px; line-height: 1.5; color: var(--nt-tinta3); }
+.noti-error { margin: 8px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--nt-rojo) 10%, transparent); font-size: 13px; color: var(--nt-rojo); }
+
+/* Pie: aviso por correo */
+.noti-pie { padding: 8px; border-top: 1px solid var(--nt-borde); background: var(--nt-fondo2); }
+.noti-preferencia {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border, #e2e8f0);
-}
-.noti-cabecera h3 { margin: 0; font-size: 15px; font-weight: 800; }
-.noti-cabecera-acciones { display: flex; align-items: center; gap: 8px; }
-.noti-enlace {
-  border: 0;
-  background: none;
-  padding: 0;
-  color: #0284c7;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.noti-enlace:hover { text-decoration: underline; }
-.noti-cerrar {
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ink2, #475569);
-  cursor: pointer;
-}
-.noti-cerrar:hover { background: var(--surface2, #f1f5f9); }
-
-.noti-lista { flex: 1; overflow-y: auto; min-height: 80px; }
-.noti-vacio { margin: 0; padding: 26px 16px; text-align: center; font-size: 13px; color: var(--ink3, #64748b); }
-.noti-error { margin: 0; padding: 14px 16px; font-size: 13px; color: #dc2626; }
-
-.noti-item {
+  gap: 12px;
   width: 100%;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 11px 14px;
+  padding: 8px 10px;
   border: 0;
-  border-bottom: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.noti-item:last-child { border-bottom: 0; }
-.noti-item:hover { background: var(--surface2, #f8fafc); }
-.noti-item.is-nueva { background: rgba(2, 132, 199, 0.06); }
-.noti-item.is-nueva .noti-titulo { font-weight: 800; }
-
-.noti-icono {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9px;
-  background: rgba(2, 132, 199, 0.12);
-  color: #0284c7;
+.noti-preferencia:hover { background: var(--nt-hover); }
+.noti-preferencia-txt { display: flex; align-items: flex-start; gap: 10px; color: var(--nt-tinta3); }
+.noti-preferencia-txt > span { display: flex; flex-direction: column; gap: 1px; }
+.noti-preferencia-txt strong { font-size: 13px; font-weight: 600; color: var(--nt-tinta); }
+.noti-preferencia-txt small { font-size: 11.5px; color: var(--nt-tinta3); }
+.noti-interruptor {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--nt-borde);
+  transition: background 0.2s ease;
 }
-.noti-icono-assignment_graded { background: rgba(5, 150, 105, 0.12); color: #059669; }
-.noti-icono-due_soon { background: rgba(217, 119, 6, 0.14); color: #b45309; }
-.noti-icono-announcement { background: rgba(124, 58, 237, 0.12); color: #7c3aed; }
-
-.noti-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.noti-titulo { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
-.noti-cuerpo { font-size: 12px; color: var(--ink2, #475569); overflow-wrap: anywhere; }
-.noti-fecha { font-size: 11px; color: var(--ink3, #64748b); }
-.noti-punto { width: 8px; height: 8px; margin-top: 6px; flex-shrink: 0; border-radius: 50%; background: #0284c7; }
-
-.noti-pie { border-top: 1px solid var(--border, #e2e8f0); padding: 8px 10px; }
-.noti-preferencia {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 6px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
+.noti-interruptor::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.noti-preferencia:hover { background: var(--surface2, #f1f5f9); }
+.noti-interruptor.is-on { background: var(--nt-marca); }
+.noti-interruptor.is-on::after { transform: translateX(14px); }
 
+/* Pantallas angostas: hoja bajo la barra superior */
 @media (max-width: 1024px) {
-  .noti-fondo { justify-content: flex-end; padding-top: 62px; }
+  .noti-capa { background: rgba(15, 23, 42, 0.35); }
+  .noti-panel {
+    top: 64px !important;
+    left: 8px !important;
+    right: 8px;
+    width: auto;
+    max-height: calc(100dvh - 80px) !important;
+    transform-origin: top right;
+  }
 }
 
-/* En la barra superior del celular la campana va pegada al botón del menú. */
-.noti-campana-movil { margin-left: auto; margin-right: 6px; }
-
-/* En la cabecera de la barra lateral: la campana a la derecha, junto al botón de colapsar. */
-.sb-head-expanded .noti-campana { margin-left: auto; margin-right: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .noti-esqueleto span, .noti-esqueleto i { animation: none; }
+  .noti-item, .noti-interruptor, .noti-interruptor::after { transition: none; }
+}
