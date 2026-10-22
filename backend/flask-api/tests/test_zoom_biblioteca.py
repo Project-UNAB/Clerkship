@@ -33,6 +33,7 @@ def test_guardar_el_zoom(app, client, monkeypatch):
         token = create_access_token(identity=str(u.id), additional_claims={"role": "STUDENT"})
         monkeypatch.setattr(usuarios_routes, "get_current_user", lambda: u)
         monkeypatch.setattr(usuarios_routes.db.session, "commit", lambda: None)
+        monkeypatch.setattr(usuarios_routes, "_ficha_de", lambda user: (None, None))
         res = client.patch("/api/usuarios/me", json={"biblioteca_zoom": 140}, headers={"Authorization": f"Bearer {token}"})
     assert res.status_code == 200
     assert u.library_zoom == 140 and res.get_json()["biblioteca_zoom"] == 140

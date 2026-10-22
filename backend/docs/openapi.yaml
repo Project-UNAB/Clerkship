@@ -506,15 +506,107 @@ paths:
                   maximum: 200
                   description: Zoom de la biblioteca en porcentaje (tamaño de los libros del estante). Sin guardar, 130.
                   example: 125
+                semestre:
+                  type: integer
+                  minimum: 1
+                  maximum: 14
+                  description: Solo estudiantes. Semestre que cursa.
+                  example: 7
+                departamento:
+                  type: string
+                  maxLength: 150
+                  description: Solo docentes. Cadena vacía para borrarlo.
+                  example: Gastroenterología
       responses:
         '200':
-          description: Perfil actualizado
+          description: Perfil actualizado (mismos datos que GET /api/usuarios/me/perfil)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Dato inválido, o semestre/departamento que no corresponde al rol
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/usuarios/me/perfil:
+    get:
+      tags:
+      - Usuarios
+      summary: Ver mi perfil
+      description: Datos de la cuenta más la ficha académica (código y semestre del estudiante, o departamento del docente) y la fecha de alta.
+      operationId: getMyProfile
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Perfil del usuario de la sesión
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/UserResponse'
+                - type: object
+                  properties:
+                    created_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    estudiante:
+                      type: object
+                      nullable: true
+                      properties:
+                        codigo:
+                          type: string
+                        semestre:
+                          type: integer
+                          nullable: true
+                    docente:
+                      type: object
+                      nullable: true
+                      properties:
+                        departamento:
+                          type: string
+                          nullable: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/usuarios/me/exportar:
+    get:
+      tags:
+      - Usuarios
+      summary: Descargar mis datos
+      description: Copia en JSON de los datos personales del usuario (perfil, cursos, simulaciones y entregas), como adjunto. Derecho de acceso de la Ley 1581 de 2012. No incluye contraseñas ni archivos. Máximo 10 por hora.
+      operationId: exportMyData
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Archivo mis-datos-clerkship.json
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generado_en:
+                    type: string
+                    format: date-time
+                  perfil:
+                    type: object
+                  cursos:
+                    type: array
+                    items:
+                      type: object
+                  simulaciones:
+                    type: array
+                    items:
+                      type: object
+                  entregas:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Demasiadas descargas en la última hora
   /api/usuarios/uso-almacenamiento:
     get:
       tags:

@@ -9,7 +9,7 @@ desactualizado o si aparece una ruta sin control.
   rol del token sea el rol actual del usuario.
 - **Propiedad**: cómo se comprueba que el recurso de la URL le pertenece a quien lo pide.
 
-Total: **214** rutas — 174 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 26 públicas, **0 sin control**.
+Total: **216** rutas — 176 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 26 públicas, **0 sin control**.
 
 ## Públicas a propósito
 
@@ -338,4 +338,6 @@ Total: **214** rutas — 174 con rol y propiedad, 14 con sesión pero sin restri
 |---|---|---|---|
 | POST | `/api/usuarios/consentimiento` | Cualquiera con sesión | Solo el propio usuario: registra su consentimiento (identidad tomada del token) |
 | PATCH | `/api/usuarios/me` | Cualquiera con sesión | Solo datos del propio usuario |
+| GET | `/api/usuarios/me/exportar` | Cualquiera con sesión | Solo datos del propio usuario |
+| GET | `/api/usuarios/me/perfil` | Cualquiera con sesión | Solo datos del propio usuario |
 | GET | `/api/usuarios/uso-almacenamiento` | Cualquiera con sesión | Solo datos del propio usuario |
