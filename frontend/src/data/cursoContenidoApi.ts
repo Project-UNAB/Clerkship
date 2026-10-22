@@ -39,6 +39,16 @@ export interface CourseContentItem {
   /** Rúbrica de la tarea; vacía = se califica con una nota única. */
   rubric?: CriterioRubrica[];
   reglas?: ReglasTarea;
+  /** Solo al estudiante, en la lista del curso: su entrega (null si no ha entregado). */
+  mi_entrega?: {
+    submitted_at: string | null;
+    is_late: boolean;
+    version: number;
+    score: number | null;
+    calificada: boolean;
+  } | null;
+  /** Solo al docente, en la lista del curso: cuántas entregas hay y cuántas ya calificó. */
+  entregas?: { total: number; calificadas: number };
   // QUIZ (open_at/due_at de arriba se reutilizan como ventana de disponibilidad)
   time_limit_minutes?: number | null;
   max_attempts?: number | null;
@@ -360,4 +370,54 @@ export function enlaceArchivoEntrega(
   return apiFetch(
     `/api/cursos/${courseId}/bloques/${blockId}/contenido/${itemId}/entregas/${submissionId}/archivos/${fileId}/descarga`,
   );
+}
+
+// ── Comentarios privados de una tarea (hilo docente ↔ estudiante) ──
+
+export interface ComentarioTarea {
+  id: string;
+  student_id: string;
+  author_id: string;
+  author_name: string;
+  author_role: 'STUDENT' | 'TEACHER' | 'ADMIN' | null;
+  author_avatar: string | null;
+  body: string;
+  created_at: string | null;
+  es_mio: boolean;
+}
+
+export interface HiloTarea {
+  student_id: string;
+  student_name: string;
+  total: number;
+  ultimo_at: string | null;
+}
+
+const rutaComentarios = (courseId: string, blockId: string, itemId: string) =>
+  `/api/cursos/${courseId}/bloques/${blockId}/contenido/${itemId}/comentarios`;
+
+/** El hilo del estudiante (si lo pide un docente, el del estudiante indicado). */
+export function listarComentariosTarea(
+  courseId: string, blockId: string, itemId: string, estudianteId?: string,
+): Promise<{ comentarios: ComentarioTarea[] }> {
+  const q = estudianteId ? `?estudiante=${encodeURIComponent(estudianteId)}` : '';
+  return apiFetch(`${rutaComentarios(courseId, blockId, itemId)}${q}`);
+}
+
+/** Docente: la lista de hilos de la tarea (quién escribió y cuándo). */
+export function listarHilosTarea(courseId: string, blockId: string, itemId: string): Promise<{ hilos: HiloTarea[] }> {
+  return apiFetch(rutaComentarios(courseId, blockId, itemId));
+}
+
+export function comentarTarea(
+  courseId: string, blockId: string, itemId: string, body: string, estudianteId?: string,
+): Promise<{ comentario: ComentarioTarea }> {
+  return apiFetch(rutaComentarios(courseId, blockId, itemId), {
+    method: 'POST',
+    body: JSON.stringify(estudianteId ? { body, estudiante_id: estudianteId } : { body }),
+  });
+}
+
+export function borrarComentarioTarea(courseId: string, blockId: string, itemId: string, commentId: string): Promise<{ ok: boolean }> {
+  return apiFetch(`${rutaComentarios(courseId, blockId, itemId)}/${commentId}`, { method: 'DELETE' });
 }

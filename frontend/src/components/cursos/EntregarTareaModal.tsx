@@ -1,5 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { X, Loader2, Upload, FileText, Download, Clock, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import {
+  Loader2, Upload, FileText, Download, Clock, AlertTriangle, CheckCircle2, X, ClipboardList,
+  History, MessageSquare, Award, CalendarClock, Paperclip, Hourglass,
+} from 'lucide-react';
 import {
   enlaceArchivoEntrega, entregarTarea, miEntrega,
   type ArchivoEntregado, type CourseContentItem, type EntregaTarea, type ReglasTarea,
@@ -7,6 +11,8 @@ import {
 import { ApiError } from '../../data/apiClient';
 import { readFileAsBase64, formatFileSize } from '../../utils/fileUpload';
 import { formatFechaHora, formatRestante, listaExtensiones, validarArchivoLocal } from '../../utils/tareas';
+import VistaCompleta from './VistaCompleta';
+import ComentariosTarea from './ComentariosTarea';
 
 interface Props {
   courseId: string;
@@ -48,7 +54,23 @@ function useCuentaRegresiva(reglas: ReglasTarea | null, alLlegarACero: () => voi
   return segundos;
 }
 
+function Archivo({ archivo, onAbrir }: { archivo: ArchivoEntregado; onAbrir: () => void }) {
+  const ext = archivo.nombre.split('.').pop()?.toUpperCase().slice(0, 4) || 'DOC';
+  return (
+    <button type="button" className="av-archivo" onClick={onAbrir} title={`Abrir ${archivo.nombre}`}>
+      <span className="av-archivo-ext">{ext}</span>
+      <span className="av-archivo-nombre">{archivo.nombre}</span>
+      <span className="av-archivo-peso">{archivo.size_bytes != null ? formatFileSize(archivo.size_bytes) : ''}</span>
+      <Download size={15} className="av-archivo-ir" />
+    </button>
+  );
+}
+
+/** La tarea vista por el estudiante, a pantalla completa: instrucciones y
+ * reglas a la izquierda; su entrega, la nota y los comentarios con el docente
+ * a la derecha. */
 export default function EntregarTareaModal({ courseId, blockId, item, onClose }: Props) {
+  const sinMovimiento = useReducedMotion();
   const [reglas, setReglas] = useState<ReglasTarea | null>(item.reglas || null);
   const [entrega, setEntrega] = useState<EntregaTarea | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +79,7 @@ export default function EntregarTareaModal({ courseId, blockId, item, onClose }:
   const [seleccion, setSeleccion] = useState<File[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [verHistorial, setVerHistorial] = useState(false);
+  const [arrastrando, setArrastrando] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function cargar() {
@@ -77,32 +100,46 @@ export default function EntregarTareaModal({ courseId, blockId, item, onClose }:
   // Al cumplirse un plazo se vuelven a pedir las reglas: el estado lo decide el servidor.
   const segundos = useCuentaRegresiva(reglas, () => { cargar(); });
 
-  function handleElegir(lista: FileList | null) {
-    if (!lista || !reglas) return;
-    setOk(null);
-    const elegidos = Array.from(lista);
+  function validar(elegidos: File[]): string | null {
+    if (!reglas) return 'Todavía no se cargaron las reglas de la tarea.';
     if (elegidos.length > reglas.max_files) {
-      setError(`Esta tarea acepta como máximo ${reglas.max_files} ${reglas.max_files === 1 ? 'archivo' : 'archivos'} por entrega.`);
-      return;
+      return `Esta tarea acepta como máximo ${reglas.max_files} ${reglas.max_files === 1 ? 'archivo' : 'archivos'} por entrega.`;
     }
     for (const file of elegidos) {
       const problema = validarArchivoLocal(file, reglas);
-      if (problema) {
-        setError(problema);
-        return;
-      }
+      if (problema) return problema;
     }
     const total = elegidos.reduce((suma, f) => suma + f.size, 0);
-    if (total > reglas.max_total_mb * 1024 * 1024) {
-      setError(`La entrega completa no puede pasar de ${reglas.max_total_mb} MB.`);
-      return;
-    }
+    if (total > reglas.max_total_mb * 1024 * 1024) return `La entrega completa no puede pasar de ${reglas.max_total_mb} MB.`;
+    return null;
+  }
+
+  function agregar(lista: FileList | File[] | null) {
+    if (!lista || !reglas) return;
+    setOk(null);
+    // Con un solo archivo permitido, el nuevo reemplaza al elegido; si no, se suman.
+    const nuevos = Array.from(lista);
+    const elegidos = reglas.max_files === 1 ? nuevos.slice(0, 1) : [...seleccion, ...nuevos];
+    const problema = validar(elegidos);
+    if (problema) { setError(problema); return; }
     setError(null);
     setSeleccion(elegidos);
+    if (inputRef.current) inputRef.current.value = '';
+  }
+
+  function quitar(i: number) {
+    setSeleccion(lista => lista.filter((_, j) => j !== i));
+  }
+
+  function alSoltar(e: DragEvent<HTMLElement>) {
+    e.preventDefault();
+    setArrastrando(false);
+    if (reglas?.accepts_submissions) agregar(e.dataTransfer.files);
   }
 
   async function handleEntregar() {
     if (seleccion.length === 0) return;
+    if (entrega && !window.confirm('Tu entrega actual se reemplaza por estos archivos (la anterior queda en el historial). ¿Continuar?')) return;
     setEnviando(true);
     setError(null);
     setOk(null);
@@ -114,8 +151,7 @@ export default function EntregarTareaModal({ courseId, blockId, item, onClose }:
       setEntrega(res);
       setReglas(res.reglas);
       setSeleccion([]);
-      if (inputRef.current) inputRef.current.value = '';
-      setOk(res.is_late ? 'Entrega recibida, marcada como tardía.' : 'Entrega recibida.');
+      setOk(res.is_late ? 'Entrega recibida, marcada como tardía.' : '¡Entrega recibida!');
     } catch (err: any) {
       setError(err?.message || 'No se pudo entregar la tarea.');
       // El rechazo trae las reglas vigentes (por ejemplo si el plazo acaba de cerrar).
@@ -131,216 +167,241 @@ export default function EntregarTareaModal({ courseId, blockId, item, onClose }:
       const { url } = await enlaceArchivoEntrega(courseId, blockId, item.id, entrega.id, archivo.id);
       window.open(url, '_blank', 'noopener');
     } catch (err: any) {
-      setError(err?.message || 'No se pudo descargar el archivo.');
+      setError(err?.message || 'No se pudo abrir el archivo.');
     }
   }
 
-  function renderEstado(r: ReglasTarea) {
+  // Estado de la entrega en una palabra, con su color.
+  const estado = !entrega
+    ? (reglas && !reglas.accepts_submissions && reglas.status === 'CLOSED' ? { txt: 'No entregada', clase: 'is-rojo' } : { txt: 'Sin entregar', clase: 'is-gris' })
+    : entrega.score != null ? { txt: 'Calificada', clase: 'is-verde' }
+      : entrega.is_late ? { txt: 'Entregada tarde', clase: 'is-ambar' }
+        : { txt: 'Entregada', clase: 'is-azul' };
+
+  function renderPlazo(r: ReglasTarea) {
     if (r.status === 'NOT_OPEN') {
       return (
-        <div className="ccv-tarea-estado is-pending">
-          <Clock size={16} />
-          <span>Abre el {formatFechaHora(r.open_at)}{segundos != null ? ` — faltan ${formatRestante(segundos)}` : ''}</span>
+        <div className="av-plazo is-espera">
+          <Hourglass size={18} />
+          <div><strong>Todavía no abre</strong><span>Abre el {formatFechaHora(r.open_at)}{segundos != null ? ` · faltan ${formatRestante(segundos)}` : ''}</span></div>
         </div>
       );
     }
     if (r.status === 'OPEN') {
       const urgente = segundos != null && segundos <= 3600;
       return (
-        <div className={`ccv-tarea-estado ${urgente ? 'is-urgent' : 'is-open'}`}>
-          <Clock size={16} />
-          <span>
-            {r.due_at
-              ? <>Cierra el {formatFechaHora(r.due_at)}{segundos != null ? <> — te quedan <strong>{formatRestante(segundos)}</strong></> : null}</>
-              : 'Sin fecha límite'}
-          </span>
+        <div className={`av-plazo ${urgente ? 'is-urgente' : 'is-abierta'}`}>
+          <Clock size={18} />
+          <div>
+            <strong>{r.due_at ? (segundos != null ? `Te quedan ${formatRestante(segundos)}` : 'Abierta') : 'Abierta, sin fecha límite'}</strong>
+            {r.due_at && <span>Cierra el {formatFechaHora(r.due_at)}</span>}
+          </div>
         </div>
       );
     }
     if (r.status === 'LATE') {
       return (
-        <div className="ccv-tarea-estado is-urgent">
-          <AlertTriangle size={16} />
-          <span>
-            El plazo cerró el {formatFechaHora(r.due_at)}. Todavía puedes entregar, pero quedará marcada como tardía
-            {r.late_until
-              ? <> — hasta el {formatFechaHora(r.late_until)}{segundos != null ? <> (quedan <strong>{formatRestante(segundos)}</strong>)</> : null}</>
-              : null}.
-          </span>
+        <div className="av-plazo is-urgente">
+          <AlertTriangle size={18} />
+          <div>
+            <strong>Plazo vencido: se recibe como tardía</strong>
+            <span>
+              Cerró el {formatFechaHora(r.due_at)}
+              {r.late_until ? ` · se acepta hasta el ${formatFechaHora(r.late_until)}${segundos != null ? ` (quedan ${formatRestante(segundos)})` : ''}` : ''}
+            </span>
+          </div>
         </div>
       );
     }
     return (
-      <div className="ccv-tarea-estado is-closed">
-        <AlertTriangle size={16} />
-        <span>El plazo de entrega cerró el {formatFechaHora(r.allow_late && r.late_until ? r.late_until : r.due_at)}. Ya no se reciben entregas.</span>
+      <div className="av-plazo is-cerrada">
+        <AlertTriangle size={18} />
+        <div><strong>Entregas cerradas</strong><span>El plazo cerró el {formatFechaHora(r.allow_late && r.late_until ? r.late_until : r.due_at)}.</span></div>
       </div>
     );
   }
 
-  return (
-    <div className="ccv-modal-backdrop" onClick={onClose}>
-      <div className="ccv-modal ccv-modal-form-wide" onClick={e => e.stopPropagation()}>
-        <div className="ccv-modal-header">
-          <h3>{item.title}</h3>
-          <button type="button" className="ccv-modal-close" onClick={onClose} aria-label="Cerrar">
-            <X size={18} />
-          </button>
-        </div>
+  const max = item.max_score;
 
-        <div className="ccv-modal-body ccv-tarea-body">
-          {item.description && <p className="ccv-modal-desc" style={{ padding: 0 }}>{item.description}</p>}
-          {loading && <Loader2 size={20} className="dfm-spin" />}
+  return (
+    <VistaCompleta
+      etiqueta="Tarea"
+      titulo={item.title}
+      subtitulo={<span className={`av-estado ${estado.clase}`}>{estado.txt}</span>}
+      icono={<ClipboardList size={18} />}
+      color="#ef6c00"
+      onClose={onClose}
+    >
+      <div className="av-tarea">
+        {/* ── Instrucciones y reglas ── */}
+        <div className="av-tarea-col">
+          {reglas && renderPlazo(reglas)}
+
+          <section className="av-tarjeta">
+            <h3 className="av-h3">Instrucciones</h3>
+            {item.description
+              ? <p className="av-texto">{item.description}</p>
+              : <p className="av-texto is-muted">El docente no escribió instrucciones adicionales.</p>}
+          </section>
 
           {reglas && (
-            <>
-              {renderEstado(reglas)}
-
-              <ul className="ccv-tarea-reglas">
-                <li><strong>Archivos permitidos:</strong> {listaExtensiones(reglas.allowed_extensions)}</li>
-                <li><strong>Tamaño máximo:</strong> {reglas.max_file_size_mb} MB por archivo</li>
-                <li><strong>Cantidad:</strong> {reglas.max_files === 1 ? '1 archivo' : `hasta ${reglas.max_files} archivos`} por entrega</li>
-                {reglas.open_at && <li><strong>Abre:</strong> {formatFechaHora(reglas.open_at)}</li>}
-                {reglas.due_at && <li><strong>Fecha límite:</strong> {formatFechaHora(reglas.due_at)}</li>}
+            <section className="av-tarjeta">
+              <h3 className="av-h3">Cómo entregar</h3>
+              <ul className="av-reglas">
+                <li><Paperclip size={15} /><span><strong>Archivos permitidos</strong>{listaExtensiones(reglas.allowed_extensions)}</span></li>
+                <li><Upload size={15} /><span><strong>Tamaño y cantidad</strong>{reglas.max_file_size_mb} MB por archivo · {reglas.max_files === 1 ? '1 archivo' : `hasta ${reglas.max_files} archivos`}</span></li>
+                {reglas.open_at && <li><CalendarClock size={15} /><span><strong>Abre</strong>{formatFechaHora(reglas.open_at)}</span></li>}
+                {reglas.due_at && <li><Clock size={15} /><span><strong>Fecha límite</strong>{formatFechaHora(reglas.due_at)}</span></li>}
                 {reglas.due_at && (
-                  <li>
-                    <strong>Entregas tardías:</strong>{' '}
+                  <li><AlertTriangle size={15} /><span><strong>Entregas tardías</strong>
                     {reglas.allow_late
-                      ? (reglas.late_until ? `se aceptan hasta el ${formatFechaHora(reglas.late_until)}` : 'se aceptan, sin fecha tope')
-                      : 'no se aceptan'}
-                  </li>
+                      ? (reglas.late_until ? `Se aceptan hasta el ${formatFechaHora(reglas.late_until)}` : 'Se aceptan, sin fecha tope')
+                      : 'No se aceptan'}
+                  </span></li>
                 )}
-                {item.max_score != null && <li><strong>Puntaje máximo:</strong> {item.max_score}</li>}
+                {max != null && <li><Award size={15} /><span><strong>Puntaje máximo</strong>{max} puntos</span></li>}
               </ul>
-
-              {item.rubric && item.rubric.length > 0 && !(entrega?.rubric_scores?.length) && (
-                <table className="ccv-quiz-tabla ccv-rubrica-tabla">
-                  <thead><tr><th>Cómo se califica</th><th>Puntos</th></tr></thead>
-                  <tbody>
-                    {item.rubric.map(c => (
-                      <tr key={c.id || c.title}>
-                        <td>{c.title}{c.description ? <span className="ccv-rubrica-comentario">{c.description}</span> : null}</td>
-                        <td>{c.max_points}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </>
+            </section>
           )}
 
-          {entrega && (
-            <div className="ccv-tarea-entrega">
-              <div className="ccv-tarea-entrega-head">
-                <CheckCircle2 size={16} color="#10b981" />
-                <span>
-                  Entregaste el {formatFechaHora(entrega.submitted_at)}
-                  {entrega.version > 1 ? ` (versión ${entrega.version})` : ''}
-                  {entrega.is_late ? ' — tardía' : ''}
-                </span>
-              </div>
-              {entrega.files.map(a => (
-                <button key={a.id} type="button" className="ccv-tarea-archivo" onClick={() => handleDescargar(a)}>
-                  <FileText size={15} />
-                  <span className="ccv-tarea-archivo-nombre">{a.nombre}</span>
-                  <span className="ccv-tarea-archivo-meta">{a.size_bytes != null ? formatFileSize(a.size_bytes) : ''}</span>
-                  <Download size={14} />
-                </button>
-              ))}
-
-              {entrega.score != null && (
-                <p className="ccv-tarea-nota">
-                  Nota: <strong>{entrega.score}{item.max_score != null ? ` / ${item.max_score}` : ''}</strong>
-                  {entrega.feedback ? <> — {entrega.feedback}</> : null}
-                </p>
-              )}
-              {entrega.rubric_scores && entrega.rubric_scores.length > 0 && (
-                <table className="ccv-quiz-tabla ccv-rubrica-tabla">
-                  <thead><tr><th>Criterio</th><th>Puntos</th></tr></thead>
-                  <tbody>
-                    {entrega.rubric_scores.map(r => (
-                      <tr key={r.criterion_id}>
-                        <td>{r.title}{r.comment ? <span className="ccv-rubrica-comentario">{r.comment}</span> : null}</td>
-                        <td>{r.points} / {r.max_points}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-
-              {entrega.history.length > 0 && (
-                <>
-                  <button type="button" className="ccv-link-btn" onClick={() => setVerHistorial(v => !v)}>
-                    {verHistorial ? 'Ocultar' : 'Ver'} versiones anteriores ({entrega.history.length})
-                  </button>
-                  {verHistorial && entrega.history.map(h => (
-                    <div key={h.version} className="ccv-tarea-version">
-                      <span className="ccv-tarea-version-titulo">
-                        Versión {h.version} — {formatFechaHora(h.uploaded_at)}{h.is_late ? ' — tardía' : ''}
-                      </span>
-                      {h.files.map(a => (
-                        <button key={a.id} type="button" className="ccv-tarea-archivo" onClick={() => handleDescargar(a)}>
-                          <FileText size={15} />
-                          <span className="ccv-tarea-archivo-nombre">{a.nombre}</span>
-                          <span className="ccv-tarea-archivo-meta">{a.size_bytes != null ? formatFileSize(a.size_bytes) : ''}</span>
-                          <Download size={14} />
-                        </button>
-                      ))}
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
+          {item.rubric && item.rubric.length > 0 && !(entrega?.rubric_scores?.length) && (
+            <section className="av-tarjeta">
+              <h3 className="av-h3">Cómo se califica</h3>
+              <ul className="av-rubrica">
+                {item.rubric.map(c => (
+                  <li key={c.id || c.title}>
+                    <div><strong>{c.title}</strong>{c.description && <span>{c.description}</span>}</div>
+                    <em>{c.max_points} pts</em>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
-
-          {reglas?.accepts_submissions && (
-            <>
-              <label className="ccv-file-drop">
-                <Upload size={18} />
-                <span>
-                  {seleccion.length > 0
-                    ? seleccion.map(f => `${f.name} (${formatFileSize(f.size)})`).join(', ')
-                    : (entrega ? 'Elegir archivo para reemplazar tu entrega' : `Elegir ${reglas.max_files === 1 ? 'archivo' : 'archivos'}`)}
-                </span>
-                <input
-                  ref={inputRef}
-                  type="file"
-                  hidden
-                  multiple={reglas.max_files > 1}
-                  accept={reglas.allowed_extensions.map(e => `.${e}`).join(',')}
-                  onChange={e => handleElegir(e.target.files)}
-                />
-              </label>
-              {seleccion.length > 0 && (
-                <button
-                  type="button" className="ccv-link-btn"
-                  onClick={() => { setSeleccion([]); if (inputRef.current) inputRef.current.value = ''; }}
-                >
-                  <Trash2 size={12} /> Quitar selección
-                </button>
-              )}
-              {entrega && (
-                <p className="ccv-form-hint">
-                  Puedes reemplazar tu entrega hasta el cierre. La versión anterior queda guardada
-                  {entrega.score != null ? ' y la nota actual se borra hasta que el docente vuelva a calificar' : ''}.
-                </p>
-              )}
-            </>
-          )}
-
-          {error && <p className="ccv-form-error" role="alert">{error}</p>}
-          {ok && <p className="ccv-form-ok" role="status">{ok}</p>}
         </div>
 
-        <div className="ccv-modal-actions">
-          <button type="button" className="ccv-btn-secondary" onClick={onClose} disabled={enviando}>Cerrar</button>
-          {reglas?.accepts_submissions && (
-            <button type="button" className="ccv-btn-primary" onClick={handleEntregar} disabled={enviando || seleccion.length === 0}>
-              {enviando ? <Loader2 size={14} className="dfm-spin" /> : null} {entrega ? 'Reemplazar entrega' : 'Entregar'}
-            </button>
-          )}
+        {/* ── Mi entrega y comentarios ── */}
+        <div className="av-tarea-col">
+          <section className="av-tarjeta">
+            <div className="av-tarjeta-cab">
+              <h3 className="av-h3">Tu entrega</h3>
+              <span className={`av-estado ${estado.clase}`}>{estado.txt}</span>
+            </div>
+
+            {loading && <div className="av-cargando"><Loader2 size={20} className="dfm-spin" /></div>}
+
+            {entrega && entrega.score != null && (
+              <div className="av-nota">
+                <div className="av-nota-num">
+                  <strong>{entrega.score}</strong>{max != null && <span>/ {max}</span>}
+                </div>
+                {max != null && max > 0 && (
+                  <div className="av-nota-barra"><motion.i initial={{ width: 0 }} animate={{ width: `${Math.min(100, (entrega.score / max) * 100)}%` }} transition={{ duration: sinMovimiento ? 0 : 0.6, ease: 'easeOut' }} /></div>
+                )}
+                {entrega.feedback && <p className="av-nota-feedback"><MessageSquare size={14} /> {entrega.feedback}</p>}
+                {entrega.rubric_scores && entrega.rubric_scores.length > 0 && (
+                  <ul className="av-rubrica is-notas">
+                    {entrega.rubric_scores.map(r => (
+                      <li key={r.criterion_id}>
+                        <div><strong>{r.title}</strong>{r.comment && <span>{r.comment}</span>}</div>
+                        <em>{r.points} / {r.max_points}</em>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {entrega && (
+              <div className="av-entregado">
+                <span className="av-entregado-cab">
+                  <CheckCircle2 size={16} />
+                  Entregaste el {formatFechaHora(entrega.submitted_at)}
+                  {entrega.version > 1 ? ` · versión ${entrega.version}` : ''}
+                  {entrega.is_late ? ' · tardía' : ''}
+                </span>
+                <div className="av-archivos">
+                  {entrega.files.map(a => <Archivo key={a.id} archivo={a} onAbrir={() => handleDescargar(a)} />)}
+                </div>
+                {entrega.history.length > 0 && (
+                  <>
+                    <button type="button" className="av-enlace" onClick={() => setVerHistorial(v => !v)} aria-expanded={verHistorial}>
+                      <History size={14} /> {verHistorial ? 'Ocultar' : 'Ver'} versiones anteriores ({entrega.history.length})
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {verHistorial && (
+                        <motion.div className="av-historial" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
+                          {entrega.history.map(h => (
+                            <div key={h.version} className="av-version">
+                              <span>Versión {h.version} · {formatFechaHora(h.uploaded_at)}{h.is_late ? ' · tardía' : ''}</span>
+                              {h.files.map(a => <Archivo key={a.id} archivo={a} onAbrir={() => handleDescargar(a)} />)}
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+              </div>
+            )}
+
+            {reglas?.accepts_submissions && (
+              <div className="av-subir">
+                <label
+                  className={`av-zona${arrastrando ? ' is-arrastrando' : ''}`}
+                  onDragOver={e => { e.preventDefault(); setArrastrando(true); }}
+                  onDragLeave={() => setArrastrando(false)}
+                  onDrop={alSoltar}
+                >
+                  <span className="av-zona-icono"><Upload size={22} /></span>
+                  <strong>{entrega ? 'Arrastra aquí para reemplazar tu entrega' : 'Arrastra aquí tus archivos'}</strong>
+                  <span>o <u>elígelos desde tu equipo</u> · {listaExtensiones(reglas.allowed_extensions)}</span>
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    hidden
+                    multiple={reglas.max_files > 1}
+                    accept={reglas.allowed_extensions.map(e => `.${e}`).join(',')}
+                    onChange={e => agregar(e.target.files)}
+                  />
+                </label>
+
+                <AnimatePresence initial={false}>
+                  {seleccion.map((f, i) => (
+                    <motion.div key={`${f.name}-${i}`} className="av-elegido" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
+                      <FileText size={16} />
+                      <span className="av-archivo-nombre">{f.name}</span>
+                      <span className="av-archivo-peso">{formatFileSize(f.size)}</span>
+                      <button type="button" onClick={() => quitar(i)} aria-label={`Quitar ${f.name}`}><X size={14} /></button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+
+                {entrega && entrega.score != null && (
+                  <p className="av-nota-al-pie">Si reemplazas tu entrega, la nota actual se borra hasta que el docente vuelva a calificar.</p>
+                )}
+
+                <button type="button" className="av-btn is-principal is-ancho" onClick={handleEntregar} disabled={enviando || seleccion.length === 0}>
+                  {enviando ? <Loader2 size={16} className="dfm-spin" /> : <Upload size={16} />}
+                  {entrega ? 'Reemplazar mi entrega' : 'Entregar tarea'}
+                </button>
+              </div>
+            )}
+
+            <AnimatePresence>
+              {error && <motion.p className="av-error" role="alert" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{error}</motion.p>}
+              {ok && <motion.p className="av-ok" role="status" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}><CheckCircle2 size={16} /> {ok}</motion.p>}
+            </AnimatePresence>
+          </section>
+
+          <section className="av-tarjeta">
+            <div className="av-tarjeta-cab">
+              <h3 className="av-h3"><MessageSquare size={15} /> Comentarios con el docente</h3>
+              <span className="av-privado">Privado</span>
+            </div>
+            <ComentariosTarea courseId={courseId} blockId={blockId} itemId={item.id} esDocente={false} />
+          </section>
         </div>
       </div>
-    </div>
+    </VistaCompleta>
   );
 }
