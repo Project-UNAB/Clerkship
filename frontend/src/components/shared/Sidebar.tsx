@@ -17,11 +17,11 @@ import {
   Briefcase,
   Clock,
   Library,
-  Bell,
+  ChevronRight,
+  ShieldCheck,
+  Palette,
   Mail,
-  Volume2,
   Zap,
-  Globe,
   BarChart3,
   PanelLeftClose,
   PanelLeftOpen,
@@ -34,6 +34,8 @@ import { getStoredUser, logoutMainSession } from '../../data/mainAuth';
 import { listConsultations, listMyCourses } from '../../data/consultasApi';
 import logoUrl from '../../assets/Logo Clerkship.svg';
 import NotificacionesCampana from './NotificacionesCampana';
+import { useReducirMovimiento } from '../../utils/preferencias';
+import { actualizarPreferencias, obtenerPreferencias } from '../../data/notificacionesApi';
 import '../../styles/sidebar.css';
 
 /* ── Tipos ─────────────────────────────────────────────────── */
@@ -56,6 +58,7 @@ interface TreeSection {
 function getActiveSectionId(pathname: string): string {
   if (pathname.startsWith('/casos')) return 'casos';
   if (pathname.startsWith('/historial')) return 'historial';
+  if (pathname.startsWith('/perfil')) return 'perfil';
   if (pathname.startsWith('/biblioteca')) return 'biblioteca';
   if (pathname.startsWith('/seguimiento')) return 'seguimiento';
   if (pathname.startsWith('/mis-cursos') || pathname.startsWith('/explorar')) return 'mis-cursos';
@@ -124,13 +127,27 @@ export default function Sidebar() {
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
   const [tip, setTip] = useState<{ texto: string; x: number; y: number } | null>(null);
 
-  // Preferencias de muestra: solo interfaz por ahora (no persisten ni llaman
-  // al backend). Cada una se conecta de verdad más adelante.
-  const [mockLang, setMockLang] = useState<'es' | 'en'>('es');
-  const [mockPushNotif, setMockPushNotif] = useState(true);
-  const [mockEmailDigest, setMockEmailDigest] = useState(false);
-  const [mockReduceMotion, setMockReduceMotion] = useState(false);
-  const [mockSounds, setMockSounds] = useState(true);
+  // Preferencias reales del menú de configuración (las mismas de Perfil).
+  const [reducirMovimiento, setReducirMovimiento] = useReducirMovimiento();
+  const [avisosPorCorreo, setAvisosPorCorreo] = useState<boolean | null>(null);
+  const [guardandoCorreo, setGuardandoCorreo] = useState(false);
+
+  useEffect(() => {
+    if (!settingsOpen || avisosPorCorreo !== null) return;
+    obtenerPreferencias().then(p => setAvisosPorCorreo(p.email)).catch(() => { /* sin red: se reintenta al abrir */ });
+  }, [settingsOpen, avisosPorCorreo]);
+
+  async function cambiarAvisosPorCorreo() {
+    if (avisosPorCorreo === null || guardandoCorreo) return;
+    setGuardandoCorreo(true);
+    try {
+      setAvisosPorCorreo((await actualizarPreferencias(!avisosPorCorreo)).email);
+    } catch {
+      /* se queda como estaba */
+    } finally {
+      setGuardandoCorreo(false);
+    }
+  }
 
   // Métricas reales para los contadores (en curso, completados, cursos)
   const [counts, setCounts] = useState({ inProgress: 0, completed: 0, courses: 0 });
@@ -385,37 +402,37 @@ export default function Sidebar() {
     ));
   }
 
-  /** Preferencias (de muestra) del menú de configuración. */
+  /** Ir a una pestaña del perfil cerrando los menús. */
+  function irAPerfil(pestana = 'cuenta') {
+    setSettingsOpen(false);
+    setProfileOpen(false);
+    navigate(`/perfil/${pestana}`);
+  }
+
+  /** Preferencias rápidas del menú de configuración; el resto, en Perfil. */
   function renderAjustes() {
     return (
       <div className="nv-ajustes">
         <div className="nv-ajustes-grupo">
-          <span className="nv-ajustes-titulo">Idioma</span>
-          <div className="nv-segmento" role="radiogroup" aria-label="Idioma">
-            {(['es', 'en'] as const).map(l => (
-              <button key={l} type="button" role="radio" aria-checked={mockLang === l}
-                className={mockLang === l ? 'is-activo' : ''} onClick={() => setMockLang(l)}>
-                <Globe size={13} /> {l === 'es' ? 'Español' : 'English'}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="nv-ajustes-grupo">
           <span className="nv-ajustes-titulo">Notificaciones</span>
-          <button type="button" className="nv-ajuste" role="switch" aria-checked={mockPushNotif} onClick={() => setMockPushNotif(v => !v)}>
-            <span><Bell size={14} /> Notificaciones push</span><span className={`nv-interruptor${mockPushNotif ? ' is-on' : ''}`} />
-          </button>
-          <button type="button" className="nv-ajuste" role="switch" aria-checked={mockEmailDigest} onClick={() => setMockEmailDigest(v => !v)}>
-            <span><Mail size={14} /> Resumen semanal</span><span className={`nv-interruptor${mockEmailDigest ? ' is-on' : ''}`} />
+          <button type="button" className="nv-ajuste" role="switch" aria-checked={!!avisosPorCorreo}
+            disabled={avisosPorCorreo === null || guardandoCorreo} onClick={cambiarAvisosPorCorreo}>
+            <span><Mail size={14} /> Avisos por correo</span><span className={`nv-interruptor${avisosPorCorreo ? ' is-on' : ''}`} />
           </button>
         </div>
         <div className="nv-ajustes-grupo">
-          <span className="nv-ajustes-titulo">Accesibilidad e interfaz</span>
-          <button type="button" className="nv-ajuste" role="switch" aria-checked={mockReduceMotion} onClick={() => setMockReduceMotion(v => !v)}>
-            <span><Zap size={14} /> Reducir movimiento</span><span className={`nv-interruptor${mockReduceMotion ? ' is-on' : ''}`} />
+          <span className="nv-ajustes-titulo">Accesibilidad</span>
+          <button type="button" className="nv-ajuste" role="switch" aria-checked={reducirMovimiento} onClick={() => setReducirMovimiento(!reducirMovimiento)}>
+            <span><Zap size={14} /> Reducir movimiento</span><span className={`nv-interruptor${reducirMovimiento ? ' is-on' : ''}`} />
           </button>
-          <button type="button" className="nv-ajuste" role="switch" aria-checked={mockSounds} onClick={() => setMockSounds(v => !v)}>
-            <span><Volume2 size={14} /> Efectos de sonido</span><span className={`nv-interruptor${mockSounds ? ' is-on' : ''}`} />
+        </div>
+        <div className="nv-ajustes-grupo">
+          <span className="nv-ajustes-titulo">Cuenta</span>
+          <button type="button" className="nv-ajuste" onClick={() => irAPerfil('seguridad')}>
+            <span><ShieldCheck size={14} /> Contraseña y sesiones</span><ChevronRight size={14} />
+          </button>
+          <button type="button" className="nv-ajuste" onClick={() => irAPerfil('apariencia')}>
+            <span><Palette size={14} /> Todas las preferencias</span><ChevronRight size={14} />
           </button>
         </div>
       </div>
@@ -571,7 +588,7 @@ export default function Sidebar() {
                 {botonAjustes}
               </div>
               <div className="nv-usuario">
-                <button type="button" className="nv-usuario-btn" onClick={() => navigate('/dashboard')} title="Ver perfil">
+                <button type="button" className="nv-usuario-btn" onClick={() => irAPerfil()} title="Ver perfil">
                   {avatar('nv-avatar')}
                   <span className="nv-usuario-txt">
                     <strong>{currentUser?.name || 'Estudiante'}</strong>
@@ -614,7 +631,7 @@ export default function Sidebar() {
                         </span>
                       </div>
                       <div className="nv-pop-linea" />
-                      <button type="button" role="menuitem" className="nv-pop-item" onClick={() => { setProfileOpen(false); navigate('/dashboard'); }}>
+                      <button type="button" role="menuitem" className="nv-pop-item" onClick={() => irAPerfil()}>
                         <User size={15} strokeWidth={1.8} /> Mi perfil
                       </button>
                       <button type="button" role="menuitem" className="nv-pop-item" onClick={() => { setProfileOpen(false); setSettingsOpen(true); }}>
