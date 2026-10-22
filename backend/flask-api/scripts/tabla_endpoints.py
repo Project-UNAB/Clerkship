@@ -125,6 +125,12 @@ PROPIEDAD_EXACTA = {
     ("DELETE", "/api/cursos/<course_id>/avisos/<announcement_id>/comentarios/<comment_id>"):
         "Autor del comentario, o docente dueño del curso",
     ("POST", "/api/cursos"): "No aplica: el curso nuevo queda a nombre del docente de la sesión",
+    ("GET", "/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/comentarios"):
+        "Estudiante matriculado (solo su propio hilo) o docente dueño del curso (los hilos de sus estudiantes)",
+    ("POST", "/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/comentarios"):
+        "Estudiante matriculado (escribe en su propio hilo) o docente dueño del curso (responde a un estudiante matriculado)",
+    ("DELETE", "/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/comentarios/<comment_id>"):
+        "Autor del comentario dentro de su propio hilo, o docente dueño del curso",
     ("POST", "/api/admin/validacion-expertos/casos/<consultation_id>/asignaciones"): "No aplica: el rol ADMIN administra toda la plataforma (la asignación queda a nombre del administrador de la sesión)",
     ("POST", "/api/admin/validacion-expertos/invitaciones"): "No aplica: el rol ADMIN administra toda la plataforma (la invitación queda a nombre del administrador de la sesión)",
 }

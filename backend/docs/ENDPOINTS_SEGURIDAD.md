@@ -9,7 +9,7 @@ desactualizado o si aparece una ruta sin control.
   rol del token sea el rol actual del usuario.
 - **Propiedad**: cómo se comprueba que el recurso de la URL le pertenece a quien lo pide.
 
-Total: **211** rutas — 171 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 26 públicas, **0 sin control**.
+Total: **214** rutas — 174 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 26 públicas, **0 sin control**.
 
 ## Públicas a propósito
 
@@ -231,6 +231,14 @@ Total: **211** rutas — 171 con rol y propiedad, 14 con sesión pero sin restri
 | POST | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/preguntas` | TEACHER | Docente dueño del curso |
 | DELETE | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/preguntas/<question_id>` | TEACHER | Docente dueño del curso |
 | PATCH | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/preguntas/<question_id>` | TEACHER | Docente dueño del curso |
+
+## Con rol y propiedad — curso_tarea_comentarios
+
+| Método | Ruta | Rol | Propiedad |
+|---|---|---|---|
+| GET | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/comentarios` | Cualquiera con sesión | Estudiante matriculado (solo su propio hilo) o docente dueño del curso (los hilos de sus estudiantes) |
+| POST | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/comentarios` | Cualquiera con sesión | Estudiante matriculado (escribe en su propio hilo) o docente dueño del curso (responde a un estudiante matriculado) |
+| DELETE | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/comentarios/<comment_id>` | Cualquiera con sesión | Autor del comentario dentro de su propio hilo, o docente dueño del curso |
 
 ## Con rol y propiedad — cursos
 

@@ -2521,6 +2521,84 @@ paths:
           description: La evaluación ya fue finalizada
         '429':
           description: Demasiadas peticiones desde esta IP
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/comentarios:
+    get:
+      tags:
+      - Cursos
+      summary: Comentarios privados de una tarea
+      description: Estudiante - su propio hilo con el docente. Docente - con ?estudiante=<id> el hilo de ese estudiante; sin él, la lista de hilos de la tarea.
+      operationId: listarComentariosTarea
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: course_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: block_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: item_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: estudiante, in: query, required: false, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Comentarios del hilo, o lista de hilos para el docente
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: No eres el docente dueño ni un estudiante matriculado
+        '404':
+          description: Curso, tarea, estudiante o comentario no encontrado
+    post:
+      tags:
+      - Cursos
+      summary: Escribir un comentario en el hilo privado de una tarea
+      description: El estudiante escribe en su hilo (haya entregado o no); el docente responde indicando estudiante_id.
+      operationId: crearComentarioTarea
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: course_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: block_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: item_id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: {type: string, minLength: 1, maxLength: 2000}
+                estudiante_id: {type: string, format: uuid, description: Solo el docente - el estudiante del hilo}
+      responses:
+        '201':
+          description: Comentario creado
+        '400':
+          description: Comentario vacío o falta estudiante_id
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: No eres el docente dueño ni un estudiante matriculado
+        '404':
+          description: Curso, tarea, estudiante o comentario no encontrado
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/comentarios/{comment_id}:
+    delete:
+      tags:
+      - Cursos
+      summary: Borrar un comentario de la tarea (el autor o el docente)
+      operationId: borrarComentarioTarea
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: course_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: block_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: item_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: comment_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Comentario borrado
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: No eres el docente dueño ni un estudiante matriculado
+        '404':
+          description: Curso, tarea, estudiante o comentario no encontrado
   /api/validacion/inicio:
     post:
       tags:

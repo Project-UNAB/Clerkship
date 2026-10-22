@@ -37,6 +37,7 @@ from app.models.user_file import UserFile
 from app.models.validacion import ValidacionInicio, ValidacionCasos, ValidacionHistorial, ValidacionBiblioteca
 from app.models.validacion_invitacion import ValidacionInvitacion
 from app.models.revision_caso import RevisionCaso
+from app.models.assignment_comment import AssignmentComment
 from app.models.agente_uso_tokens import AgenteUsoTokens
 
 __all__ = [
@@ -51,6 +52,7 @@ __all__ = [
     "ValidacionBiblioteca",
     "ValidacionInvitacion",
     "RevisionCaso",
+    "AssignmentComment",
     "AgenteUsoTokens",
     "User",
     "Student",

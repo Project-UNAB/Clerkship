@@ -11,8 +11,9 @@ import base64
 import binascii
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import jwt_required
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app import db, limiter, storage
@@ -207,16 +208,56 @@ def listar_bloques(course_id):
         for archivo in UserFile.query.filter(UserFile.id.in_(archivo_ids)).all():
             archivos_por_id[str(archivo.id)] = archivo
 
+    # El estado de las entregas es un extra de las tarjetas: si falla, el curso se ve igual.
+    try:
+        entregas = _resumen_entregas(user, course, [i for lista in items_por_bloque.values() for i in lista if i.type == "ASSIGNMENT"])
+    except Exception:  # noqa: BLE001
+        current_app.logger.warning("No se pudo resumir las entregas del curso %s", course_id, exc_info=True)
+        entregas = {}
+
     resultado = []
     for bloque in bloques:
         d = bloque.to_dict()
-        d["contenido"] = [
-            _item_dict(item, archivos_por_id.get(str(item.file_id)) if item.file_id else None)
-            for item in items_por_bloque.get(str(bloque.id), [])
-        ]
+        d["contenido"] = []
+        for item in items_por_bloque.get(str(bloque.id), []):
+            dato = _item_dict(item, archivos_por_id.get(str(item.file_id)) if item.file_id else None)
+            if item.type == "ASSIGNMENT" and str(item.id) in entregas:
+                dato.update(entregas[str(item.id)])
+            d["contenido"].append(dato)
         resultado.append(d)
 
     return jsonify({"bloques": resultado}), 200
+
+
+def _resumen_entregas(user, course, tareas_del_curso) -> dict:
+    """Para pintar las tarjetas de las tareas sin abrirlas, en una sola consulta:
+    al estudiante, su entrega (`mi_entrega`, null si no entregó); al docente,
+    cuántas entregas hay y cuántas faltan por calificar (`entregas`)."""
+    ids = [t.id for t in tareas_del_curso]
+    if not ids:
+        return {}
+    if _es_docente_dueno(user, course):
+        filas = (db.session.query(AssignmentSubmission.item_id, func.count(AssignmentSubmission.id), func.count(AssignmentSubmission.score))
+                 .filter(AssignmentSubmission.item_id.in_(ids), AssignmentSubmission.current_version > 0)
+                 .group_by(AssignmentSubmission.item_id).all())
+        por_item = {str(i): {"total": n, "calificadas": c} for i, n, c in filas}
+        return {str(i): {"entregas": por_item.get(str(i), {"total": 0, "calificadas": 0})} for i in ids}
+    propias = AssignmentSubmission.query.filter(
+        AssignmentSubmission.item_id.in_(ids), AssignmentSubmission.student_id == user.id,
+        AssignmentSubmission.current_version > 0,
+    ).all()
+    por_item = {str(e.item_id): e for e in propias}
+    resumen = {}
+    for i in ids:
+        e = por_item.get(str(i))
+        resumen[str(i)] = {"mi_entrega": None if e is None else {
+            "submitted_at": e.submitted_at.isoformat() if e.submitted_at else None,
+            "is_late": bool(e.is_late),
+            "version": e.current_version,
+            "score": float(e.score) if e.score is not None else None,
+            "calificada": e.score is not None,
+        }}
+    return resumen
 
 
 @curso_contenido_bp.post("/<course_id>/bloques")
