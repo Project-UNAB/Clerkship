@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo, type CSSProperties } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState, useMemo, type CSSProperties } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import DOMPurify from 'dompurify';
@@ -20,7 +20,7 @@ import {
 import AgregarContenidoModal from '../../components/cursos/AgregarContenidoModal';
 import ContenidoPreviewModal from '../../components/cursos/ContenidoPreviewModal';
 import AvisosPanel from '../../components/cursos/AvisosPanel';
-import { listarAvisos } from '../../data/cursoAvisosApi';
+import { listarAvisosPagina } from '../../data/cursoAvisosApi';
 import GestionarQuizModal from '../../components/cursos/GestionarQuizModal';
 import TomarQuizModal from '../../components/cursos/TomarQuizModal';
 import GestionarTareaModal from '../../components/cursos/GestionarTareaModal';
@@ -104,10 +104,6 @@ export default function CursoDetallePage() {
   // Menú «⋯» con las acciones menos usadas del módulo abierto.
   const [menuModulo, setMenuModulo] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  // «Sobre el curso»: plegado si es largo.
-  const [sobreAbierto, setSobreAbierto] = useState(false);
-  const [sobreDesborda, setSobreDesborda] = useState(false);
-  const sobreRef = useRef<HTMLDivElement>(null);
 
   // Búsqueda y filtros
   const [searchQuery, setSearchQuery] = useState('');
@@ -198,7 +194,7 @@ export default function CursoDetallePage() {
 
   function contarAvisos() {
     if (!id) return;
-    listarAvisos(id)
+    listarAvisosPagina(id, 1, 1)
       .then(res => setTotalAvisos(res.total ?? res.avisos.length))
       .catch(() => setTotalAvisos(null));
   }
@@ -251,17 +247,6 @@ export default function CursoDetallePage() {
     document.addEventListener('keydown', tecla);
     return () => { document.removeEventListener('mousedown', fuera); document.removeEventListener('keydown', tecla); };
   }, [menuModulo]);
-
-  // ¿La información del curso es más alta que la vista plegada?
-  useLayoutEffect(() => {
-    const el = sobreRef.current;
-    if (!el) return;
-    const medir = () => setSobreDesborda(el.scrollHeight > 200);
-    medir();
-    const obs = new ResizeObserver(medir);
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [curso?.description, editando]);
 
   function toggleAbierto(blockId: string) {
     setAbiertoId(previo => (previo === blockId ? null : blockId));
@@ -422,7 +407,29 @@ export default function CursoDetallePage() {
     const tipo = TIPOS[item.type];
     const Icon = tipo.icon;
     const cerrado = item.due_at ? faltaPara(item.due_at) === 'ya cerró' : false;
-    const accion = esDocente && tipo.accionDocente ? tipo.accionDocente : tipo.accion;
+    const mia = item.mi_entrega;
+    const accion = esDocente && tipo.accionDocente ? tipo.accionDocente
+      : item.type === 'ASSIGNMENT' && mia ? 'Ver entrega' : tipo.accion;
+    const formato = item.type === 'DOCUMENT' ? (item.file?.nombre?.split('.').pop() || '').toUpperCase().slice(0, 4) : '';
+    // Estado de la tarea en la tarjeta: lo del estudiante o el avance de calificación del docente.
+    let estadoTarea: { txt: string; clase: string } | null = null;
+    if (item.type === 'ASSIGNMENT') {
+      if (esDocente && item.entregas) {
+        const { total, calificadas } = item.entregas;
+        estadoTarea = total === 0 ? { txt: 'Sin entregas', clase: 'is-gris' }
+          : calificadas < total ? { txt: `${total - calificadas} por calificar · ${total} ${plural(total, 'entrega', 'entregas')}`, clase: 'is-azul' }
+            : { txt: `${total} ${plural(total, 'entrega calificada', 'entregas calificadas')}`, clase: 'is-verde' };
+      } else if (!esDocente) {
+        estadoTarea = mia
+          ? mia.calificada
+            ? { txt: `Calificada · ${mia.score}${item.max_score != null ? ` / ${item.max_score}` : ''}`, clase: 'is-verde' }
+            : { txt: mia.is_late ? 'Entregada tarde' : 'Entregada', clase: mia.is_late ? 'is-ambar' : 'is-azul' }
+          : item.reglas?.status === 'LATE' ? { txt: 'Atrasada · aún puedes entregar', clase: 'is-ambar' }
+            : item.reglas?.status === 'CLOSED' || (!item.reglas && cerrado) ? { txt: 'No entregada', clase: 'is-rojo' }
+              : item.reglas?.status === 'NOT_OPEN' ? { txt: 'Aún no abre', clase: 'is-gris' }
+                : { txt: 'Pendiente', clase: 'is-ambar' };
+      }
+    }
     return (
       <motion.div
         key={item.id}
@@ -439,16 +446,22 @@ export default function CursoDetallePage() {
         <span className="cd-item-cuerpo">
           <span className="cd-item-meta">
             <span className="cd-item-tipo">{tipo.label}</span>
+            {formato && <span className="cd-item-dato is-formato">{formato}</span>}
             {item.file?.size_bytes ? <span className="cd-item-dato">{formatFileSize(item.file.size_bytes)}</span> : null}
             {item.type === 'ASSIGNMENT' && item.max_score ? <span className="cd-item-dato">{item.max_score} pts</span> : null}
             {item.type === 'QUIZ' && item.time_limit_minutes ? <span className="cd-item-dato">{item.time_limit_minutes} min</span> : null}
           </span>
           <span className="cd-item-titulo">{item.title}</span>
           {item.description && <span className="cd-item-desc">{item.description}</span>}
-          {item.due_at && (
-            <span className={`cd-item-vence${cerrado ? ' is-cerrada' : ''}`}>
-              <Clock size={12} />
-              {cerrado ? 'Cerró' : 'Vence'} {formatFechaHoraCorta(item.due_at)}{!cerrado && ` · ${faltaPara(item.due_at)}`}
+          {(item.due_at || estadoTarea) && (
+            <span className="cd-item-pie">
+              {estadoTarea && <span className={`cd-item-estado ${estadoTarea.clase}`}>{estadoTarea.txt}</span>}
+              {item.due_at && !(mia && !esDocente) && (
+                <span className={`cd-item-vence${cerrado ? ' is-cerrada' : ''}`}>
+                  <Clock size={12} />
+                  {cerrado ? 'Cerró' : 'Vence'} {formatFechaHoraCorta(item.due_at)}{!cerrado && ` · ${faltaPara(item.due_at)}`}
+                </span>
+              )}
             </span>
           )}
         </span>
@@ -600,21 +613,9 @@ export default function CursoDetallePage() {
                         }
                       />
                     ) : curso.description ? (
-                      <>
-                        <div className={`cd-sobre-texto${sobreDesborda && !sobreAbierto ? ' is-plegado' : ''}`}>
-                          <div
-                            ref={sobreRef}
-                            className="ccv-rte-content"
-                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(curso.description, SANITIZE_OPTS) }}
-                          />
-                        </div>
-                        {sobreDesborda && (
-                          <button type="button" className="cd-leer-mas" onClick={() => setSobreAbierto(v => !v)} aria-expanded={sobreAbierto}>
-                            {sobreAbierto ? 'Ver menos' : 'Leer más'}
-                            <motion.span animate={{ rotate: sobreAbierto ? 180 : 0 }} transition={{ duration: 0.2 }}><ChevronDown size={15} /></motion.span>
-                          </button>
-                        )}
-                      </>
+                      <div className="cd-sobre-texto">
+                        <div className="ccv-rte-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(curso.description, SANITIZE_OPTS) }} />
+                      </div>
                     ) : (
                       <p className="cd-muted">
                         {esDocente

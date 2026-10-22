@@ -55,9 +55,9 @@
 
 .cd-contenido {
   width: 100%;
-  max-width: 1320px;
+  max-width: 1760px;
   margin: 0 auto;
-  padding: 24px 32px 110px;
+  padding: 18px 20px 110px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -231,7 +231,7 @@
 .cd-error button { display: grid; place-items: center; border: none; background: none; color: inherit; cursor: pointer; }
 
 /* ── Distribución ── */
-.cd-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.cd-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
 .cd-principal { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .cd-lateral { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -574,12 +574,20 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.cd-item-pie { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.cd-item-estado { padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.cd-item-estado.is-gris { background: var(--cd-hover); color: var(--cd-tinta2); }
+.cd-item-estado.is-azul { background: var(--cd-marca-suave); color: var(--cd-marca); }
+.cd-item-estado.is-verde { background: color-mix(in srgb, #2e7d32 13%, transparent); color: #2e7d32; }
+.cd-item-estado.is-ambar { background: var(--cd-alerta-suave); color: var(--cd-alerta); }
+.cd-item-estado.is-rojo { background: color-mix(in srgb, var(--cd-rojo) 11%, transparent); color: var(--cd-rojo); }
+[data-theme="dark"] .cd-item-estado.is-verde { color: #81c784; }
+.cd-item-dato.is-formato { background: color-mix(in srgb, var(--t) 12%, transparent); color: var(--t); letter-spacing: 0.04em; }
 .cd-item-vence {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   align-self: flex-start;
-  margin-top: 4px;
   padding: 2px 9px;
   border-radius: 999px;
   background: var(--cd-alerta-suave);
@@ -717,8 +725,9 @@
 .cd-resumen-icono { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: color-mix(in srgb, var(--t) 12%, transparent); color: var(--t); }
 
 /* ── Cajón de avisos ── */
-.cd-cajon-velo { position: fixed; inset: 0; z-index: 900; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); }
+.cd-cajon-velo { position: fixed; inset: 0; z-index: 900; background: rgba(15, 23, 42, 0.42); }
 .cd-cajon {
+  will-change: transform;
   position: absolute;
   inset: 0 0 0 auto;
   display: flex;
