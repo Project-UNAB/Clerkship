@@ -96,3 +96,13 @@ button {
   border: none;
   outline: none;
 }
+
+/* «Reducir movimiento» (Perfil → Apariencia): sin animaciones ni transiciones en toda la plataforma. */
+html.reducir-movimiento *,
+html.reducir-movimiento *::before,
+html.reducir-movimiento *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

@@ -36,7 +36,10 @@ const CuestionarioPage = lazy(() => import('./pages/cuestionario/CuestionarioPag
 const CronogramaPage = lazy(() => import('./pages/cronograma/CronogramaPage'));
 const DesarrolloPage = lazy(() => import('./pages/desarrollo/DesarrolloPage'));
 const SeguimientoPage = lazy(() => import('./pages/seguimiento/SeguimientoPage'));
+const PerfilPage = lazy(() => import('./pages/perfil/PerfilPage'));
+import { MotionConfig } from 'framer-motion';
 import ThemeToggleFloating from './components/shared/ThemeToggleFloating';
+import { useReducirMovimiento } from './utils/preferencias';
 import { isAuthenticated, hasUserAcceptedConsent } from './utils/authConsent';
 import { getStoredUser } from './data/mainAuth';
 
@@ -136,7 +139,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 /** Rutas cuyas páginas ya traen su propio <Sidebar/> con toggle de tema en
  *  el riel — ahí el botón flotante global queda de más. */
-const SIDEBAR_ROUTE_PREFIXES = ['/dashboard', '/biblioteca', '/casos', '/historial', '/desarrollo', '/mis-cursos', '/seguimiento'];
+const SIDEBAR_ROUTE_PREFIXES = ['/dashboard', '/biblioteca', '/casos', '/historial', '/desarrollo', '/mis-cursos', '/seguimiento', '/perfil'];
 
 function GlobalThemeToggle() {
   const { pathname } = useLocation();
@@ -162,7 +165,10 @@ function PublicAuthRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  // «Reducir movimiento» del perfil: también apaga las animaciones de framer-motion.
+  const [reducirMovimiento] = useReducirMovimiento();
   return (
+    <MotionConfig reducedMotion={reducirMovimiento ? 'always' : 'user'}>
     <BrowserRouter>
       {/* Botón Flotante Fijo a la Derecha — solo en páginas sin Sidebar propio
           (el Sidebar ya trae su propio toggle de tema en el riel). */}
@@ -201,6 +207,8 @@ export default function App() {
         <Route path="/simulacion/:id"         element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
         <Route path="/casos"                  element={<ProtectedRoute><CasosPage /></ProtectedRoute>} />
         <Route path="/historial"              element={<ProtectedRoute><HistorialPage /></ProtectedRoute>} />
+        <Route path="/perfil"                 element={<ProtectedRoute><PerfilPage /></ProtectedRoute>} />
+        <Route path="/perfil/:pestana"        element={<ProtectedRoute><PerfilPage /></ProtectedRoute>} />
 
         {/* Informative Pages */}
         <Route path="/equipo/desarrolladores" element={<DesarrolladoresPage />} />
@@ -217,5 +225,6 @@ export default function App() {
       </Routes>
       </Suspense>
     </BrowserRouter>
+    </MotionConfig>
   );
 }

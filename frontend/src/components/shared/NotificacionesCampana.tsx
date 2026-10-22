@@ -89,7 +89,12 @@ export default function NotificacionesCampana({ variante = 'icono', className = 
       // Con la pestaña en segundo plano no se consulta.
       if (document.visibilityState === 'visible') refrescarConteo();
     }, INTERVALO_MS);
-    return () => window.clearInterval(id);
+    // Otras pantallas (Perfil → Notificaciones) avisan cuando cambian las leídas.
+    window.addEventListener('clerkship-notificaciones-cambio', refrescarConteo);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('clerkship-notificaciones-cambio', refrescarConteo);
+    };
   }, [refrescarConteo]);
 
   useEffect(() => {

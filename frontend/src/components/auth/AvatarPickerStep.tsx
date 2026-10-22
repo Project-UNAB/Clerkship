@@ -38,6 +38,8 @@ function buildAvatarUrl(style: string, seed: string, bg: string): string {
 interface AvatarPickerStepProps {
   defaultSeed: string;
   onDone: () => void;
+  /** Texto del botón final (en el registro, «Guardar y continuar»). */
+  textoBoton?: string;
 }
 
 /**
@@ -47,7 +49,7 @@ interface AvatarPickerStepProps {
  * sola vez y se guarda en la base — no un link que dependa de que DiceBear
  * siga respondiendo después.
  */
-export default function AvatarPickerStep({ defaultSeed, onDone }: AvatarPickerStepProps) {
+export default function AvatarPickerStep({ defaultSeed, onDone, textoBoton = 'Guardar y continuar' }: AvatarPickerStepProps) {
   const [style, setStyle] = useState<string>(STYLES[0].id);
   const [seed, setSeed] = useState(defaultSeed);
   const [bg, setBg] = useState(BG_COLORS[0]);
@@ -190,7 +192,7 @@ export default function AvatarPickerStep({ defaultSeed, onDone }: AvatarPickerSt
         whileTap={saving ? {} : { scale: 0.98 }}
         onClick={handleConfirm}
       >
-        {saving ? <span className="auth-spinner" /> : 'Guardar y continuar'}
+        {saving ? <span className="auth-spinner" /> : textoBoton}
       </motion.button>
     </>
   );
