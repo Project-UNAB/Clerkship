@@ -173,7 +173,7 @@ function SessionRow({ s, delay, onVerDetalle }: { s: Consultation; delay: number
         <div className="hist-td-icon" style={{ background: spC.bg, color: spC.color }}>
           <StomachIcon />
         </div>
-        <div>
+        <div className="hist-td-caso-txt">
           <span className="hist-td-title">{s.title}</span>
           {/* El subtema solo se revela en casos ya completados — mientras está
               en curso arruinaría el ejercicio de anamnesis (el estudiante
@@ -184,28 +184,28 @@ function SessionRow({ s, delay, onVerDetalle }: { s: Consultation; delay: number
         </div>
       </div>
 
-      <div className="hist-td hist-td-mod">
+      <div className="hist-td hist-td-mod" data-label="Módulo">
         <span className="hist-td-tag" data-spec={s.specialty} style={{ color: spC.color, background: spC.bg }}>
           {s.specialty}
         </span>
       </div>
 
-      <div className="hist-td hist-td-diff">
+      <div className="hist-td hist-td-diff" data-label="Dificultad">
         <span className="hist-td-tag" data-diff={difficulty} style={{ color: dc.color, background: dc.bg }}>
           {DIFFICULTY_LABEL[difficulty]}
         </span>
       </div>
 
-      <div className="hist-td hist-td-date">
+      <div className="hist-td hist-td-date" data-label="Finalización">
         <span>{fmtDate(finished)}</span>
         <span className="hist-td-time-sub">{timeStr}</span>
       </div>
 
-      <div className="hist-td hist-td-time">
+      <div className="hist-td hist-td-time" data-label="Tiempo">
         {s.status === 'IN_PROGRESS' ? 'En curso' : (fmtDuracion(s.started_at, s.finished_at) || '—')}
       </div>
 
-      <div className="hist-td hist-td-acc">
+      <div className="hist-td hist-td-acc" data-label="Precisión">
         <span className="hist-acc-val">{score}%</span>
         <div className="hist-acc-track">
           <motion.div
@@ -221,7 +221,7 @@ function SessionRow({ s, delay, onVerDetalle }: { s: Consultation; delay: number
         </div>
       </div>
 
-      <div className="hist-td hist-td-res">
+      <div className="hist-td hist-td-res" data-label="Resultado">
         {s.status !== 'COMPLETED' ? (
           <div className="hist-res-badge hist-res-warn">
             <Clock size={14} strokeWidth={2.5} /> En progreso
