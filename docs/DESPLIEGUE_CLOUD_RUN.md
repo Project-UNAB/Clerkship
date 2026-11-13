@@ -4,12 +4,28 @@ Guía para dejar Clerkship funcionando en producción y para reiniciarlo o rever
 
 > **Nunca** pegue contraseñas, claves de API ni cadenas de conexión en el repositorio, en el chat del equipo ni en esta guía. Viven en **Secret Manager**.
 
+## Despliegue continuo (ya configurado)
+
+Cada `git push` a `main` dispara solo dos despliegues:
+
+- **Backend:** Cloud Build (trigger `rmgpgab-clerkship-northamerica-south1-Project-UNAB-Clerkshipgbx`) hace *build → push → deploy* al servicio `clerkship` de Cloud Run, región `northamerica-south1`, proyecto `clerkship`. Tarda unos 2 minutos. El estado aparece en GitHub (check de *Google Cloud Build* del commit) y con `gcloud builds list --limit 5`.
+- **Frontend:** Vercel despliega a producción (check *Vercel* del commit).
+
+El despliegue continuo solo cambia la **imagen**; las variables de entorno y los secretos del servicio se conservan. Por eso no hace falta repetir los pasos 1 a 3 salvo para cambiar la configuración o para recrear el servicio desde cero.
+
+Comprobar que el backend está sano tras un despliegue:
+
+```bash
+curl -fsS https://clerkship-500831889744.northamerica-south1.run.app/api/health
+# {"databases":{"mongodb":"connected","postgresql":"connected"},"status":"healthy",...}
+```
+
 ## 0. Variables de la sesión
 
 ```bash
-export PROJECT_ID=mi-proyecto-gcp          # ID del proyecto de Google Cloud (con facturación activa)
-export REGION=us-central1                  # región de Cloud Run
-export SERVICE=clerkship-api               # nombre del servicio
+export PROJECT_ID=clerkship                # ID del proyecto de Google Cloud
+export REGION=northamerica-south1          # región de Cloud Run
+export SERVICE=clerkship                   # nombre del servicio
 export FRONTEND_URL=https://clerkship.vercel.app   # dominio EXACTO del frontend, sin "/" final
 
 gcloud auth login
@@ -60,6 +76,8 @@ bash backend/flask-api/deploy/cloud_run.sh
 
 El script construye la imagen con el `Dockerfile` de `backend/flask-api`, despliega con **1 instancia mínima** (sin arranque en frío), 1 vCPU, 1 GiB y `TRUST_PROXY=1`, e imprime la URL del servicio y el resultado de `/api/health`.
 
+> El script y el comando manual usan `--update-env-vars` y `--update-secrets`: **añaden o cambian** lo indicado y conservan el resto. No use `--set-env-vars` ni `--set-secrets` sobre el servicio existente: **reemplazan todas** las variables y secretos y dejarían el servicio sin la configuración que ya tiene.
+
 Equivalente manual (si prefiere no usar el script):
 
 ```bash
@@ -67,8 +85,8 @@ gcloud run deploy "$SERVICE" --project "$PROJECT_ID" --region "$REGION" \
   --source backend/flask-api --allow-unauthenticated --port 8080 \
   --cpu 1 --memory 1Gi --cpu-boost --concurrency 20 --timeout 300 \
   --min-instances 1 --max-instances 3 \
-  --set-env-vars "^|^FLASK_ENV=production|TRUST_PROXY=1|AI_AGENT_PROVIDER=gemini|CORS_ORIGINS=$FRONTEND_URL|MONGODB_DB_NAME=clerkship|MAILGUN_DOMAIN=$MAILGUN_DOMAIN|R2_BUCKET=$R2_BUCKET|R2_ENDPOINT_URL=$R2_ENDPOINT_URL|R2_PUBLIC_BASE_URL=$R2_PUBLIC_BASE_URL" \
-  --set-secrets "DATABASE_URL=DATABASE_URL:latest,MONGODB_URI=MONGODB_URI:latest,JWT_SECRET_KEY=JWT_SECRET_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,MAILGUN_API_KEY=MAILGUN_API_KEY:latest,R2_ACCESS_KEY_ID=R2_ACCESS_KEY_ID:latest,R2_SECRET_ACCESS_KEY=R2_SECRET_ACCESS_KEY:latest,CRON_SECRET=CRON_SECRET:latest"
+  --update-env-vars "^|^FLASK_ENV=production|TRUST_PROXY=1|AI_AGENT_PROVIDER=gemini|CORS_ORIGINS=$FRONTEND_URL|MONGODB_DB_NAME=clerkship|MAILGUN_DOMAIN=$MAILGUN_DOMAIN|R2_BUCKET=$R2_BUCKET|R2_ENDPOINT_URL=$R2_ENDPOINT_URL|R2_PUBLIC_BASE_URL=$R2_PUBLIC_BASE_URL" \
+  --update-secrets "DATABASE_URL=DATABASE_URL:latest,MONGODB_URI=MONGODB_URI:latest,JWT_SECRET_KEY=JWT_SECRET_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,MAILGUN_API_KEY=MAILGUN_API_KEY:latest,R2_ACCESS_KEY_ID=R2_ACCESS_KEY_ID:latest,R2_SECRET_ACCESS_KEY=R2_SECRET_ACCESS_KEY:latest,CRON_SECRET=CRON_SECRET:latest"
 ```
 
 Si el frontend tiene más de un dominio, sepárelos con comas en `CORS_ORIGINS` (cada uno completo, con `https://`; nunca `*`).

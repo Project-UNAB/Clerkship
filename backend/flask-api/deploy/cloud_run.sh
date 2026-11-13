@@ -2,23 +2,26 @@
 # Despliega (o redespliega) el backend de Clerkship en Google Cloud Run.
 #
 # Uso:
-#   export PROJECT_ID=mi-proyecto-gcp
 #   export FRONTEND_URL=https://clerkship.vercel.app        # origen exacto del frontend, sin "/" final
+#   (PROJECT_ID, REGION y SERVICE ya traen los valores de producción: clerkship / northamerica-south1 / clerkship)
+#
+# OJO: cada push a main ya despliega solo (Cloud Build). Use este script para forzar un despliegue manual o para
+# cambiar variables. Usa --update-env-vars / --update-secrets: AÑADE o cambia lo indicado y conserva el resto.
 #   export R2_BUCKET=... R2_ENDPOINT_URL=... R2_PUBLIC_BASE_URL=... MAILGUN_DOMAIN=...
 #   bash backend/flask-api/deploy/cloud_run.sh              # desde la raíz del repositorio
 #
 # Los SECRETOS no van aquí: viven en Secret Manager (ver docs/DESPLIEGUE_CLOUD_RUN.md, paso 2).
 set -euo pipefail
 
-: "${PROJECT_ID:?Falta PROJECT_ID}"
+PROJECT_ID="${PROJECT_ID:-clerkship}"
 : "${FRONTEND_URL:?Falta FRONTEND_URL (el dominio del frontend en Vercel)}"
 : "${MAILGUN_DOMAIN:?Falta MAILGUN_DOMAIN}"
 : "${R2_BUCKET:?Falta R2_BUCKET}"
 : "${R2_ENDPOINT_URL:?Falta R2_ENDPOINT_URL}"
 : "${R2_PUBLIC_BASE_URL:?Falta R2_PUBLIC_BASE_URL}"
 
-REGION="${REGION:-us-central1}"
-SERVICE="${SERVICE:-clerkship-api}"
+REGION="${REGION:-northamerica-south1}"
+SERVICE="${SERVICE:-clerkship}"
 MONGODB_DB_NAME="${MONGODB_DB_NAME:-clerkship}"
 MAILGUN_FROM="${MAILGUN_FROM:-Clerkship <no-reply@${MAILGUN_DOMAIN}>}"
 GOTENBERG_URL="${GOTENBERG_URL:-}"
@@ -41,8 +44,8 @@ gcloud run deploy "${SERVICE}" \
   --cpu 1 --memory 1Gi --cpu-boost \
   --concurrency 20 --timeout 300 \
   --min-instances "${MIN_INSTANCES}" --max-instances "${MAX_INSTANCES}" \
-  --set-env-vars "${ENV_VARS}" \
-  --set-secrets "${SECRETS}"
+  --update-env-vars "${ENV_VARS}" \
+  --update-secrets "${SECRETS}"
 
 URL="$(gcloud run services describe "${SERVICE}" --project "${PROJECT_ID}" --region "${REGION}" --format='value(status.url)')"
 echo
