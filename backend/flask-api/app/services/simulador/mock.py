@@ -80,6 +80,8 @@ def evaluacion_demo() -> dict:
         "preguntas_clave_omitidas": ["Fiebre", "Irradiacion"],
         "hallazgos_indagados_correctamente": ["Episodios previos"],
         "hallazgos_no_indagados": ["Fiebre"],
+        "calidad_anamnesis_escrita": "adecuada",
+        "comentario_anamnesis_escrita": "Anamnesis con lo esencial (modo demo, sin IA real).",
         "concordancia_hipotesis": "alta",
         "comentario_hipotesis": "Diagnostico correcto (modo demo, sin IA real).",
         "diferenciales_pertinentes": ["Pancreatitis aguda"],

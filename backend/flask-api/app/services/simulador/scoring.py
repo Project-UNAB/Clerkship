@@ -20,6 +20,14 @@ ETIQUETAS = {
 MAPA_CONCORDANCIA = {"alta": 1, "media": 0.66, "baja": 0.33, "nula": 0}
 MAPA_PLAN = {"adecuado": 1, "parcial": 0.5, "inadecuado": 0.15, "ausente": 0}
 MAPA_COMUNICACION = {"excelente": 1, "adecuada": 0.75, "mejorable": 0.4, "deficiente": 0.1}
+# Anamnesis que el estudiante redacta al cerrar la consulta (síntesis del caso).
+MAPA_ANAMNESIS_ESCRITA = {"completa": 1, "adecuada": 0.75, "incompleta": 0.4, "ausente": 0}
+
+# Peso de cada parte dentro de "Razonamiento clínico". Si la evaluación no trae
+# la anamnesis escrita (consultas anteriores al cambio), se usan los pesos de
+# antes: 0,60 / 0,25 / 0,15.
+PESOS_RAZONAMIENTO = {"concordancia": 0.45, "diferenciales": 0.20, "plan": 0.15, "anamnesis_escrita": 0.20}
+PESOS_RAZONAMIENTO_SIN_ANAMNESIS = {"concordancia": 0.60, "diferenciales": 0.25, "plan": 0.15}
 
 
 def _lista(x):
@@ -89,6 +97,24 @@ def evaluar_exploracion(caso: dict, acciones: list) -> dict:
     }
 
 
+def _razonamiento(ev: dict) -> float:
+    """Concordancia del diagnóstico, diferenciales, plan y, si viene, la
+    anamnesis escrita por el estudiante."""
+    partes = {
+        "concordancia": MAPA_CONCORDANCIA[ev["concordancia_hipotesis"]],
+        "diferenciales": _proporcion(len(ev["diferenciales_pertinentes"]), len(ev["diferenciales_faltantes"])),
+        "plan": MAPA_PLAN[ev["calidad_plan"]],
+    }
+    anamnesis = ev.get("calidad_anamnesis_escrita")
+    if anamnesis in MAPA_ANAMNESIS_ESCRITA:
+        partes["anamnesis_escrita"] = MAPA_ANAMNESIS_ESCRITA[anamnesis]
+        pesos = PESOS_RAZONAMIENTO
+    else:
+        ev.pop("calidad_anamnesis_escrita", None)
+        pesos = PESOS_RAZONAMIENTO_SIN_ANAMNESIS
+    return sum(partes[k] * peso for k, peso in pesos.items())
+
+
 def calcular_puntaje(ev: dict, caso: dict, acciones: list, duracion_segundos) -> dict:
     """Muta y completa `ev` con puntaje_global, desglose, exploracion y
     revelacion — replica exacta de la formula del original (ver
@@ -106,11 +132,7 @@ def calcular_puntaje(ev: dict, caso: dict, acciones: list, duracion_segundos) ->
         "anamnesis": _proporcion(len(ev["preguntas_clave_cubiertas"]), len(ev["preguntas_clave_omitidas"])),
         "hallazgos": _proporcion(len(ev["hallazgos_indagados_correctamente"]), len(ev["hallazgos_no_indagados"])),
         "exploracion": exploracion["puntaje"],
-        "razonamiento": (
-            MAPA_CONCORDANCIA[ev["concordancia_hipotesis"]] * 0.60
-            + _proporcion(len(ev["diferenciales_pertinentes"]), len(ev["diferenciales_faltantes"])) * 0.25
-            + MAPA_PLAN[ev["calidad_plan"]] * 0.15
-        ),
+        "razonamiento": _razonamiento(ev),
         "comunicacion": MAPA_COMUNICACION[ev["comunicacion"]],
     }
 

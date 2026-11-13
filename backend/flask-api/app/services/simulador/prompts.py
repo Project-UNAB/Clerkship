@@ -196,7 +196,10 @@ def construir_prompt_evaluador(caso: dict, historial: list, hipotesis: str, dife
     }
 
     diferenciales_txt = "; ".join(diferenciales) if diferenciales else "(no proporcionados)"
-    notas_txt = f"\n- Notas tomadas durante la consulta: {notas[:2000]}" if notas else ""
+    # El cierre del estudiante trae en las notas su anamnesis escrita, otros
+    # diagnosticos y notas libres, cada uno en su propia linea con su rotulo.
+    notas_txt = f"\n- Anamnesis escrita, otros diagnosticos y notas del estudiante:\n{notas[:2000]}" if notas else \
+        "\n- Anamnesis escrita: (no proporcionada)"
 
     # JSON compacto (sin sangria): el mismo contenido con menos tokens de entrada.
     return f"""Eres el evaluador docente de un simulador academico de entrevista clinica en GASTROENTEROLOGIA (prototipo TRL 5). Evaluas a un estudiante de medicina con criterio de un docente clinico: justo, especifico y formativo.
@@ -218,7 +221,11 @@ CIERRE DEL ESTUDIANTE:
 INSTRUCCIONES
 - Clasifica usando la rubrica del caso. Una pregunta clave cuenta como cubierta si el estudiante obtuvo esa informacion, aunque la haya formulado con otras palabras.
 - Cada elemento de rubrica_evaluacion.preguntas_clave_anamnesis debe quedar en preguntas_clave_cubiertas o en preguntas_clave_omitidas; lo mismo con hallazgos_que_debia_indagar.
-- diferenciales_pertinentes: los diferenciales del estudiante que son razonables para el caso. diferenciales_faltantes: los esperados en la rubrica que no menciono.
+- concordancia_hipotesis compara el diagnostico del estudiante con diagnostico_real POR SU SIGNIFICADO CLINICO, NO POR EL NOMBRE EXACTO. Cuenta como "alta" si es la misma entidad aunque use sinonimos, abreviaturas (ERGE, EII, HDA, CPRE), otro orden de palabras, errores menores de ortografia o con o sin la etiologia (por ejemplo "pancreatitis biliar" frente a "pancreatitis aguda de origen biliar", o "ulcera duodenal sangrante" frente a "hemorragia digestiva alta por ulcera peptica"). "media" si acierta la entidad pero con un error relevante de etiologia o gravedad, si es una impresion diagnostica sindromica correcta pero inespecifica, o si el diagnostico real aparece solo entre sus otros diagnosticos. "baja" si es un diagnostico relacionado pero distinto. "nula" si no tiene relacion con el caso.
+- Si el diagnostico empieza con "Impresion diagnostica:", el estudiante no se comprometio con un diagnostico: valora si el sindrome o problema que describe es coherente con el caso; menciona en comentario_hipotesis cual habria sido el diagnostico especifico.
+- "Otros diagnosticos" son diagnosticos adicionales que el estudiante identifico (comorbilidades o hallazgos asociados). Comentalos en comentario_hipotesis: cuales son pertinentes y cuales no. No los cuentes como diferenciales.
+- diferenciales_pertinentes: los diferenciales del estudiante que son razonables para el caso, tambien juzgados por significado y no por nombre exacto. diferenciales_faltantes: los esperados en la rubrica que no menciono ni con otras palabras.
+- calidad_anamnesis_escrita valora la "Anamnesis del estudiante": "completa" si sintetiza identificacion, motivo de consulta, enfermedad actual, antecedentes relevantes, hallazgos del examen y paraclinicos, y justifica con esos datos su diagnostico; "adecuada" si tiene lo esencial y justifica el diagnostico pero omite datos relevantes; "incompleta" si es muy breve, desordenada o no conecta los datos con el diagnostico; "ausente" si no la escribio. Penaliza datos inventados que no estan en la transcripcion ni en los resultados. comentario_anamnesis_escrita en una frase: que le falto o que hizo bien.
 - comunicacion evalua saludo y presentacion, preguntas abiertas, lenguaje comprensible, empatia con el estado del paciente y cierre de la consulta.
 - No calcules ningun puntaje numerico: el sistema lo calcula a partir de tu clasificacion.
 - Escribe en segunda persona dirigiendote al estudiante, en espanol, con tono de docente.
@@ -230,6 +237,8 @@ INSTRUCCIONES
   "preguntas_clave_omitidas": ["string"],
   "hallazgos_indagados_correctamente": ["string"],
   "hallazgos_no_indagados": ["string"],
+  "calidad_anamnesis_escrita": "completa | adecuada | incompleta | ausente",
+  "comentario_anamnesis_escrita": "string",
   "concordancia_hipotesis": "alta | media | baja | nula",
   "comentario_hipotesis": "string",
   "diferenciales_pertinentes": ["string"],

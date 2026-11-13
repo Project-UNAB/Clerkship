@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, CheckCircle, Send, ChevronRight, ChevronLeft, Info, ArrowLeft, Stethoscope,
   Loader2, AlertTriangle, TrendingUp, Award, User, Eye, ClipboardList, FileText,
-  X, FlaskConical, Sparkles, Shuffle, FolderOpen, ZoomIn, ZoomOut,
+  X, FlaskConical, Sparkles, Shuffle, FolderOpen, ZoomIn, ZoomOut, Plus,
 } from 'lucide-react';
 import HTMLFlipBookRaw from 'react-pageflip';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -1311,11 +1311,29 @@ function DiagnosisForm({
   onSubmit: (dx: string, differentials: string[], treatmentPlan: string, notes: string) => void;
   onBack: () => void; submitting: boolean; error: string | null;
 }) {
+  const [anamnesis, setAnamnesis] = useState('');
+  const [tipoDx, setTipoDx] = useState<'principal' | 'impresion'>('principal');
   const [dx, setDx] = useState('');
+  const [otros, setOtros] = useState<string[]>([]);
   const [diff, setDiff] = useState('');
   const [plan, setPlan] = useState('');
   const [notes, setNotes] = useState('');
-  const ready = dx.trim().length > 0;
+  const MAX_OTROS = 5;
+  const MAX_ANAMNESIS = 1500;
+  // La anamnesis es lo central del cierre: sin ella y sin un diagnóstico (o
+  // una impresión diagnóstica) no se envía.
+  const ready = anamnesis.trim().length > 0 && dx.trim().length > 0;
+
+  const enviar = () => {
+    const extras = otros.map(o => o.trim()).filter(Boolean);
+    // El backend recibe estos campos dentro de las notas, que el agente
+    // evaluador ya lee junto al diagnóstico, los diferenciales y el plan.
+    const partes: string[] = [`Anamnesis del estudiante: ${anamnesis.trim()}`];
+    if (extras.length) partes.push(`Otros diagnósticos: ${extras.join('; ')}`);
+    if (notes.trim()) partes.push(`Notas: ${notes.trim()}`);
+    const finalDx = tipoDx === 'impresion' ? `Impresión diagnóstica: ${dx.trim()}` : dx.trim();
+    onSubmit(finalDx, splitLines(diff), plan.trim(), partes.join('\n').slice(0, 2000));
+  };
 
   return (
     <div className="sim-stage-body">
@@ -1326,9 +1344,53 @@ function DiagnosisForm({
       </div>
       <div className="sim-final-form">
         <div className="sim-final-field">
-          <label className="sim-final-label">Diagnóstico principal *</label>
-          <input className="sim-final-input" placeholder="Ej: Pancreatitis aguda de origen biliar"
+          <div className="sim-final-label-row">
+            <label className="sim-final-label" htmlFor="sim-anamnesis">Anamnesis *</label>
+            <span className="sim-wc">{anamnesis.length}/{MAX_ANAMNESIS}</span>
+          </div>
+          <p className="sim-final-ayuda">
+            Redacta la anamnesis completa del paciente: identificación, motivo de consulta, enfermedad actual,
+            antecedentes, hallazgos del examen y paraclínicos. Cierra con los datos que te llevan a tu diagnóstico.
+          </p>
+          <textarea id="sim-anamnesis" className="sim-final-ta sim-final-ta-grande" rows={9} maxLength={MAX_ANAMNESIS}
+            placeholder={'Ej: Mujer de 45 años que consulta por dolor epigástrico de 12 horas, irradiado en cinturón a la espalda, con vómitos.\nAntecedente de colelitiasis.\nAl examen: FC 108, dolor a la palpación en epigastrio.\nLipasa elevada.\nPor todo esto planteo...'}
+            value={anamnesis} onChange={e => setAnamnesis(e.target.value)} />
+        </div>
+        <div className="sim-final-field">
+          <div className="sim-final-tipo" role="radiogroup" aria-label="Tipo de diagnóstico">
+            <button type="button" role="radio" aria-checked={tipoDx === 'principal'}
+              className={`sim-final-tipo-btn${tipoDx === 'principal' ? ' activo' : ''}`} onClick={() => setTipoDx('principal')}>
+              Diagnóstico principal
+            </button>
+            <button type="button" role="radio" aria-checked={tipoDx === 'impresion'}
+              className={`sim-final-tipo-btn${tipoDx === 'impresion' ? ' activo' : ''}`} onClick={() => setTipoDx('impresion')}>
+              Impresión diagnóstica
+            </button>
+          </div>
+          <p className="sim-final-ayuda">
+            {tipoDx === 'principal'
+              ? 'El diagnóstico que consideras más probable.'
+              : 'Si todavía no tienes un diagnóstico claro, escribe el síndrome o el problema principal que identificas.'}
+          </p>
+          <input className="sim-final-input"
+            placeholder={tipoDx === 'principal' ? 'Ej: Pancreatitis aguda de origen biliar' : 'Ej: Síndrome de dolor abdominal agudo'}
             value={dx} onChange={e => setDx(e.target.value)} />
+          {otros.map((valor, i) => (
+            <div className="sim-final-extra" key={i}>
+              <input className="sim-final-input" placeholder={`Otro diagnóstico ${i + 1}. Ej: Diabetes mellitus tipo 2`}
+                value={valor} autoFocus={valor === ''}
+                onChange={e => setOtros(prev => prev.map((v, j) => (j === i ? e.target.value : v)))} />
+              <button type="button" className="sim-final-extra-quitar" aria-label={`Quitar otro diagnóstico ${i + 1}`}
+                onClick={() => setOtros(prev => prev.filter((_, j) => j !== i))}>
+                <X size={15} />
+              </button>
+            </div>
+          ))}
+          {otros.length < MAX_OTROS && (
+            <button type="button" className="sim-final-agregar" onClick={() => setOtros(prev => [...prev, ''])}>
+              <Plus size={15} /> Agregar otro diagnóstico
+            </button>
+          )}
         </div>
         <div className="sim-final-field">
           <label className="sim-final-label">Diagnósticos diferenciales (uno por línea)</label>
@@ -1350,7 +1412,7 @@ function DiagnosisForm({
           <ArrowLeft size={14} /> Volver a la entrevista
         </button>
         <button className="sim-btn-submit" disabled={!ready || submitting}
-          onClick={() => onSubmit(dx.trim(), splitLines(diff), plan.trim(), notes.trim())}>
+          onClick={enviar}>
           {submitting
             ? <><Loader2 size={16} className="sim-spin" /> Evaluando...</>
             : <><CheckCircle size={16} /> Enviar y recibir retroalimentación</>}
@@ -1359,6 +1421,11 @@ function DiagnosisForm({
     </div>
   );
 }
+
+const NIVEL_CIERRE: Record<string, string> = {
+  completa: 'Completa', adecuada: 'Adecuada', incompleta: 'Incompleta', ausente: 'Ausente',
+  alta: 'Concordancia alta', media: 'Concordancia media', baja: 'Concordancia baja', nula: 'Sin concordancia',
+};
 
 /* ── Resultado (Agente 3) ── */
 function ResultView({ evaluation, isMock, onHistory, onNew }: {
@@ -1391,6 +1458,29 @@ function ResultView({ evaluation, isMock, onHistory, onNew }: {
       <div className="sim-eval-feedback">
         <p className="sim-eval-feedback-title"><Info size={14} /> Retroalimentación</p>
         <p className="sim-eval-feedback-text">{evaluation.retroalimentacion_formativa}</p>
+      </div>
+
+      <div className="sim-eval-cierre">
+        {evaluation.calidad_anamnesis_escrita && (
+          <div className="sim-eval-cierre-item">
+            <p className="sim-eval-cierre-titulo">
+              <FileText size={14} /> Tu anamnesis
+              <span className={`sim-eval-nivel nivel-${evaluation.calidad_anamnesis_escrita}`}>
+                {NIVEL_CIERRE[evaluation.calidad_anamnesis_escrita]}
+              </span>
+            </p>
+            {evaluation.comentario_anamnesis_escrita && <p className="sim-eval-cierre-texto">{evaluation.comentario_anamnesis_escrita}</p>}
+          </div>
+        )}
+        <div className="sim-eval-cierre-item">
+          <p className="sim-eval-cierre-titulo">
+            <Stethoscope size={14} /> Tu diagnóstico
+            <span className={`sim-eval-nivel nivel-${evaluation.concordancia_hipotesis}`}>
+              {NIVEL_CIERRE[evaluation.concordancia_hipotesis]}
+            </span>
+          </p>
+          {evaluation.comentario_hipotesis && <p className="sim-eval-cierre-texto">{evaluation.comentario_hipotesis}</p>}
+        </div>
       </div>
 
       <div className="sim-eval-cols">

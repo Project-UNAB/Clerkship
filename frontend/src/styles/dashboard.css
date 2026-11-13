@@ -5980,6 +5980,84 @@
 .sim-final-ta:focus { border-color: var(--p); }
 .sim-final-ta::placeholder { color: var(--ink3); }
 
+.sim-final-ta-grande { min-height: 210px; font-size: 0.88rem; }
+
+/* Valoración de la anamnesis escrita y del diagnóstico en el resultado */
+.sim-eval-cierre { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 16px 0; }
+.sim-eval-cierre-item { padding: 14px 16px; border: 1px solid var(--border2); border-radius: var(--r-md); background: var(--surface); }
+.sim-eval-cierre-titulo { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 6px; font-size: 0.8rem; font-weight: 700; color: var(--ink2); }
+.sim-eval-cierre-texto { margin: 0; font-size: 0.84rem; line-height: 1.55; color: var(--ink2); }
+.sim-eval-nivel { margin-left: auto; padding: 2px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; background: #F1F5F9; color: #475569; }
+.sim-eval-nivel.nivel-completa, .sim-eval-nivel.nivel-alta { background: #DCFCE7; color: #15803D; }
+.sim-eval-nivel.nivel-adecuada, .sim-eval-nivel.nivel-media { background: #E3F2FD; color: #0D47A1; }
+.sim-eval-nivel.nivel-incompleta, .sim-eval-nivel.nivel-baja { background: #FEF3C7; color: #B45309; }
+.sim-eval-nivel.nivel-ausente, .sim-eval-nivel.nivel-nula { background: #FEE2E2; color: #B91C1C; }
+
+.sim-final-tipo {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px;
+  gap: 4px;
+  border-radius: var(--r-md);
+  background: var(--bg-alt, #F1F5F9);
+  border: 1px solid var(--border2);
+}
+.sim-final-tipo-btn {
+  padding: 7px 14px;
+  border: none;
+  border-radius: calc(var(--r-md) - 3px);
+  background: transparent;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink3);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sim-final-tipo-btn.activo { background: var(--surface); color: var(--p); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08); }
+
+.sim-final-ayuda {
+  margin: -2px 0 2px;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--ink3);
+}
+
+.sim-final-extra { display: flex; align-items: center; gap: 8px; }
+.sim-final-extra-quitar {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink3);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.sim-final-extra-quitar:hover { color: #DC2626; border-color: #FCA5A5; }
+
+.sim-final-agregar {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--r-md);
+  background: transparent;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--p);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.sim-final-agregar:hover { border-color: var(--p); background: var(--pl, rgba(25, 118, 210, 0.06)); }
+
 /* ── Right panel: Hypotheses ── */
 .sim-right {
   background: var(--surface);

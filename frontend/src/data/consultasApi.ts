@@ -367,6 +367,10 @@ export interface EvaluationResult {
   preguntas_clave_omitidas: string[];
   hallazgos_indagados_correctamente: string[];
   hallazgos_no_indagados: string[];
+  /** Valoración de la anamnesis que el estudiante redacta al cerrar
+   *  (ausente en consultas anteriores a ese campo). */
+  calidad_anamnesis_escrita?: 'completa' | 'adecuada' | 'incompleta' | 'ausente';
+  comentario_anamnesis_escrita?: string;
   concordancia_hipotesis: 'alta' | 'media' | 'baja' | 'nula';
   comentario_hipotesis: string;
   diferenciales_pertinentes: string[];
