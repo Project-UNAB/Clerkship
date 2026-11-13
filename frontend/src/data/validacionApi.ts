@@ -134,7 +134,8 @@ export interface VistaCaso {
   rubrica: Record<string, string[]>;
   conversacion: { quien: 'ESTUDIANTE' | 'PACIENTE' | 'SISTEMA'; texto: string; exploracion: boolean; hora: string | null }[];
   acciones: { tipo: string; etiqueta: string; hora: string | null }[];
-  respuesta_estudiante: { hipotesis: string; diferenciales: string[]; plan: string } | null;
+  /** `notas` trae la anamnesis escrita, otros diagnósticos y notas (vacío en consultas anteriores). */
+  respuesta_estudiante: { hipotesis: string; diferenciales: string[]; plan: string; notas?: string } | null;
   evaluacion: EvaluationResult | null;
   /** Para el experto: la evaluación se muestra después de que fije su puntaje. */
   evaluacion_oculta?: boolean;

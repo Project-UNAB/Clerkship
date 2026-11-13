@@ -140,6 +140,9 @@ export default function VistaCasoClinico({ caso }: { caso: VistaCaso }) {
             <h4><ClipboardList size={16} />Lo que entregó al cerrar la consulta</h4>
             {caso.respuesta_estudiante ? (
               <dl>
+                {caso.respuesta_estudiante.notas && (
+                  <div><dt>Anamnesis y otros diagnósticos</dt><dd style={{ whiteSpace: 'pre-line' }}>{caso.respuesta_estudiante.notas}</dd></div>
+                )}
                 <div><dt>Diagnóstico propuesto</dt><dd>{caso.respuesta_estudiante.hipotesis || '—'}</dd></div>
                 <div><dt>Diferenciales</dt><dd>{caso.respuesta_estudiante.diferenciales.join(' · ') || '—'}</dd></div>
                 <div><dt>Plan</dt><dd>{caso.respuesta_estudiante.plan || '—'}</dd></div>

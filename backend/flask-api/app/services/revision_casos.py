@@ -99,6 +99,8 @@ def vista_caso(consultation, doc: dict, ocultar: list[str] | None = None) -> dic
             "hipotesis": _sin_nombres(str(respuesta.get("hipotesis") or ""), ocultar),
             "diferenciales": _lista(respuesta.get("diferenciales")),
             "plan": _sin_nombres(str(respuesta.get("plan") or ""), ocultar),
+            # Anamnesis escrita, otros diagnósticos y notas (desde el 13 de noviembre).
+            "notas": _sin_nombres(str(respuesta.get("notas") or ""), ocultar),
         } if isinstance(respuesta, dict) else None,
         "evaluacion": evaluacion if isinstance(evaluacion, dict) else None,
     }

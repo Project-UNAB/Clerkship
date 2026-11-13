@@ -546,6 +546,8 @@ def finalizar_consulta(consultation_id, validated_body: FinishConsultationReques
                     "hipotesis": final_diagnosis,
                     "diferenciales": list(validated_body.differential_diagnoses or []),
                     "plan": validated_body.treatment_plan or "",
+                    # Anamnesis escrita, otros diagnósticos y notas del cierre.
+                    "notas": validated_body.notes or "",
                 },
             }},
         )
