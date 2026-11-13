@@ -241,7 +241,7 @@ function Invitaciones({ onCambio }: { onCambio: () => void }) {
         <div className="va-vacio">
           <BookOpenCheck size={36} />
           <h4>Todavía no invitaste a ningún experto</h4>
-          <p>Invita a profesionales de la salud (idealmente entre 5 y 10) para validar el contenido de la plataforma. Cada uno recibe un enlace personal.</p>
+          <p>Invita a docentes expertos para validar el contenido de la plataforma. Cada uno recibe un enlace personal.</p>
           <button type="button" className="adm-btn adm-btn-primary va-btn" onClick={() => setForm({ inicial: null })}><UserPlus size={15} /> Invitar al primero</button>
         </div>
       ) : !visibles.length ? <p className="adm-vacio">Ninguna invitación coincide.</p> : (
@@ -541,7 +541,7 @@ export default function ValidacionExpertos() {
       <header className="va-cabecera">
         <div>
           <h2>Validación por expertos</h2>
-          <p>Profesionales de la salud evalúan, con su enlace personal, si el contenido de cada sección es claro, pertinente y adecuado. Los resultados se calculan con la V de Aiken y el índice de validez de contenido.</p>
+          <p>Docentes expertos evalúan, con su enlace personal, si el contenido de cada sección es claro, pertinente y adecuado para el aprendizaje de los estudiantes.</p>
         </div>
         <div className="va-vistas" role="tablist">
           <button type="button" role="tab" aria-selected={vista === 'invitaciones'} className={vista === 'invitaciones' ? 'is-activa' : ''} onClick={() => setVista('invitaciones')}>Expertos invitados</button>

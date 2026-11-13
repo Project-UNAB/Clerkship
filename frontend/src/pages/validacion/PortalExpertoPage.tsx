@@ -403,9 +403,9 @@ export default function PortalExpertoPage() {
               <h1 className="vp-titulo">Hola{perfil.nombre ? `, ${saludo(perfil.nombre)}` : ''}. Gracias por ayudarnos.</h1>
               <p className="vp-texto">
                 Clerkship es un simulador de casos clínicos de gastroenterología con pacientes virtuales y una biblioteca
-                para estudiantes de medicina. Te invitamos a evaluar, desde tu experiencia profesional, si su contenido es
-                <strong> claro, pertinente y adecuado</strong> para la formación. Tu juicio se usará para calcular la
-                validez de contenido (V de Aiken e índice de validez de contenido).
+                para estudiantes de medicina. Te invitamos a evaluar, desde tu experiencia como docente, si su contenido es
+                <strong> claro, pertinente y adecuado</strong> para el aprendizaje de los estudiantes. Tus calificaciones y
+                observaciones nos dirán qué mejorar antes de usarla con ellos.
               </p>
               <ul className="vp-datos-rapidos">
                 {secciones.length > 0 && <li><ClipboardCheck size={16} /> {secciones.length} {secciones.length === 1 ? 'sección' : 'secciones'} de la plataforma</li>}
