@@ -43,6 +43,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
   const [tarea, setTarea] = useState<TareaFormValue>(TAREA_FORM_VACIO);
   const [subtema, setSubtema] = useState<string>(SUBTEMAS_CASO[0]);
   const [dificultad, setDificultad] = useState('MEDIUM');
+  const [diagnosticoCaso, setDiagnosticoCaso] = useState('');
   const [puntajeCaso, setPuntajeCaso] = useState('100');
   const [generando, setGenerando] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -68,6 +69,10 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
     const textoPlano = textContent.replace(/<[^>]*>/g, '').trim();
     if (tipo === 'TEXT' && !textoPlano) {
       setError('Escribe el contenido de la nota.');
+      return;
+    }
+    if (tipo === 'CASE' && diagnosticoCaso.trim().length < 3) {
+      setError('Escribe el diagnóstico que tendrá el paciente.');
       return;
     }
     if (tipo === 'ASSIGNMENT') {
@@ -142,7 +147,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
         // El caso se genera una vez y lo harán todos los estudiantes.
         setGenerando(true);
         try {
-          await generarCasoCurso(courseId, blockId, item.id, subtema, dificultad);
+          await generarCasoCurso(courseId, blockId, item.id, subtema, dificultad, diagnosticoCaso.trim());
         } catch {
           onCreated();
           setError('El caso quedó creado, pero no se pudo generar el paciente. Ábrelo y usa «Generar caso».');
@@ -240,9 +245,15 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
           {tipo === 'CASE' && (
             <>
               <p className="ccv-form-hint">
-                La IA genera un paciente con el subtema y la dificultad que elijas. Todos los estudiantes entrevistan al mismo
-                paciente, y podrás revisar el caso, ver cómo le fue a cada uno y calificar su informe.
+                Escribe la enfermedad que tendrá el paciente: la IA construye todo el caso alrededor de ese diagnóstico. Todos
+                los estudiantes entrevistan al mismo paciente, y podrás revisar el caso, ver cómo le fue a cada uno y calificar
+                su informe.
               </p>
+              <label className="ccv-form-label">
+                Diagnóstico del caso
+                <input type="text" value={diagnosticoCaso} maxLength={200} onChange={e => setDiagnosticoCaso(e.target.value)}
+                  placeholder="Ej. Pancreatitis aguda por hipertrigliceridemia" />
+              </label>
               <div className="ccv-form-row">
                 <label className="ccv-form-label">
                   Subtema

@@ -73,7 +73,8 @@ def catalogo_exploracion() -> dict:
 # Agente 1 — Generador de casos
 # ---------------------------------------------------------------------------
 
-def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = None, identidad_forzada: Optional[dict] = None) -> dict:
+def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = None, identidad_forzada: Optional[dict] = None,
+                 diagnostico_objetivo: Optional[str] = None) -> dict:
     """Genera y sanea un caso clinico completo. Devuelve un dict con
     `is_mock` (True si hay que reintentar/usar demo) y, si tuvo exito,
     `caso_completo_oculto` + `system_prompt_paciente` listos para persistir.
@@ -83,7 +84,7 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
     pide al modelo que la use (prompts.py) y, como red de seguridad, se
     sobreescribe nombre/edad/sexo/peso al final por si el modelo la ignora.
     """
-    prompt = construir_prompt_generador(subtema, dificultad, referencias or [], identidad_forzada)
+    prompt = construir_prompt_generador(subtema, dificultad, referencias or [], identidad_forzada, diagnostico_objetivo)
     resp = llamar_modelo([prompt, "Genera un caso nuevo siguiendo las reglas. Responde solo con el JSON."], temperature=0.3, agente="generador")
 
     avisos = []
@@ -123,6 +124,10 @@ def generar_caso(subtema: str, dificultad: str, referencias: Optional[list] = No
         )
 
     avisos.extend(validar_signos_vitales(caso.get("signos_vitales")))
+
+    # Si el docente fijó el diagnóstico, el caso queda con ese texto exacto (también lo usa la guarda de fuga).
+    if diagnostico_objetivo:
+        caso["diagnostico_real"] = diagnostico_objetivo
 
     if identidad_forzada:
         sexo = identidad_forzada["sexo"]

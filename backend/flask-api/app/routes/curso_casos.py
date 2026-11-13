@@ -35,6 +35,8 @@ DIFICULTAD_CATALOGO_A_UI = {v: k for k, v in DIFICULTAD_UI_A_CATALOGO.items()}
 class GenerarCasoCursoRequest(BaseSchema):
     subtema: str = Field(..., min_length=2, max_length=150)
     dificultad: str = Field("MEDIUM", description="EASY | MEDIUM | HARD")
+    # La enfermedad exacta que tendrá el paciente; el caso se genera alrededor de ella.
+    diagnostico: str = Field(..., min_length=3, max_length=200)
 
 
 def _error(status, mensaje):
@@ -139,7 +141,10 @@ def generar_caso_curso(course_id, block_id, item_id, validated_body: GenerarCaso
     if dificultad is None:
         return _error(400, "dificultad debe ser EASY, MEDIUM o HARD")
 
-    resultado = agentes.generar_caso(subtema, dificultad, obtener_referencias(subtema))
+    diagnostico = " ".join(validated_body.diagnostico.split())
+    if len(diagnostico) < 3:
+        return _error(400, "Escribe el diagnóstico del caso")
+    resultado = agentes.generar_caso(subtema, dificultad, obtener_referencias(subtema), diagnostico_objetivo=diagnostico)
     if resultado.get("is_mock"):
         return _error(503, "El generador de casos no está disponible en este momento; inténtalo de nuevo.")
     item.case_template = resultado["caso_completo_oculto"]

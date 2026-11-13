@@ -15,8 +15,20 @@ from app.services.simulador.catalogo import (
 )
 
 
-def construir_prompt_generador(subtema: str, dificultad: str, referencias: list, identidad_forzada: dict = None) -> str:
+def construir_prompt_generador(subtema: str, dificultad: str, referencias: list, identidad_forzada: dict = None,
+                               diagnostico_objetivo: str = None) -> str:
     perfil = PERFILES_DIFICULTAD.get(dificultad, PERFILES_DIFICULTAD["intermedio"])
+    # El docente puede fijar la enfermedad exacta del caso (casos asignados en un curso).
+    linea_diagnostico = (
+        f"\n- Diagnostico real OBLIGATORIO, definido por el docente: {diagnostico_objetivo}" if diagnostico_objetivo else ""
+    )
+    regla_diagnostico = (
+        f"\n- El diagnostico real del caso ES {diagnostico_objetivo}, sin excepcion. Construye todo el cuadro (antecedentes, "
+        f"sintomas, signos vitales, examen fisico, paraclinicos, rubrica y diferenciales) alrededor de esa enfermedad; "
+        f"no la cambies por otra aunque el subtema sugiera algo distinto. El subtema es solo la categoria del caso. "
+        f"En \"diagnostico_real\" escribe exactamente: {diagnostico_objetivo}"
+        if diagnostico_objetivo else ""
+    )
     referencias = referencias or []
 
     bloque_referencias = ""
@@ -51,11 +63,11 @@ def construir_prompt_generador(subtema: str, dificultad: str, referencias: list,
     return f"""Eres el generador de casos clinicos de un simulador academico de entrevista medica en GASTROENTEROLOGIA (prototipo TRL 5, sin fines diagnosticos reales). El contexto es una consulta en un hospital universitario de Colombia.
 
 PARAMETROS DEL CASO
-- Subtema: {subtema}
+- Subtema: {subtema}{linea_diagnostico}
 - Dificultad: {perfil['etiqueta']}. {perfil['generador']}
 {bloque_referencias}
 REGLAS
-- El caso pertenece exclusivamente a gastroenterologia y al subtema indicado.
+- El caso pertenece exclusivamente a gastroenterologia y al subtema indicado.{regla_diagnostico}
 - Toda la informacion debe ser coherente con la literatura medica: sintomas, signos vitales, examen fisico y paraclinicos deben apuntar de forma consistente al diagnostico real (o enmascararlo de forma verosimil si la dificultad lo pide).
 {regla_identidad}
 - "examen_fisico_alterado" contiene SOLO las maniobras con hallazgo anormal o relevante, redactadas como en una historia clinica. Claves permitidas: {claves_examen}.

@@ -6071,7 +6071,7 @@ paths:
       tags:
       - Cursos
       summary: "Generar el caso clínico asignado"
-      description: "Solo el docente dueño; se puede regenerar mientras ningún estudiante lo haya empezado."
+      description: "Solo el docente dueño. Escribe el diagnóstico y el caso se genera alrededor de él; se puede regenerar mientras ningún estudiante lo haya empezado."
       operationId: generarCasoCurso
       security:
       - BearerAuth: []
@@ -6085,10 +6085,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [subtema]
+              required: [subtema, diagnostico]
               properties:
                 subtema: {type: string}
                 dificultad: {type: string, enum: [EASY, MEDIUM, HARD]}
+                diagnostico: {type: string, minLength: 3, maxLength: 200, description: "Enfermedad exacta del paciente; el caso se genera alrededor de ella"}
       responses:
         '200':
           description: "Caso generado"

@@ -46,6 +46,7 @@ export default function CasoClinicoModal({ courseId, blockId, item, esDocente, o
   const [trabajando, setTrabajando] = useState(false);
   const [subtema, setSubtema] = useState<string>(item.case_subtema || SUBTEMAS_CASO[0]);
   const [dificultad, setDificultad] = useState(item.case_dificultad || 'MEDIUM');
+  const [diagnostico, setDiagnostico] = useState('');
 
   useEffect(() => {
     let vivo = true;
@@ -63,10 +64,15 @@ export default function CasoClinicoModal({ courseId, blockId, item, esDocente, o
   }, [esDocente, pestana, resultados, courseId, blockId, item.id]);
 
   async function generar() {
+    const dx = (diagnostico || docente?.caso?.diagnostico_real || '').trim();
+    if (dx.length < 3) {
+      setError('Escribe el diagnóstico que tendrá el paciente.');
+      return;
+    }
     setTrabajando(true);
     setError(null);
     try {
-      setDocente(await generarCasoCurso(courseId, blockId, item.id, subtema, dificultad));
+      setDocente(await generarCasoCurso(courseId, blockId, item.id, subtema, dificultad, dx));
       onChanged();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo generar el caso.');
@@ -154,6 +160,10 @@ export default function CasoClinicoModal({ courseId, blockId, item, esDocente, o
                 )}
                 {docente.puede_regenerar && (
                   <div className="cc-generar">
+                    <label className="cc-generar-dx">Diagnóstico del caso
+                      <input value={diagnostico} maxLength={200} onChange={e => setDiagnostico(e.target.value)}
+                        placeholder={caso?.diagnostico_real || 'Ej. Pancreatitis aguda por hipertrigliceridemia'} />
+                    </label>
                     <label>Subtema
                       <select value={subtema} onChange={e => setSubtema(e.target.value)}>
                         {SUBTEMAS_CASO.map(s => <option key={s} value={s}>{s}</option>)}

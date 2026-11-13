@@ -28,6 +28,11 @@
 .cc-nota { margin: 0; font-size: 0.78rem; color: var(--ink3); }
 .cc-generar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border2); }
 .cc-generar label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; font-size: 0.76rem; font-weight: 600; color: var(--ink3); }
+.cc-generar-dx { flex-basis: 100% !important; }
+.cc-generar input {
+  padding: 8px 10px; border: 1px solid var(--border2); border-radius: 9px; background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 0.85rem;
+}
 .cc-generar select {
   padding: 8px 10px; border: 1px solid var(--border2); border-radius: 9px; background: var(--surface); color: var(--ink);
   font: inherit; font-size: 0.82rem;

@@ -164,9 +164,11 @@ const rutaCaso = (courseId: string, blockId: string, itemId: string) =>
 export const obtenerCasoCurso = <T extends CasoCursoDocente | CasoCursoEstudiante>(courseId: string, blockId: string, itemId: string) =>
   apiFetch<T>(rutaCaso(courseId, blockId, itemId));
 
-export const generarCasoCurso = (courseId: string, blockId: string, itemId: string, subtema: string, dificultad: string) =>
+export const generarCasoCurso = (
+  courseId: string, blockId: string, itemId: string, subtema: string, dificultad: string, diagnostico: string,
+) =>
   apiFetch<CasoCursoDocente>(`${rutaCaso(courseId, blockId, itemId)}/generar`, {
-    method: 'POST', body: JSON.stringify({ subtema, dificultad }),
+    method: 'POST', body: JSON.stringify({ subtema, dificultad, diagnostico }),
   });
 
 export const iniciarCasoCurso = (courseId: string, blockId: string, itemId: string) =>
