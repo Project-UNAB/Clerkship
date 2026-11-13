@@ -389,6 +389,7 @@ function Resultados({ version }: { version: number }) {
         <div className={`va-kpi ${datos.global.v_promedio != null && datos.global.v_promedio >= umbral ? 'is-ok' : ''}`}><strong>{num(datos.global.v_promedio)}</strong><span>V de Aiken promedio</span></div>
         <div className={`va-kpi ${datos.global.s_cvi_ave != null && datos.global.s_cvi_ave >= 0.9 ? 'is-ok' : ''}`}><strong>{num(datos.global.s_cvi_ave)}</strong><span>S-CVI/Ave (meta ≥ 0,90)</span></div>
         <div className="va-kpi"><strong>{validos}<small> / {todosItems.length}</small></strong><span>ítems válidos</span></div>
+        <div className={`va-kpi ${datos.global.favorables?.cumple ? 'is-ok' : ''}`}><strong>{datos.global.favorables?.proporcion != null ? `${Math.round(datos.global.favorables.proporcion * 100)} %` : '—'}</strong><span>de las valoraciones en 3 o 4 (meta ≥ 70 %)</span></div>
       </div>
 
       {datos.expertos.length < 5 && datos.expertos.length > 0 && (

@@ -11,7 +11,9 @@ from flask_jwt_extended import create_access_token
 from app.models import RevisionCaso, ValidacionInvitacion
 from app.routes import validacion as validacion_routes
 from app.routes.admin_validacion import calcular_resultados_casos
-from app.services.revision_casos import CRITERIOS_CASO, concordancia, nombres_a_ocultar, vista_caso
+from app.services.revision_casos import (
+    CRITERIOS_CASO, concordancia, nombres_a_ocultar, referencia_adecuada, valoraciones_favorables, vista_caso,
+)
 
 TOKEN = "c" * 32
 INV_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
@@ -186,3 +188,38 @@ def test_puntaje_a_ciegas_antes_de_ver_la_evaluacion(client, portal):
     assert client.put(url, json={"puntaje_experto": 90}).status_code == 409
     assert client.put(url, json={"puntaje_experto": 60, "respuestas": {CRITERIOS_CASO[0]: 2}}).status_code == 200
     assert portal.rev.puntaje_experto == 60
+
+
+# ── Anonimización sin dañar el texto clínico ──
+
+def test_nombres_a_ocultar_ignora_particulas_de_apellido():
+    ocultar = nombres_a_ocultar("María Del Pilar", "De Los Ríos", "san.martin")
+    assert "Del" not in ocultar and "Los" not in ocultar and "san" not in ocultar
+    assert {"María", "Pilar", "Ríos", "martin"} <= set(ocultar)
+    doc = {**DOC, "chat_history": [{"sender": "STUDENT", "content": "Siente dolor del abdomen, soy Pilar", "timestamp": "t"}]}
+    texto = vista_caso(_consulta(), doc, ocultar)["conversacion"][0]["texto"]
+    assert "dolor del abdomen" in texto and "Pilar" not in texto
+
+
+# ── Indicadores de éxito de la tesis ──
+
+def test_referencia_adecuada_exige_coherencia_y_precision_en_3_o_4():
+    buenas = {k: 4 for k in CRITERIOS_CASO}
+    r = referencia_adecuada([buenas, {**buenas, "precision_evaluacion": 2}, {**buenas, "coherencia_clinica": 3}])
+    assert r["n"] == 3 and r["adecuadas"] == 2 and r["proporcion"] == 0.667 and r["cumple"] is False
+    assert referencia_adecuada([buenas])["cumple"] is True
+    assert referencia_adecuada([]) == {"n": 0, "adecuadas": 0, "proporcion": None, "meta": 0.8, "cumple": None}
+
+
+def test_valoraciones_favorables_cuenta_3_y_4_e_ignora_valores_invalidos():
+    r = valoraciones_favorables([4, 3, 2, 1, 4, 3, 3, 4, 9, None])
+    assert r["n"] == 8 and r["favorables"] == 6 and r["proporcion"] == 0.75 and r["cumple"] is True
+    assert valoraciones_favorables([])["proporcion"] is None
+
+
+def test_resultados_de_casos_incluye_los_indicadores():
+    invitaciones = {INV_ID: SimpleNamespace(etiqueta="Dra. A", estado="EN_CURSO")}
+    revisiones = [_revision(estado="ENVIADA", respuestas={k: 4 for k in CRITERIOS_CASO}, puntaje_experto=80)]
+    r = calcular_resultados_casos(revisiones, {CONSULTA_ID: _consulta(70)}, invitaciones)
+    assert r["referencia_adecuada"]["proporcion"] == 1.0 and r["referencia_adecuada"]["cumple"] is True
+    assert r["favorables"]["n"] == len(CRITERIOS_CASO) and r["favorables"]["proporcion"] == 1.0

@@ -189,10 +189,20 @@ export interface SeccionValidez {
   observaciones: Record<string, { experto: string; texto: string }[]>;
 }
 
+/** Indicador de éxito de la tesis: proporción frente a su meta (n = 0 → proporcion y cumple en null). */
+export interface IndicadorProporcion {
+  n: number;
+  proporcion: number | null;
+  meta: number;
+  cumple: boolean | null;
+  favorables?: number;
+  adecuadas?: number;
+}
+
 export interface ResultadosValidacion {
   expertos: ExpertoResultado[];
   secciones: Record<PestanaValidacion, SeccionValidez>;
-  global: { v_promedio: number | null; s_cvi_ave: number | null; s_cvi_ua: number | null };
+  global: { v_promedio: number | null; s_cvi_ave: number | null; s_cvi_ua: number | null; favorables: IndicadorProporcion };
   aplicabilidad: Record<Aplicabilidad, number>;
 }
 
@@ -258,6 +268,10 @@ export interface ResultadosCasos {
     expertos: { experto: string; puntaje: number | null; respuestas: Record<string, number> }[];
   }[];
   concordancia: Concordancia;
+  /** Casos con coherencia clínica y precisión de la evaluación en 3 o 4 (meta ≥ 80 %). */
+  referencia_adecuada: IndicadorProporcion;
+  /** Valoraciones de los criterios en 3 o 4 (meta ≥ 70 %). */
+  favorables: IndicadorProporcion;
   pares: { ia: number; experto: number }[];
   observaciones: Record<string, { experto: string; caso: string | null; texto: string }[]>;
 }

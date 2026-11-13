@@ -72,6 +72,9 @@ def test_resultados_solo_cuentan_secciones_enviadas_y_no_revocadas():
     assert inicio["observaciones"]["_general"][0]["texto"] == "Bien"
     assert r["secciones"]["casos"]["expertos"] == 0   # casos no se envió
     assert r["aplicabilidad"]["APLICABLE"] == 1
+    # Indicador de la tesis: proporción de valoraciones en 3 o 4 (aquí todas, de los 2 expertos).
+    favorables = r["global"]["favorables"]
+    assert favorables["n"] == 2 * len(items) and favorables["proporcion"] == 1.0 and favorables["cumple"] is True
 
 
 # ── Portal del experto (ruta pública) ──

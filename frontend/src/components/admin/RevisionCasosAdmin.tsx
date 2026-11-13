@@ -258,6 +258,8 @@ export default function RevisionCasosAdmin() {
               <div className={`va-kpi ${res.criterios.v_promedio != null && res.criterios.v_promedio >= umbral ? 'is-ok' : ''}`}><strong>{num(res.criterios.v_promedio)}</strong><span>V de Aiken promedio de los criterios</span></div>
               <div className="va-kpi"><strong>{co?.diferencia_media != null ? `${co.diferencia_media > 0 ? '+' : ''}${num(co.diferencia_media, 1)}` : '—'}</strong><span>diferencia media experto − IA (puntos)</span></div>
               <div className={`va-kpi ${co?.dentro_10 != null && co.dentro_10 >= 0.8 ? 'is-ok' : ''}`}><strong>{co?.dentro_10 != null ? `${Math.round(co.dentro_10 * 100)} %` : '—'}</strong><span>de los puntajes a ±10 de la IA</span></div>
+              <div className={`va-kpi ${res.referencia_adecuada?.cumple ? 'is-ok' : ''}`}><strong>{res.referencia_adecuada?.proporcion != null ? `${Math.round(res.referencia_adecuada.proporcion * 100)} %` : '—'}</strong><span>de los casos con referencia adecuada (meta ≥ 80 %)</span></div>
+              <div className={`va-kpi ${res.favorables?.cumple ? 'is-ok' : ''}`}><strong>{res.favorables?.proporcion != null ? `${Math.round(res.favorables.proporcion * 100)} %` : '—'}</strong><span>de las valoraciones en 3 o 4 (meta ≥ 70 %)</span></div>
             </div>
 
             <div className="va-bloque">
