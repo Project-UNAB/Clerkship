@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Bell, BellOff, CheckCheck, ClipboardList, Megaphone, CheckCircle2, Clock, Mail, X } from 'lucide-react';
+import { Bell, BellOff, CheckCheck, ClipboardList, Megaphone, CheckCircle2, Clock, Mail, X, Share2, MessageSquare, GraduationCap } from 'lucide-react';
 import {
   actualizarPreferencias, contarNoLeidas, listarNotificaciones, marcarLeida, marcarTodasLeidas, obtenerPreferencias,
   type Notificacion, type TipoNotificacion,
@@ -16,6 +16,9 @@ const ICONOS: Record<TipoNotificacion, typeof Bell> = {
   ANNOUNCEMENT: Megaphone,
   ASSIGNMENT_GRADED: CheckCircle2,
   DUE_SOON: Clock,
+  REPORT_SHARED: Share2,
+  REPORT_COMMENT: MessageSquare,
+  CASE_GRADED: GraduationCap,
 };
 
 const TIPOS: Record<TipoNotificacion, string> = {
@@ -23,6 +26,9 @@ const TIPOS: Record<TipoNotificacion, string> = {
   ANNOUNCEMENT: 'Aviso',
   ASSIGNMENT_GRADED: 'Calificación',
   DUE_SOON: 'Por vencer',
+  REPORT_SHARED: 'Informe compartido',
+  REPORT_COMMENT: 'Nota en informe',
+  CASE_GRADED: 'Caso calificado',
 };
 
 /** Cada cuánto se vuelve a preguntar cuántas hay sin leer. */
@@ -142,7 +148,10 @@ export default function NotificacionesCampana({ variante = 'icono', className = 
       setNoLeidas(prev => Math.max(0, prev - 1));
       marcarLeida(n.id).catch(() => refrescarConteo());
     }
-    if (n.course_id) {
+    if (n.entity_type === 'consultation' && n.entity_id) {
+      setAbierto(false);
+      navigate(`/historial/${n.entity_id}`);
+    } else if (n.course_id) {
       setAbierto(false);
       navigate(`/mis-cursos/${n.course_id}`);
     }
@@ -272,7 +281,7 @@ export default function NotificacionesCampana({ variante = 'icono', className = 
                           <motion.button
                             key={n.id}
                             type="button"
-                            className={`noti-item${n.read ? '' : ' is-nueva'}${n.course_id ? '' : ' sin-enlace'}`}
+                            className={`noti-item${n.read ? '' : ' is-nueva'}${n.course_id || n.entity_type === 'consultation' ? '' : ' sin-enlace'}`}
                             onClick={() => handleAbrir(n)}
                             initial={{ opacity: 0, y: 4 }}
                             animate={{ opacity: 1, y: 0 }}

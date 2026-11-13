@@ -22,6 +22,14 @@ class Consultation(db.Model):
     started_at = db.Column(db.DateTime, server_default=func.now())
     finished_at = db.Column(db.DateTime, nullable=True)
     score = db.Column(db.Numeric(5, 2), nullable=True)
+    # Caso clínico asignado por el docente en un curso (NULL = práctica libre).
+    course_item_id = db.Column(UUID(as_uuid=True), db.ForeignKey("course_content_items.id", ondelete="SET NULL"), nullable=True)
+    # Enlace para compartir el informe (NULL = sin enlace activo).
+    share_token = db.Column(db.String(64), nullable=True)
+    # Nota del docente sobre un caso asignado (la del evaluador sigue en `score`).
+    teacher_score = db.Column(db.Numeric(6, 2), nullable=True)
+    teacher_feedback = db.Column(db.Text, nullable=True)
+    graded_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relaciones
     student = db.relationship("Student", backref=db.backref("consultations", lazy=True))
@@ -49,5 +57,7 @@ class Consultation(db.Model):
             "started_at": started,
             "finished_at": finished,
             "score": float(self.score) if self.score is not None else None,
+            "course_item_id": str(self.course_item_id) if self.course_item_id else None,
+            "teacher_score": float(self.teacher_score) if self.teacher_score is not None else None,
         }
 

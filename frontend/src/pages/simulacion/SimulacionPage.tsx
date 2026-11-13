@@ -1511,7 +1511,7 @@ function ResultView({ evaluation, isMock, onHistory, onNew }: {
       <div className="sim-stage-footer">
         <button className="sim-btn-ghost-sm" onClick={onNew}>Nuevo caso</button>
         <button className="sim-btn-submit" onClick={onHistory}>
-          Ver historial <ChevronRight size={16} />
+          Ver informe completo <ChevronRight size={16} />
         </button>
       </div>
     </div>
@@ -2037,7 +2037,7 @@ export default function SimulacionPage() {
           {phase === 'result' && evaluation && (
             <div className="sim-body-full">
               <ResultView evaluation={evaluation} isMock={isMock}
-                onHistory={() => navigate('/historial')} onNew={() => navigate('/casos')} />
+                onHistory={() => navigate(consultationId ? `/historial/${consultationId}` : '/historial')} onNew={() => navigate('/casos')} />
             </div>
           )}
         </motion.div>

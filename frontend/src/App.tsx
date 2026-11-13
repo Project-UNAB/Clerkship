@@ -32,6 +32,8 @@ const BibliotecaPage = lazy(() => import('./pages/contenido/BibliotecaPage'));
 const SimulacionPage = lazy(() => import('./pages/simulacion/SimulacionPage'));
 const CasosPage = lazy(() => import('./pages/simulacion/CasosPage'));
 const HistorialPage = lazy(() => import('./pages/simulacion/HistorialPage'));
+const InformePage = lazy(() => import('./pages/simulacion/InformePage'));
+const EnlaceInformePage = lazy(() => import('./pages/simulacion/EnlaceInformePage'));
 const CuestionarioPage = lazy(() => import('./pages/cuestionario/CuestionarioPage'));
 const CronogramaPage = lazy(() => import('./pages/cronograma/CronogramaPage'));
 const DesarrolloPage = lazy(() => import('./pages/desarrollo/DesarrolloPage'));
@@ -207,6 +209,8 @@ export default function App() {
         <Route path="/simulacion/:id"         element={<ProtectedRoute><SimulacionPage /></ProtectedRoute>} />
         <Route path="/casos"                  element={<ProtectedRoute><CasosPage /></ProtectedRoute>} />
         <Route path="/historial"              element={<ProtectedRoute><HistorialPage /></ProtectedRoute>} />
+        <Route path="/historial/:id"          element={<ProtectedRoute><InformePage /></ProtectedRoute>} />
+        <Route path="/informe/enlace/:token"  element={<EnlaceInformePage />} />
         <Route path="/perfil"                 element={<ProtectedRoute><PerfilPage /></ProtectedRoute>} />
         <Route path="/perfil/:pestana"        element={<ProtectedRoute><PerfilPage /></ProtectedRoute>} />
 

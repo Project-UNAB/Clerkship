@@ -9,7 +9,7 @@ desactualizado o si aparece una ruta sin control.
   rol del token sea el rol actual del usuario.
 - **Propiedad**: cómo se comprueba que el recurso de la URL le pertenece a quien lo pide.
 
-Total: **216** rutas — 176 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 26 públicas, **0 sin control**.
+Total: **233** rutas — 193 con rol y propiedad, 14 con sesión pero sin restricción por dueño (a propósito), 26 públicas, **0 sin control**.
 
 ## Públicas a propósito
 
@@ -192,6 +192,15 @@ Total: **216** rutas — 176 con rol y propiedad, 14 con sesión pero sin restri
 | GET | `/api/cursos/<course_id>/calificaciones/exportar` | TEACHER | Docente dueño del curso |
 | GET | `/api/cursos/<course_id>/calificaciones/mias` | Cualquiera con sesión | Solo datos del propio usuario |
 
+## Con rol y propiedad — curso_casos
+
+| Método | Ruta | Rol | Propiedad |
+|---|---|---|---|
+| GET | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/caso` | TEACHER o STUDENT | Estudiante matriculado en el curso |
+| POST | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/caso/generar` | TEACHER | Docente dueño del curso |
+| POST | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/caso/iniciar` | STUDENT | Estudiante matriculado en el curso |
+| GET | `/api/cursos/<course_id>/bloques/<block_id>/contenido/<item_id>/caso/resultados` | TEACHER | Docente dueño del curso |
+
 ## Con rol y propiedad — curso_contenido
 
 | Método | Ruta | Rol | Propiedad |
@@ -313,6 +322,24 @@ Total: **216** rutas — 176 con rol y propiedad, 14 con sesión pero sin restri
 | GET | `/api/historial/<string:consultation_id>/retroalimentacion` | Cualquiera con sesión | Dueño de la consulta, o docente del curso al que pertenece |
 | GET | `/api/historial/estadisticas` | STUDENT | Solo datos del propio usuario |
 | GET | `/api/historial/recomendacion` | STUDENT | Solo datos del propio usuario |
+
+## Con rol y propiedad — informes
+
+| Método | Ruta | Rol | Propiedad |
+|---|---|---|---|
+| GET | `/api/informes/<consultation_id>` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| PATCH | `/api/informes/<consultation_id>/calificacion` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| GET | `/api/informes/<consultation_id>/comentarios` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| POST | `/api/informes/<consultation_id>/comentarios` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| DELETE | `/api/informes/<consultation_id>/comentarios/<comment_id>` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| GET | `/api/informes/<consultation_id>/compartir` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| POST | `/api/informes/<consultation_id>/compartir` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| DELETE | `/api/informes/<consultation_id>/compartir/<user_id>` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| DELETE | `/api/informes/<consultation_id>/compartir/enlace` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| POST | `/api/informes/<consultation_id>/compartir/enlace` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| GET | `/api/informes/<consultation_id>/descarga` | Cualquiera con sesión | Dueño de la consulta, docente de su curso o usuario con quien se compartió |
+| GET | `/api/informes/compartidos-conmigo` | Cualquiera con sesión | Solo datos del propio usuario |
+| POST | `/api/informes/enlace/<token>` | Cualquiera con sesión | Solo datos del propio usuario |
 
 ## Con rol y propiedad — notificaciones
 

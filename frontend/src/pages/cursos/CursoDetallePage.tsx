@@ -6,7 +6,7 @@ import {
   ArrowLeft, ArrowRight, Plus, FileText, Video, Link as LinkIcon, Type,
   Pencil, Trash2, Loader2, ClipboardList, HelpCircle,
   BarChart3, Search, X, Clock, BookOpen, ArrowUpRight, ChevronDown, MoreHorizontal,
-  Users, MessagesSquare, Check, Image as ImageIcon, Mail, ExternalLink, Palette, Layers, GripVertical,
+  Users, MessagesSquare, Check, Image as ImageIcon, Mail, ExternalLink, Palette, Layers, GripVertical, Stethoscope,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import FeedbackFab from '../../components/shared/FeedbackFab';
@@ -25,6 +25,7 @@ import GestionarQuizModal from '../../components/cursos/GestionarQuizModal';
 import TomarQuizModal from '../../components/cursos/TomarQuizModal';
 import GestionarTareaModal from '../../components/cursos/GestionarTareaModal';
 import EntregarTareaModal from '../../components/cursos/EntregarTareaModal';
+import CasoClinicoModal from '../../components/cursos/CasoClinicoModal';
 import CalificacionesModal from '../../components/cursos/CalificacionesModal';
 import EditarTarjetaCursoModal from '../../components/cursos/EditarTarjetaCursoModal';
 import RichTextEditor from '../../components/cursos/RichTextEditor';
@@ -59,8 +60,9 @@ const TIPOS: Record<TipoContenido, {
   TEXT: { label: 'Lectura', plural: 'Lecturas', icon: Type, accion: 'Leer' },
   ASSIGNMENT: { label: 'Tarea', plural: 'Tareas', icon: ClipboardList, accion: 'Entregar', accionDocente: 'Gestionar' },
   QUIZ: { label: 'Cuestionario', plural: 'Cuestionarios', icon: HelpCircle, accion: 'Responder', accionDocente: 'Gestionar' },
+  CASE: { label: 'Caso clínico', plural: 'Casos clínicos', icon: Stethoscope, accion: 'Resolver', accionDocente: 'Gestionar' },
 };
-const ORDEN_TIPOS: TipoContenido[] = ['DOCUMENT', 'ASSIGNMENT', 'QUIZ', 'VIDEO', 'LINK', 'TEXT'];
+const ORDEN_TIPOS: TipoContenido[] = ['CASE', 'DOCUMENT', 'ASSIGNMENT', 'QUIZ', 'VIDEO', 'LINK', 'TEXT'];
 
 function plural(n: number, uno: string, varios: string): string {
   return n === 1 ? uno : varios;
@@ -124,6 +126,7 @@ export default function CursoDetallePage() {
   const [agregarContenidoEnBloque, setAgregarContenidoEnBloque] = useState<string | null>(null);
   const [itemPreview, setItemPreview] = useState<CourseContentItem | null>(null);
   const [quizItem, setQuizItem] = useState<{ item: CourseContentItem; blockId: string } | null>(null);
+  const [casoItem, setCasoItem] = useState<{ item: CourseContentItem; blockId: string } | null>(null);
   const [tareaItem, setTareaItem] = useState<{ item: CourseContentItem; blockId: string } | null>(null);
   const [calificacionesAbierto, setCalificacionesAbierto] = useState(false);
   const [miembrosAbierto, setMiembrosAbierto] = useState(false);
@@ -206,6 +209,7 @@ export default function CursoDetallePage() {
 
   function handleAbrirItem(item: CourseContentItem, blockId: string) {
     if (item.type === 'QUIZ') setQuizItem({ item, blockId });
+    else if (item.type === 'CASE') setCasoItem({ item, blockId });
     else if (item.type === 'ASSIGNMENT') setTareaItem({ item, blockId });
     else setItemPreview(item);
   }
@@ -409,10 +413,29 @@ export default function CursoDetallePage() {
     const cerrado = item.due_at ? faltaPara(item.due_at) === 'ya cerró' : false;
     const mia = item.mi_entrega;
     const accion = esDocente && tipo.accionDocente ? tipo.accionDocente
-      : item.type === 'ASSIGNMENT' && mia ? 'Ver entrega' : tipo.accion;
+      : item.type === 'ASSIGNMENT' && mia ? 'Ver entrega'
+        : item.type === 'CASE' && item.mi_caso ? (item.mi_caso.estado === 'COMPLETADO' ? 'Ver informe' : 'Continuar') : tipo.accion;
     const formato = item.type === 'DOCUMENT' ? (item.file?.nombre?.split('.').pop() || '').toUpperCase().slice(0, 4) : '';
     // Estado de la tarea en la tarjeta: lo del estudiante o el avance de calificación del docente.
     let estadoTarea: { txt: string; clase: string } | null = null;
+    if (item.type === 'CASE') {
+      if (esDocente) {
+        const c = item.casos;
+        estadoTarea = !item.case_listo ? { txt: 'Sin generar', clase: 'is-ambar' }
+          : !c || c.completados === 0 ? { txt: 'Nadie lo ha resuelto', clase: 'is-gris' }
+            : c.calificados < c.completados
+              ? { txt: `${c.completados - c.calificados} por calificar · ${c.completados} ${plural(c.completados, 'resuelto', 'resueltos')}`, clase: 'is-azul' }
+              : { txt: `${c.completados} ${plural(c.completados, 'resuelto y calificado', 'resueltos y calificados')}`, clase: 'is-verde' };
+      } else {
+        const m = item.mi_caso;
+        estadoTarea = m?.estado === 'COMPLETADO'
+          ? m.teacher_score != null
+            ? { txt: `Calificado · ${m.teacher_score}${item.max_score != null ? ` / ${item.max_score}` : ''}`, clase: 'is-verde' }
+            : { txt: `Resuelto · ${m.score != null ? Math.round(m.score) : '—'}/100`, clase: 'is-azul' }
+          : m?.estado === 'EN_CURSO' ? { txt: 'En curso', clase: 'is-azul' }
+            : cerrado ? { txt: 'No resuelto', clase: 'is-rojo' } : { txt: 'Pendiente', clase: 'is-ambar' };
+      }
+    }
     if (item.type === 'ASSIGNMENT') {
       if (esDocente && item.entregas) {
         const { total, calificadas } = item.entregas;
@@ -1033,6 +1056,11 @@ export default function CursoDetallePage() {
         ) : (
           <TomarQuizModal courseId={id} blockId={quizItem.blockId} item={quizItem.item} onClose={() => setQuizItem(null)} />
         )
+      )}
+
+      {casoItem && id && (
+        <CasoClinicoModal courseId={id} blockId={casoItem.blockId} item={casoItem.item} esDocente={esDocente}
+          onClose={() => setCasoItem(null)} onChanged={cargar} />
       )}
 
       {tareaItem && id && (

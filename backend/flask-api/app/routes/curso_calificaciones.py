@@ -19,6 +19,7 @@ from flask_jwt_extended import jwt_required
 from app import db
 from app.models import (
     AssignmentSubmission,
+    Consultation,
     Course,
     CourseBlock,
     CourseContentItem,
@@ -55,7 +56,7 @@ def _items_calificables(course_id):
     ordenados por posición del bloque y luego del item."""
     return (
         CourseContentItem.query.join(CourseBlock, CourseContentItem.block_id == CourseBlock.id)
-        .filter(CourseBlock.course_id == course_id, CourseContentItem.type.in_(["ASSIGNMENT", "QUIZ"]))
+        .filter(CourseBlock.course_id == course_id, CourseContentItem.type.in_(["ASSIGNMENT", "QUIZ", "CASE"]))
         .order_by(CourseBlock.position.asc(), CourseContentItem.position.asc())
         .all()
     )
@@ -91,7 +92,7 @@ def _construir_matriz(course_id, student_ids):
 
     items_meta = []
     for item in items:
-        max_score = float(item.max_score) if item.type == "ASSIGNMENT" and item.max_score is not None else None
+        max_score = float(item.max_score) if item.type in ("ASSIGNMENT", "CASE") and item.max_score is not None else None
         if item.type == "QUIZ":
             max_score = max_score_quiz.get(str(item.id))
         meta = {
@@ -134,6 +135,20 @@ def _construir_matriz(course_id, student_ids):
                 continue
             fila = celdas_por_estudiante.setdefault(student_id, {})
             fila[item_id] = {"score": score, "status": "graded", "attempts": len(suyos)}
+
+    # Casos clínicos asignados: cuenta la nota del docente; completado sin nota = entregado.
+    case_ids = [i.id for i in items if i.type == "CASE"]
+    if case_ids and student_ids:
+        consultas = Consultation.query.filter(
+            Consultation.course_item_id.in_(case_ids), Consultation.student_id.in_(student_ids),
+            Consultation.status == "COMPLETED",
+        ).all()
+        for c in consultas:
+            fila = celdas_por_estudiante.setdefault(str(c.student_id), {})
+            if c.teacher_score is not None:
+                fila[str(c.course_item_id)] = {"score": float(c.teacher_score), "status": "graded"}
+            else:
+                fila[str(c.course_item_id)] = {"score": None, "status": "submitted"}
 
     return items_meta, celdas_por_estudiante
 

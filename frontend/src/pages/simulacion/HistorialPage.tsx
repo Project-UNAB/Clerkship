@@ -4,15 +4,17 @@ import { motion } from 'framer-motion';
 import {
   Search, Clock, Info,
   ChevronRight, ChevronDown, Download, BarChart2,
-  Check, AlertCircle, Target, Star, ClipboardCheck, Loader2, X, TrendingUp, Award, Eye,
+  Check, AlertCircle, Target, Star, ClipboardCheck, Loader2, Share2,
 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import FeedbackFab from '../../components/shared/FeedbackFab';
 import {
-  listHistorial, getEstadisticas, getRetroalimentacion, getRecomendacion,
-  type Consultation, type Estadisticas, type EvaluationResult, type RetroalimentacionResponse, type Recomendacion,
+  listHistorial, getEstadisticas, getRecomendacion,
+  type Consultation, type Estadisticas, type Recomendacion,
 } from '../../data/consultasApi';
 import { mainAuthErrorMessage } from '../../data/mainAuth';
+import { informesCompartidosConmigo, type InformeCompartido } from '../../data/informesApi';
+import '../../styles/informe.css';
 
 /* ── Custom Select Component ───────────────────────────── */
 function CustomSelect({
@@ -254,162 +256,6 @@ function SessionRow({ s, delay, onVerDetalle }: { s: Consultation; delay: number
 }
 
 /* ── Desglose completo de la evaluación (EvaluationResult, cuando viene detailed_rubric) ── */
-function EvaluationBreakdown({ ev }: { ev: EvaluationResult }) {
-  return (
-    <>
-      <h2 className="sim-stage-title">Puntaje: {ev.puntaje_global.toFixed(0)} / 100</h2>
-
-      <div className="sim-eval-domains">
-        {ev.desglose.map(d => (
-          <div key={d.dimension} className="sim-eval-domain">
-            <span className="sim-eval-domain-label">
-              {d.etiqueta}<em className="sim-eval-domain-weight">({d.peso}%)</em>
-            </span>
-            <div className="sim-eval-domain-track">
-              <div className="sim-eval-domain-fill" style={{ width: `${Math.max(0, Math.min(100, d.puntaje))}%` }} />
-            </div>
-            <span className="sim-eval-domain-val">{d.puntaje.toFixed(0)}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="sim-eval-feedback">
-        <p className="sim-eval-feedback-title"><Info size={14} /> Retroalimentación</p>
-        <p className="sim-eval-feedback-text">{ev.retroalimentacion_formativa}</p>
-      </div>
-
-      <div className="sim-eval-cols">
-        <div className="sim-eval-col">
-          <p className="sim-eval-col-title"><TrendingUp size={14} /> Fortalezas</p>
-          <ul className="sim-eval-list">{ev.fortalezas.map((s, i) => <li key={i}>{s}</li>)}</ul>
-        </div>
-        <div className="sim-eval-col">
-          <p className="sim-eval-col-title"><Award size={14} /> Áreas de mejora</p>
-          <ul className="sim-eval-list">{ev.aspectos_a_mejorar.map((s, i) => <li key={i}>{s}</li>)}</ul>
-        </div>
-      </div>
-
-      <div className="sim-eval-reveal">
-        <p className="sim-eval-reveal-title"><Eye size={14} /> Diagnóstico real revelado</p>
-        <p className="sim-eval-reveal-dx">{ev.revelacion.diagnostico_real}</p>
-        <p className="sim-eval-reveal-sub">{ev.revelacion.subtema} · dificultad {ev.revelacion.dificultad}</p>
-        {ev.revelacion.diferenciales_esperados.length > 0 && (
-          <div className="sim-eval-reveal-diff">
-            <span>Diferenciales esperados:</span>
-            <ul className="sim-eval-list">
-              {ev.revelacion.diferenciales_esperados.map((s, i) => <li key={i}>{s}</li>)}
-            </ul>
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-function fmtHora(iso: string | null) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-}
-
-/* ── Transcripción completa de la charla con el paciente — la consulta ya
-   está completada acá, así que no hay nada que se esté "adelantando". ── */
-function ConversationView({ chat }: { chat: RetroalimentacionResponse['chat_history'] }) {
-  if (chat.length === 0) {
-    return <p className="sim-hc-hist-empty">No quedó ninguna conversación registrada para esta consulta.</p>;
-  }
-  return (
-    <div className="hist-chat-transcript">
-      {chat.map((m, i) => (
-        m.es_exploracion ? (
-          <div key={i} className="sim-explora-nota">{m.content}</div>
-        ) : (
-          <div key={i} className={`sim-bubble-wrap${m.sender === 'STUDENT' ? ' sim-bubble-wrap-student' : ''}`}>
-            <div>
-              <div className={`sim-bubble sim-bubble-${m.sender === 'STUDENT' ? 'student' : 'patient'}`}>{m.content}</div>
-              <div className="sim-bubble-meta">{fmtHora(m.timestamp)}</div>
-            </div>
-          </div>
-        )
-      ))}
-    </div>
-  );
-}
-
-/* ── Modal de retroalimentación real (Agente 3) ────────────── */
-function RetroalimentacionModal({ consultationId, onClose }: { consultationId: string; onClose: () => void }) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<RetroalimentacionResponse | null>(null);
-  const [tab, setTab] = useState<'evaluacion' | 'conversacion'>('evaluacion');
-
-  useEffect(() => {
-    let cancelled = false;
-    getRetroalimentacion(consultationId)
-      .then(res => { if (!cancelled) setData(res); })
-      .catch(err => { if (!cancelled) setError(mainAuthErrorMessage(err)); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [consultationId]);
-
-  const rubric = data?.evaluation.detailed_rubric;
-
-  return (
-    <div className="hist-modal-backdrop" onClick={onClose}>
-      <motion.div
-        className="hist-modal"
-        initial={{ opacity: 0, y: 16, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        onClick={e => e.stopPropagation()}
-      >
-        <button className="hist-modal-close" onClick={onClose}><X size={16} /></button>
-
-        {loading && <div className="hist-modal-loading"><Loader2 size={24} className="sim-spin" /></div>}
-        {error && <p className="sim-error-text">{error}</p>}
-
-        {data && (
-          <>
-            <p className="sim-eval-mock-badge">{data.consultation.title}</p>
-
-            <div className="sim-explora-tabs" style={{ marginBottom: 16 }}>
-              <button
-                type="button"
-                className={`sim-explora-tab${tab === 'evaluacion' ? ' active' : ''}`}
-                onClick={() => setTab('evaluacion')}
-              >
-                Evaluación
-              </button>
-              <button
-                type="button"
-                className={`sim-explora-tab${tab === 'conversacion' ? ' active' : ''}`}
-                onClick={() => setTab('conversacion')}
-              >
-                Conversación ({data.chat_history.filter(m => !m.es_exploracion).length})
-              </button>
-            </div>
-
-            {tab === 'conversacion' ? (
-              <ConversationView chat={data.chat_history} />
-            ) : rubric ? (
-              <EvaluationBreakdown ev={rubric} />
-            ) : (
-              <>
-                <h2 className="sim-stage-title">Puntaje: {data.evaluation.final_score.toFixed(0)} / 100</h2>
-                <div className="sim-eval-feedback">
-                  <p className="sim-eval-feedback-title"><Info size={14} /> Retroalimentación</p>
-                  <p className="sim-eval-feedback-text">
-                    {data.evaluation.feedback_summary || 'No hay retroalimentación detallada disponible para esta consulta.'}
-                  </p>
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </motion.div>
-    </div>
-  );
-}
-
 /* ── Page ───────────────────────────────────────────────── */
 export default function HistorialPage() {
   const navigate = useNavigate();
@@ -424,7 +270,10 @@ export default function HistorialPage() {
   const [stats, setStats] = useState<Estadisticas | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [detalleId, setDetalleId] = useState<string | null>(null);
+  const [compartidos, setCompartidos] = useState<InformeCompartido[]>([]);
+  useEffect(() => {
+    informesCompartidosConmigo().then(setCompartidos).catch(() => setCompartidos([]));
+  }, []);
   const [recomendacion, setRecomendacion] = useState<Recomendacion | null>(null);
 
   useEffect(() => {
@@ -599,7 +448,7 @@ export default function HistorialPage() {
             {loading ? (
               <div className="hist-empty-state"><Loader2 size={22} className="sim-spin" /></div>
             ) : displayed.length > 0 ? (
-              displayed.map((s, i) => <SessionRow key={s.id} s={s} delay={i * 0.05} onVerDetalle={setDetalleId} />)
+              displayed.map((s, i) => <SessionRow key={s.id} s={s} delay={i * 0.05} onVerDetalle={id => navigate(`/historial/${id}`)} />)
             ) : (
               <div className="hist-empty-state">
                 <p>Aún no has completado ninguna simulación clínica — ve a «Casos» para iniciar una.</p>
@@ -608,8 +457,22 @@ export default function HistorialPage() {
           </div>
         </div>
 
-        {detalleId && (
-          <RetroalimentacionModal consultationId={detalleId} onClose={() => setDetalleId(null)} />
+        {compartidos.length > 0 && (
+          <section className="hist-compartidos">
+            <h2><Share2 size={18} /> Compartidos conmigo</h2>
+            <div className="hist-compartidos-lista">
+              {compartidos.map(c => (
+                <button key={c.id} type="button" className="hist-compartido" onClick={() => navigate(`/historial/${c.id}`)}>
+                  <span className="hist-compartido-titulo">{c.title}</span>
+                  <span className="hist-compartido-meta">{c.estudiante.nombre}{c.subtema ? ` · ${c.subtema}` : ''}</span>
+                  <span className="hist-compartido-pie">
+                    {c.score != null && <strong>{Math.round(c.score)}/100</strong>}
+                    <span>Ver informe <ChevronRight size={14} /></span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* ── Pagination ── */}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { tomarDestinoPendiente } from '../../data/informesApi';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, Database, Shield, Scale,
@@ -137,7 +138,7 @@ export default function ConsentPage() {
 
           setTimeout(() => {
             setTransitionPhase('done');
-            navigate('/dashboard', { replace: true });
+            navigate(tomarDestinoPendiente() ?? '/dashboard', { replace: true });
           }, CROSSFADE_TIME + 50);
         }, SUCCESS_HOLD);
       }, 3000);

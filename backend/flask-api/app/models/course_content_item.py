@@ -12,7 +12,7 @@ from sqlalchemy.sql import func
 
 from app import db
 
-TIPOS_CONTENIDO = ("DOCUMENT", "VIDEO", "LINK", "TEXT", "ASSIGNMENT", "QUIZ")
+TIPOS_CONTENIDO = ("DOCUMENT", "VIDEO", "LINK", "TEXT", "ASSIGNMENT", "QUIZ", "CASE")
 POLITICAS_NOTA = ("BEST", "LAST", "AVERAGE", "FIRST")
 
 
@@ -56,6 +56,11 @@ class CourseContentItem(db.Model):
         default="BEST",
         server_default="BEST",
     )
+    # Solo CASE: el caso clínico que el docente generó una vez y que
+    # entrevistan todos los estudiantes. Nunca se envía a los estudiantes.
+    case_template = db.Column(JSONB)
+    case_subtema = db.Column(db.String(150))
+    case_dificultad = db.Column(db.String(20))
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
     updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
@@ -108,4 +113,11 @@ class CourseContentItem(db.Model):
             d["time_limit_minutes"] = self.time_limit_minutes
             d["max_attempts"] = self.max_attempts
             d["grade_policy"] = self.grade_policy or "BEST"
+        if self.type == "CASE":
+            d["open_at"] = _dt(self.open_at)
+            d["due_at"] = _dt(self.due_at)
+            d["max_score"] = float(self.max_score) if self.max_score is not None else None
+            d["case_subtema"] = self.case_subtema
+            d["case_dificultad"] = self.case_dificultad
+            d["case_listo"] = bool(self.case_template)
         return d

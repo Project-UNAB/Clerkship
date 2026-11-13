@@ -51,9 +51,11 @@ PUBLICAS = {
 # Qué comprobación de propiedad hace una vista, según lo que aparece en su código.
 # El orden importa: gana la primera que coincida.
 PROPIEDAD = [
+    ("Dueño de la consulta, docente de su curso o usuario con quien se compartió", (r"_informe_o_error\(",)),
     ("Docente dueño del curso", (
         r"_curso_del_docente\(", r"_curso_en_papelera\(", r"_entrega_para_docente\(", r"_resolver_solicitud\(",
         r"not _es_docente_dueno\(", r"teacher_id\) != str\(user\.id\)",
+        r"lambda c: _es_docente_dueno\(user, c\)\)",
     )),
     ("Docente dueño o estudiante matriculado en el curso", (r"_puede_ver\(",)),
     ("Docente dueño del curso o estudiante autor de la entrega", (r"_archivo_de_entrega_o_error\(",)),

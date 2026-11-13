@@ -1,0 +1,55 @@
+/* ── Caso clínico asignado en un curso (CasoClinicoModal). Usa las piezas de informe.css. ── */
+.cc-modal { width: min(680px, 100%); }
+.cc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 0 20px 8px; font-size: 0.8rem; color: var(--ink3); }
+.cc-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.cc-meta .inf-badge-caso { margin: 0; }
+.cc-pestanas { display: flex; gap: 4px; margin: 4px 20px 0; padding: 4px; border-radius: 12px; background: var(--surface2); width: fit-content; }
+.cc-pestanas button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: none; border-radius: 9px;
+  background: transparent; color: var(--ink3); font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+}
+.cc-pestanas button.is-activa { background: var(--surface); color: var(--p, #1976D2); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08); }
+.cc-instrucciones { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--surface2); font-size: 0.86rem; line-height: 1.6; color: var(--ink2); white-space: pre-line; }
+.cc-instrucciones-sec { margin: 0; font-size: 0.86rem; line-height: 1.6; color: var(--ink2); }
+.cc-caso { display: flex; flex-direction: column; gap: 10px; }
+.cc-paciente { display: flex; flex-direction: column; gap: 2px; }
+.cc-paciente strong { font-size: 1rem; }
+.cc-paciente span { font-size: 0.8rem; color: var(--ink3); }
+.cc-cita {
+  margin: 0; padding: 10px 14px; border-left: 3px solid var(--p, #1976D2); background: rgba(25, 118, 210, 0.05);
+  border-radius: 0 10px 10px 0; font-size: 0.86rem; font-style: italic; color: var(--ink2);
+}
+.cc-dato { padding: 10px 12px; border: 1px solid var(--border2); border-radius: 10px; }
+.cc-dato > span { display: block; margin-bottom: 3px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink3); }
+.cc-dato p, .cc-dato ul { margin: 0; font-size: 0.85rem; line-height: 1.55; color: var(--ink2); }
+.cc-dato ul { padding-left: 18px; }
+.cc-dato.is-dx { border-color: rgba(124, 58, 237, 0.35); background: rgba(124, 58, 237, 0.05); }
+.cc-dato.is-dx strong { color: #6D28D9; }
+.cc-nota { margin: 0; font-size: 0.78rem; color: var(--ink3); }
+.cc-generar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border2); }
+.cc-generar label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; font-size: 0.76rem; font-weight: 600; color: var(--ink3); }
+.cc-generar select {
+  padding: 8px 10px; border: 1px solid var(--border2); border-radius: 9px; background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 0.82rem;
+}
+.cc-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.cc-resumen div { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 12px; background: var(--surface2); }
+.cc-resumen strong { font-size: 1.3rem; color: var(--ink); }
+.cc-resumen span { font-size: 0.74rem; color: var(--ink3); }
+.cc-resultados { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.cc-resultados li {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto auto; align-items: center; gap: 10px;
+  padding: 9px 10px; border: 1px solid var(--border2); border-radius: 10px; font-size: 0.84rem;
+}
+.cc-res-nombre { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cc-res-nota { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; color: var(--ink2); }
+.cc-res-nota.is-docente { color: #6D28D9; font-weight: 700; }
+.cc-estado { padding: 2px 9px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+.cc-estado.is-completado { background: rgba(22, 163, 74, 0.12); color: #15803D; }
+.cc-estado.is-en_curso { background: rgba(25, 118, 210, 0.12); color: #0D47A1; }
+.cc-estado.is-pendiente { background: var(--surface2); color: var(--ink3); }
+.cc-estudiante { display: flex; flex-direction: column; gap: 14px; }
+.cc-hecho { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 700; color: #15803D; }
+@media (max-width: 640px) {
+  .cc-resultados li { grid-template-columns: 1fr auto; }
+}

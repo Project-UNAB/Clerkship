@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { tomarDestinoPendiente } from '../../data/informesApi';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail, Lock, Eye, EyeOff,
@@ -98,8 +99,9 @@ export default function LoginPage() {
         // va directo a su panel.
         navigate('/admin', { replace: true });
       } else if (hasConsent) {
-        sessionStorage.setItem('clerkship_show_welcome', 'true');
-        navigate('/dashboard', { replace: true });
+        const destino = tomarDestinoPendiente();
+        if (!destino) sessionStorage.setItem('clerkship_show_welcome', 'true');
+        navigate(destino ?? '/dashboard', { replace: true });
       } else {
         navigate('/consent', { replace: true });
       }

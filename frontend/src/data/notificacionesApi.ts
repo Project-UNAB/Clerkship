@@ -5,7 +5,8 @@
  */
 import { apiFetch, type Paginacion } from './apiClient';
 
-export type TipoNotificacion = 'ASSIGNMENT_PUBLISHED' | 'ANNOUNCEMENT' | 'ASSIGNMENT_GRADED' | 'DUE_SOON';
+export type TipoNotificacion = 'ASSIGNMENT_PUBLISHED' | 'ANNOUNCEMENT' | 'ASSIGNMENT_GRADED' | 'DUE_SOON'
+  | 'REPORT_SHARED' | 'REPORT_COMMENT' | 'CASE_GRADED';
 
 export interface Notificacion {
   id: string;
@@ -13,7 +14,7 @@ export interface Notificacion {
   title: string;
   body: string | null;
   course_id: string | null;
-  entity_type: 'assignment' | 'announcement' | null;
+  entity_type: 'assignment' | 'announcement' | 'consultation' | null;
   entity_id: string | null;
   /** Una fecha en UTC ligada al aviso (p. ej. el cierre de la tarea). */
   event_at: string | null;

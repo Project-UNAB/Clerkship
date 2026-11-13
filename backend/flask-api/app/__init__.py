@@ -241,6 +241,8 @@ def create_app():
     from app.routes.curso_avisos import curso_avisos_bp
     from app.routes.curso_quiz import curso_quiz_bp
     from app.routes.curso_calificaciones import curso_calificaciones_bp
+    from app.routes.curso_casos import curso_casos_bp
+    from app.routes.informes import informes_bp
     from app.routes.articulos import articulos_bp
     from app.routes.anotaciones import anotaciones_bp
     from app.routes.comunidad import comunidad_bp
@@ -267,6 +269,8 @@ def create_app():
     app.register_blueprint(curso_avisos_bp, url_prefix="/api/cursos")
     app.register_blueprint(curso_quiz_bp, url_prefix="/api/cursos")
     app.register_blueprint(curso_calificaciones_bp, url_prefix="/api/cursos")
+    app.register_blueprint(curso_casos_bp, url_prefix="/api/cursos")
+    app.register_blueprint(informes_bp, url_prefix="/api/informes")
     app.register_blueprint(articulos_bp, url_prefix="/api/articulos")
     app.register_blueprint(anotaciones_bp, url_prefix="/api/articulos")
     app.register_blueprint(comunidad_bp, url_prefix="/api/comunidad")

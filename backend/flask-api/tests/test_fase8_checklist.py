@@ -29,6 +29,7 @@ from flask_jwt_extended import create_access_token
 
 import app.routes.curso_avisos as ca_routes
 import app.routes.curso_calificaciones as cal_routes
+import app.routes.curso_casos as ccasos_routes
 import app.routes.curso_contenido as cc_routes
 import app.routes.curso_quiz as cq_routes
 import app.routes.curso_tarea_comentarios as ctc_routes
@@ -42,7 +43,7 @@ from tests.fakes import ConsultaFalsa
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 import tabla_endpoints  # noqa: E402
 
-MODULOS_DE_CURSOS = (cursos_routes, cc_routes, cq_routes, cal_routes, ca_routes, ctc_routes)
+MODULOS_DE_CURSOS = (cursos_routes, cc_routes, cq_routes, cal_routes, ca_routes, ctc_routes, ccasos_routes)
 AHORA = datetime.now(timezone.utc)
 
 
@@ -65,6 +66,7 @@ def _url(ruta: str) -> str:
 # Cuerpo mínimo válido de las rutas que validan el JSON antes de mirar permisos.
 _CUERPOS = {
     ("POST", "/bloques"): {"title": "Bloque"},
+    ("POST", "/caso/generar"): {"subtema": "Pancreatitis aguda", "dificultad": "MEDIUM"},
     ("PUT", "/anotaciones/<pagina>"): {"trazos": []},
     ("POST", "/contenido"): {"type": "LINK", "title": "Enlace", "link_url": "https://example.com"},
     ("POST", "/preguntas"): {"type": "TRUE_FALSE", "prompt": "¿?", "choices": [{"text": "V", "is_correct": True}, {"text": "F"}]},

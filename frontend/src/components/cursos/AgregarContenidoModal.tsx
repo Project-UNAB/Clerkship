@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X, FileText, Video, Link as LinkIcon, Type, Loader2, Upload, HelpCircle, ClipboardList } from 'lucide-react';
+import { X, FileText, Video, Link as LinkIcon, Type, Loader2, Upload, HelpCircle, ClipboardList, Stethoscope } from 'lucide-react';
 import { crearContenido, GRADE_POLICY_LABELS, type ContentType, type GradePolicy } from '../../data/cursoContenidoApi';
+import { generarCasoCurso, SUBTEMAS_CASO } from '../../data/informesApi';
 import { readFileAsBase64, base64ByteLength, formatFileSize } from '../../utils/fileUpload';
 import RichTextEditor from './RichTextEditor';
 import TareaFormFields, {
@@ -21,6 +22,7 @@ const TIPOS: { type: ContentType; label: string; Icon: typeof FileText }[] = [
   { type: 'TEXT', label: 'Nota', Icon: Type },
   { type: 'ASSIGNMENT', label: 'Tarea', Icon: ClipboardList },
   { type: 'QUIZ', label: 'Cuestionario', Icon: HelpCircle },
+  { type: 'CASE', label: 'Caso clínico', Icon: Stethoscope },
 ];
 
 const MAX_FILE_BASE64_CHARS = 15 * 1024 * 1024;
@@ -39,6 +41,10 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
   const [maxAttempts, setMaxAttempts] = useState('');
   const [gradePolicy, setGradePolicy] = useState<GradePolicy>('BEST');
   const [tarea, setTarea] = useState<TareaFormValue>(TAREA_FORM_VACIO);
+  const [subtema, setSubtema] = useState<string>(SUBTEMAS_CASO[0]);
+  const [dificultad, setDificultad] = useState('MEDIUM');
+  const [puntajeCaso, setPuntajeCaso] = useState('100');
+  const [generando, setGenerando] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -124,6 +130,26 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
           max_score: tarea.maxScore ? Number(tarea.maxScore) : undefined,
           rubric: tarea.rubric.length > 0 ? rubricaParaEnviar(tarea.rubric) : undefined,
         });
+      } else if (tipo === 'CASE') {
+        const item = await crearContenido(courseId, blockId, {
+          type: 'CASE',
+          title: title.trim(),
+          description: description.trim() || undefined,
+          open_at: localDatetimeToIso(openAt),
+          due_at: localDatetimeToIso(dueAt),
+          max_score: puntajeCaso ? Number(puntajeCaso) : 100,
+        });
+        // El caso se genera una vez y lo harán todos los estudiantes.
+        setGenerando(true);
+        try {
+          await generarCasoCurso(courseId, blockId, item.id, subtema, dificultad);
+        } catch {
+          onCreated();
+          setError('El caso quedó creado, pero no se pudo generar el paciente. Ábrelo y usa «Generar caso».');
+          return;
+        } finally {
+          setGenerando(false);
+        }
       } else {
         await crearContenido(courseId, blockId, {
           type: 'QUIZ',
@@ -147,7 +173,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
 
   return (
     <div className="ccv-modal-backdrop" onClick={onClose}>
-      <div className={`ccv-modal ccv-modal-form ${tipo === 'TEXT' || tipo === 'QUIZ' || tipo === 'ASSIGNMENT' ? 'ccv-modal-form-wide' : ''}`} onClick={e => e.stopPropagation()}>
+      <div className={`ccv-modal ccv-modal-form ${tipo === 'TEXT' || tipo === 'QUIZ' || tipo === 'ASSIGNMENT' || tipo === 'CASE' ? 'ccv-modal-form-wide' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="ccv-modal-header">
           <h3>Agregar contenido</h3>
           <button type="button" className="ccv-modal-close" onClick={onClose} aria-label="Cerrar">
@@ -211,6 +237,45 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
 
           {tipo === 'ASSIGNMENT' && <TareaFormFields value={tarea} onChange={setTarea} />}
 
+          {tipo === 'CASE' && (
+            <>
+              <p className="ccv-form-hint">
+                La IA genera un paciente con el subtema y la dificultad que elijas. Todos los estudiantes entrevistan al mismo
+                paciente, y podrás revisar el caso, ver cómo le fue a cada uno y calificar su informe.
+              </p>
+              <div className="ccv-form-row">
+                <label className="ccv-form-label">
+                  Subtema
+                  <select value={subtema} onChange={e => setSubtema(e.target.value)}>
+                    {SUBTEMAS_CASO.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </label>
+                <label className="ccv-form-label">
+                  Dificultad
+                  <select value={dificultad} onChange={e => setDificultad(e.target.value)}>
+                    <option value="EASY">Básica</option>
+                    <option value="MEDIUM">Intermedia</option>
+                    <option value="HARD">Avanzada</option>
+                  </select>
+                </label>
+              </div>
+              <div className="ccv-form-row">
+                <label className="ccv-form-label">
+                  Abre (opcional)
+                  <input type="datetime-local" value={openAt} onChange={e => setOpenAt(e.target.value)} />
+                </label>
+                <label className="ccv-form-label">
+                  Cierra (opcional)
+                  <input type="datetime-local" value={dueAt} onChange={e => setDueAt(e.target.value)} />
+                </label>
+              </div>
+              <label className="ccv-form-label">
+                Puntaje máximo de la calificación del docente
+                <input type="number" min={1} value={puntajeCaso} onChange={e => setPuntajeCaso(e.target.value)} />
+              </label>
+            </>
+          )}
+
           {tipo === 'QUIZ' && (
             <>
               <p className="ccv-form-hint">Las preguntas se agregan después de crear el cuestionario.</p>
@@ -251,7 +316,7 @@ export default function AgregarContenidoModal({ courseId, blockId, onClose, onCr
         <div className="ccv-modal-actions">
           <button type="button" className="ccv-btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
           <button type="button" className="ccv-btn-primary" onClick={handleSubmit} disabled={saving}>
-            {saving ? <Loader2 size={14} className="dfm-spin" /> : null} Agregar
+            {saving ? <Loader2 size={14} className="dfm-spin" /> : null} {generando ? 'Generando el caso con IA...' : 'Agregar'}
           </button>
         </div>
       </div>

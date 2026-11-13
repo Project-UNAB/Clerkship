@@ -39,6 +39,7 @@ from app.models.validacion_invitacion import ValidacionInvitacion
 from app.models.revision_caso import RevisionCaso
 from app.models.assignment_comment import AssignmentComment
 from app.models.agente_uso_tokens import AgenteUsoTokens
+from app.models.consultation_share import ConsultationShare, ConsultationComment
 
 __all__ = [
     "FeedbackInicio",
@@ -54,6 +55,8 @@ __all__ = [
     "RevisionCaso",
     "AssignmentComment",
     "AgenteUsoTokens",
+    "ConsultationShare",
+    "ConsultationComment",
     "User",
     "Student",
     "Teacher",

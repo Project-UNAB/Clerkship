@@ -5752,6 +5752,402 @@ paths:
           description: Curso inexistente o estudiante no matriculado
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /api/informes/{consultation_id}:
+    get:
+      tags:
+      - Historial y Evaluación
+      summary: "Informe completo de una consulta"
+      description: "Cierre, evaluación detallada, conversación, nota del docente y permisos de quien lo pide. Lo ven el estudiante dueño, el docente del curso y los usuarios con quienes se compartió."
+      operationId: obtenerInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: "Informe de la consulta"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+        '409':
+          description: "La consulta todavía no termina"
+  /api/informes/{consultation_id}/descarga:
+    get:
+      tags:
+      - Historial y Evaluación
+      summary: "Descargar el informe en Word o PDF"
+      description: "Archivo del informe con sus notas; ?formato=docx o pdf (por defecto)."
+      operationId: descargarInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: formato, in: query, required: false, schema: {type: string, enum: [pdf, docx]}}
+      responses:
+        '200':
+          description: "Archivo del informe"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+        '503':
+          description: "No se pudo generar el PDF"
+  /api/informes/{consultation_id}/comentarios:
+    get:
+      tags:
+      - Historial y Evaluación
+      summary: "Notas del informe"
+      description: "Notas de todos los que tienen acceso, en orden."
+      operationId: listarComentariosInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: "Notas del informe"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+    post:
+      tags:
+      - Historial y Evaluación
+      summary: "Dejar una nota en el informe"
+      description: "Cualquiera con acceso deja notas por sección."
+      operationId: crearComentarioInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: {type: string, minLength: 1, maxLength: 2000}
+                section: {type: string, enum: [general, cierre, anamnesis, diagnostico, evaluacion, conversacion]}
+      responses:
+        '201':
+          description: "Nota creada"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+  /api/informes/{consultation_id}/comentarios/{comment_id}:
+    delete:
+      tags:
+      - Historial y Evaluación
+      summary: "Borrar una nota propia"
+      description: "Solo el autor borra su nota."
+      operationId: borrarComentarioInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: comment_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '204':
+          description: "Nota borrada"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+  /api/informes/{consultation_id}/compartir:
+    get:
+      tags:
+      - Historial y Evaluación
+      summary: "Estado de lo compartido"
+      description: "Solo el dueño: con quién está compartido, el enlace activo y los compañeros y docentes de sus cursos."
+      operationId: estadoCompartirInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: "Estado de lo compartido"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+    post:
+      tags:
+      - Historial y Evaluación
+      summary: "Compartir el informe"
+      description: "Solo el dueño, y solo con miembros de sus cursos."
+      operationId: compartirInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_ids]
+              properties:
+                user_ids: {type: array, minItems: 1, maxItems: 50, items: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: "Estado actualizado"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+  /api/informes/{consultation_id}/compartir/{user_id}:
+    delete:
+      tags:
+      - Historial y Evaluación
+      summary: "Dejar de compartir con un usuario"
+      description: "Solo el dueño."
+      operationId: dejarDeCompartirInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: user_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: "Estado actualizado"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+  /api/informes/{consultation_id}/compartir/enlace:
+    post:
+      tags:
+      - Historial y Evaluación
+      summary: "Crear o cambiar el enlace del informe"
+      description: "Solo el dueño; el enlace anterior deja de servir."
+      operationId: crearEnlaceInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: "Estado con el token del enlace"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+    delete:
+      tags:
+      - Historial y Evaluación
+      summary: "Quitar el enlace del informe"
+      description: "Solo el dueño; quienes entraron por el enlace pierden el acceso."
+      operationId: quitarEnlaceInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: "Estado actualizado"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+  /api/informes/enlace/{token}:
+    post:
+      tags:
+      - Historial y Evaluación
+      summary: "Abrir un informe por enlace"
+      description: "Cualquier usuario con sesión que tenga un enlace activo queda con acceso al informe."
+      operationId: abrirEnlaceInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: token, in: path, required: true, schema: {type: string, maxLength: 64}}
+      responses:
+        '200':
+          description: "Id de la consulta"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+  /api/informes/compartidos-conmigo:
+    get:
+      tags:
+      - Historial y Evaluación
+      summary: "Informes compartidos conmigo"
+      description: "Consultas completadas que otros compartieron con el usuario."
+      operationId: informesCompartidosConmigo
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: "Lista de informes"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+  /api/informes/{consultation_id}/calificacion:
+    patch:
+      tags:
+      - Historial y Evaluación
+      summary: "Calificar un caso asignado"
+      description: "Solo el docente del curso, en consultas de un caso asignado."
+      operationId: calificarCasoInforme
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: consultation_id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teacher_score: {type: number, minimum: 0, nullable: true}
+                teacher_feedback: {type: string, maxLength: 4000, nullable: true}
+      responses:
+        '200':
+          description: "Nota guardada"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+        '409':
+          description: "No es un caso asignado"
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/caso:
+    get:
+      tags:
+      - Cursos
+      summary: "Caso clínico asignado"
+      description: "Docente dueño: el caso completo para revisarlo. Estudiante matriculado: su estado."
+      operationId: obtenerCasoCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: course_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: block_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: item_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: "Caso o estado del estudiante"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/caso/generar:
+    post:
+      tags:
+      - Cursos
+      summary: "Generar el caso clínico asignado"
+      description: "Solo el docente dueño; se puede regenerar mientras ningún estudiante lo haya empezado."
+      operationId: generarCasoCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: course_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: block_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: item_id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subtema]
+              properties:
+                subtema: {type: string}
+                dificultad: {type: string, enum: [EASY, MEDIUM, HARD]}
+      responses:
+        '200':
+          description: "Caso generado"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+        '409':
+          description: "Ya hay estudiantes que lo empezaron"
+        '503':
+          description: "Generador no disponible"
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/caso/iniciar:
+    post:
+      tags:
+      - Cursos
+      summary: "Iniciar el caso clínico asignado"
+      description: "Estudiante matriculado: crea su consulta con el caso del docente o devuelve la que ya tiene (un intento)."
+      operationId: iniciarCasoCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: course_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: block_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: item_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '201':
+          description: "Consulta creada (200 si ya existía)"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
+        '409':
+          description: "Caso sin preparar, aún no abre o ya cerró"
+  /api/cursos/{course_id}/bloques/{block_id}/contenido/{item_id}/caso/resultados:
+    get:
+      tags:
+      - Cursos
+      summary: "Resultados del caso clínico asignado"
+      description: "Docente dueño: estado, nota del evaluador y nota del docente de cada estudiante."
+      operationId: resultadosCasoCurso
+      security:
+      - BearerAuth: []
+      parameters:
+      - {name: course_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: block_id, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: item_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: "Resultados"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Sin acceso a este recurso
+        '404':
+          description: No encontrado
   /api/historial/recomendacion:
     get:
       tags:

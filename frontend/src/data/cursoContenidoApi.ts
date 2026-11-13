@@ -5,7 +5,7 @@
  */
 import { apiFetch, todasLasPaginas, type Paginacion } from './apiClient';
 
-export type ContentType = 'DOCUMENT' | 'VIDEO' | 'LINK' | 'TEXT' | 'ASSIGNMENT' | 'QUIZ';
+export type ContentType = 'DOCUMENT' | 'VIDEO' | 'LINK' | 'TEXT' | 'ASSIGNMENT' | 'QUIZ' | 'CASE';
 
 export interface CourseContentFile {
   id: string | null;
@@ -53,6 +53,15 @@ export interface CourseContentItem {
   time_limit_minutes?: number | null;
   max_attempts?: number | null;
   grade_policy?: GradePolicy;
+  // CASE (caso clínico asignado: open_at/due_at/max_score de arriba)
+  case_subtema?: string | null;
+  case_dificultad?: string | null;
+  /** El docente ya generó el caso que harán los estudiantes. */
+  case_listo?: boolean;
+  /** Solo al estudiante, en la lista del curso: su consulta del caso (null si no lo ha empezado). */
+  mi_caso?: { estado: 'EN_CURSO' | 'COMPLETADO'; consultation_id: string; score: number | null; teacher_score: number | null } | null;
+  /** Solo al docente, en la lista del curso: cuántos lo completaron y cuántos calificó. */
+  casos?: { completados: number; calificados: number };
 }
 
 /** Qué nota queda en un cuestionario cuando hay varios intentos entregados. */

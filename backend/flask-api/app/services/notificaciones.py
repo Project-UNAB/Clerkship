@@ -30,6 +30,9 @@ ASSIGNMENT_PUBLISHED = "ASSIGNMENT_PUBLISHED"
 ANNOUNCEMENT = "ANNOUNCEMENT"
 ASSIGNMENT_GRADED = "ASSIGNMENT_GRADED"
 DUE_SOON = "DUE_SOON"
+REPORT_SHARED = "REPORT_SHARED"
+REPORT_COMMENT = "REPORT_COMMENT"
+CASE_GRADED = "CASE_GRADED"
 
 # Las fechas viajan en UTC; en el texto de un correo se escriben en hora de
 # Colombia (UTC-5 todo el año, sin horario de verano).
@@ -151,6 +154,43 @@ def tarea_calificada(course, item, entrega) -> int:
         asunto=f"Calificaron tu tarea «{item.title}»",
         texto_correo=f"Tu entrega de «{item.title}» en el curso {course.name} ya fue calificada. Nota: {nota}.",
         course_id=course.id, entity_type="assignment", entity_id=item.id,
+    )
+
+
+def informe_compartido(consulta, quien, destinatarios) -> int:
+    """A quienes recibieron el informe de una consulta."""
+    nombre = f"{quien.first_name} {quien.last_name}".strip()
+    return _notificar(
+        destinatarios, REPORT_SHARED,
+        f"{nombre} compartió contigo un informe", consulta.title,
+        asunto=f"{nombre} compartió contigo el informe de una consulta simulada",
+        texto_correo=f"{nombre} compartió contigo el informe «{consulta.title}». Entra a la plataforma para verlo y dejar tus notas.",
+        entity_type="consultation", entity_id=consulta.id,
+    )
+
+
+def nota_en_informe(consulta, autor, destinatarios) -> int:
+    """A los demás que siguen el informe: alguien dejó una nota."""
+    nombre = f"{autor.first_name} {autor.last_name}".strip()
+    return _notificar(
+        destinatarios, REPORT_COMMENT,
+        f"Nueva nota de {nombre}", f"En el informe «{consulta.title}».",
+        asunto=f"{nombre} dejó una nota en el informe «{consulta.title}»",
+        texto_correo=f"{nombre} dejó una nota en el informe «{consulta.title}». Entra a la plataforma para leerla.",
+        entity_type="consultation", entity_id=consulta.id,
+    )
+
+
+def caso_calificado(consulta, item) -> int:
+    """Al estudiante: el docente calificó su caso clínico asignado."""
+    maximo = f" / {float(item.max_score):g}" if item.max_score is not None else ""
+    nota = f"{float(consulta.teacher_score):g}{maximo}"
+    return _notificar(
+        [consulta.student_id], CASE_GRADED,
+        f"Caso calificado: {item.title}", f"Tu nota: {nota}.",
+        asunto=f"Calificaron tu caso clínico «{item.title}»",
+        texto_correo=f"El docente calificó tu caso clínico «{item.title}». Nota: {nota}.",
+        entity_type="consultation", entity_id=consulta.id,
     )
 
 

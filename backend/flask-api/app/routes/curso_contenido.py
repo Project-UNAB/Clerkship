@@ -19,6 +19,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from app import db, limiter, storage
 from app.models import (
     AssignmentSubmission,
+    Consultation,
     Course,
     CourseBlock,
     CourseContentItem,
@@ -46,7 +47,7 @@ from app.utils import get_current_user, role_required
 
 curso_contenido_bp = Blueprint("curso_contenido", __name__)
 
-TIPOS_VALIDOS = ("DOCUMENT", "VIDEO", "LINK", "TEXT", "ASSIGNMENT", "QUIZ")
+TIPOS_VALIDOS = ("DOCUMENT", "VIDEO", "LINK", "TEXT", "ASSIGNMENT", "QUIZ", "CASE")
 # Mismo límite que la Carpeta de Documentos (~11MB reales en base64).
 MAX_CONTENIDO_BASE64_CHARS = 15 * 1024 * 1024
 
@@ -215,6 +216,12 @@ def listar_bloques(course_id):
         current_app.logger.warning("No se pudo resumir las entregas del curso %s", course_id, exc_info=True)
         entregas = {}
 
+    try:
+        casos = _resumen_casos(user, course, [i for lista in items_por_bloque.values() for i in lista if i.type == "CASE"])
+    except Exception:  # noqa: BLE001
+        current_app.logger.warning("No se pudo resumir los casos del curso %s", course_id, exc_info=True)
+        casos = {}
+
     resultado = []
     for bloque in bloques:
         d = bloque.to_dict()
@@ -223,10 +230,38 @@ def listar_bloques(course_id):
             dato = _item_dict(item, archivos_por_id.get(str(item.file_id)) if item.file_id else None)
             if item.type == "ASSIGNMENT" and str(item.id) in entregas:
                 dato.update(entregas[str(item.id)])
+            if item.type == "CASE" and str(item.id) in casos:
+                dato.update(casos[str(item.id)])
             d["contenido"].append(dato)
         resultado.append(d)
 
     return jsonify({"bloques": resultado}), 200
+
+
+def _resumen_casos(user, course, casos_del_curso) -> dict:
+    """Casos clínicos asignados: al estudiante, el estado de su consulta
+    (`mi_caso`); al docente, cuántos lo completaron y cuántos calificó (`casos`)."""
+    ids = [c.id for c in casos_del_curso]
+    if not ids:
+        return {}
+    if _es_docente_dueno(user, course):
+        filas = (db.session.query(Consultation.course_item_id, func.count(Consultation.id), func.count(Consultation.teacher_score))
+                 .filter(Consultation.course_item_id.in_(ids), Consultation.status == "COMPLETED")
+                 .group_by(Consultation.course_item_id).all())
+        por_item = {str(i): {"completados": n, "calificados": c} for i, n, c in filas}
+        return {str(i): {"casos": por_item.get(str(i), {"completados": 0, "calificados": 0})} for i in ids}
+    propias = Consultation.query.filter(Consultation.course_item_id.in_(ids), Consultation.student_id == user.id).all()
+    por_item = {str(c.course_item_id): c for c in propias}
+    resumen = {}
+    for i in ids:
+        c = por_item.get(str(i))
+        resumen[str(i)] = {"mi_caso": None if c is None else {
+            "estado": "COMPLETADO" if c.status == "COMPLETED" else "EN_CURSO",
+            "consultation_id": str(c.id),
+            "score": float(c.score) if c.score is not None else None,
+            "teacher_score": float(c.teacher_score) if c.teacher_score is not None else None,
+        }}
+    return resumen
 
 
 def _resumen_entregas(user, course, tareas_del_curso) -> dict:
@@ -419,7 +454,7 @@ def crear_contenido(course_id, block_id, validated_body: CrearContenidoRequest):
         return jsonify({"error": "Bad Request", "message": "Falta 'text_content' para una nota", "status_code": 400}), 400
 
     open_at = due_at = None
-    if tipo in ("ASSIGNMENT", "QUIZ"):
+    if tipo in ("ASSIGNMENT", "QUIZ", "CASE"):
         try:
             open_at = _parse_iso(validated_body.open_at)
             due_at = _parse_iso(validated_body.due_at)
@@ -505,7 +540,7 @@ def crear_contenido(course_id, block_id, validated_body: CrearContenidoRequest):
                 # Con rúbrica, el puntaje máximo es la suma de sus criterios.
                 max_score=(
                     (tareas.puntaje_de_rubrica(rubrica) if rubrica else validated_body.max_score)
-                    if tipo == "ASSIGNMENT" else None
+                    if tipo == "ASSIGNMENT" else (validated_body.max_score or 100) if tipo == "CASE" else None
                 ),
                 rubric=rubrica or None,
                 allow_late=bool(validated_body.allow_late) if tipo == "ASSIGNMENT" else False,
