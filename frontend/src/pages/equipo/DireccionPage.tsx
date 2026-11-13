@@ -76,8 +76,8 @@ export default function DireccionPage() {
                 </p>
                 <ul>
                   <li><strong>Formulación del problema:</strong> Definición de la pregunta de investigación y los objetivos del prototipo.</li>
-                  <li><strong>Marco metodológico:</strong> Orientación en la selección del enfoque Scrum + PHVA y los criterios de evaluación TRL 3–4.</li>
-                  <li><strong>Validación técnica:</strong> Revisión del diseño de la arquitectura RAG, los prompts Chain-of-Thought y los instrumentos de evaluación de calidad.</li>
+                  <li><strong>Marco metodológico:</strong> Orientación en la selección del enfoque de desarrollo y de los criterios de evaluación TRL.</li>
+                  <li><strong>Validación técnica:</strong> Revisión del diseño de la arquitectura de agentes, las instrucciones de los agentes y los instrumentos de evaluación de calidad.</li>
                 </ul>
               </div>
             </div>

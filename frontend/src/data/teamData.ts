@@ -33,7 +33,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     name: 'Camilo Andres Bueno Rey',
     seed: 'Jasper',
     color: '#8B5CF6',
-    role: 'Backend · Node.js · API REST · Conexión del Sistema',
+    role: 'Backend · Flask · API REST · Conexión del Sistema',
     avatarUrl: 'https://api.dicebear.com/7.x/notionists/svg?seed=Jasper&backgroundColor=8B5CF6',
   },
 ];

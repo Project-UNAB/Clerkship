@@ -10,7 +10,7 @@ const features = [
     cls: 'feat-ico-blue',
     Icon: BrainCircuit,
     title: 'Casos clínicos generados por IA',
-    desc: 'Cada sesión presenta una viñeta clínica única del sistema gastrointestinal, generada por un modelo LLM y anclada en bibliografía médica curada mediante arquitectura RAG.',
+    desc: 'Cada sesión presenta una viñeta clínica única del sistema gastrointestinal, generada por un modelo de lenguaje (API de Gemini) y validada por reglas programadas.',
   },
   {
     cls: 'feat-ico-green',
@@ -28,7 +28,7 @@ const features = [
     cls: 'feat-ico-amber',
     Icon: Lightbulb,
     title: 'Retroalimentación formativa con IA',
-    desc: 'Al finalizar, el sistema analiza cada decisión tomada, detecta sesgos cognitivos presentes y compara el razonamiento del estudiante con un razonamiento de referencia experto.',
+    desc: 'Al finalizar, el sistema evalúa lo que indagaste, los exámenes que pediste y tu diagnóstico, los compara con la rúbrica de referencia del caso y te entrega retroalimentación por dimensión.',
   },
 ];
 
@@ -52,7 +52,7 @@ const steps = [
     cls: 'siv-3',
     Icon: BarChart2,
     title: 'Retroalimentación formativa',
-    desc: 'Recibe análisis detallado de tu proceso de razonamiento, sesgos y comparación con el experto.',
+    desc: 'Recibe tu puntaje por dimensión y retroalimentación sobre lo que indagaste y tu diagnóstico.',
   },
 ];
 

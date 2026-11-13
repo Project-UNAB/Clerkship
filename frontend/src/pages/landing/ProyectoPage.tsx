@@ -16,11 +16,11 @@ import {
 const DEVS = [
   { initials: 'JR', name: 'Juan Camilo Rojas', seed: 'Leo', color: '#EC4899',
     focus: 'Agentes de IA · Multi-Agente · CoT · Arquitectura IA',
-    desc: 'Especialista en agentes inteligentes. Orquesta el flujo multi-agente, la simulación del paciente virtual y el análisis automatizado de sesgos cognitivos.',
+    desc: 'Especialista en agentes inteligentes. Diseña el flujo de los tres agentes, la simulación del paciente virtual y la evaluación con puntaje por fórmula.',
     skills: [
       { label: 'Agentes IA', icon: BrainCircuit },
       { label: 'Multi-Agente', icon: Network },
-      { label: 'Fine-Tuning', icon: Sparkles },
+      { label: 'Prompts', icon: Sparkles },
     ]
   },
   { initials: 'SA', name: 'Santiago Steven Arias Estupiñán', seed: 'Aneka', color: '#10B981',
@@ -33,10 +33,10 @@ const DEVS = [
     ]
   },
   { initials: 'CB', name: 'Camilo Andrés Bueno Rey', seed: 'Jasper', color: '#8B5CF6',
-    focus: 'Backend · Node.js · API REST · Conexión del Sistema',
-    desc: 'Líder de arquitectura Backend. Construye el servidor API REST en Node.js, la gestión de datos y la infraestructura de conexión entre sistemas.',
+    focus: 'Backend · Flask · API REST · Conexión del Sistema',
+    desc: 'Líder de arquitectura Backend. Construye el servidor API REST en Flask (Python), la gestión de datos y la infraestructura de conexión entre sistemas.',
     skills: [
-      { label: 'Node.js', icon: Cloud },
+      { label: 'Flask', icon: Cloud },
       { label: 'API REST', icon: Database },
       { label: 'Backend', icon: Cpu },
     ]
@@ -58,7 +58,7 @@ const SPECIFIC_OBJECTIVES = [
 ];
 
 const THEORETICAL_CARDS = [
-  { title: 'Procesamiento Dual (S1 / S2)', desc: 'El razonamiento médico opera en dos sistemas: S1 rápido e intuitivo, y S2 analítico y deliberado. La propuesta cultiva explícitamente el Sistema 2.', icon: Activity },
+  { title: 'Procesamiento Dual (S1 / S2)', desc: 'El razonamiento médico opera en dos sistemas: S1 rápido e intuitivo, y S2 analítico y deliberado. Es el marco teórico del proyecto; el prototipo actual aún no lo operacionaliza (queda como trabajo futuro).', icon: Activity },
   { title: 'Modelos de Lenguaje (LLM)', desc: 'Los LLMs generan escenarios clínicos dinámicos y adaptativos que reaccionan a las hipótesis intermedias planteadas por el estudiante.', icon: BrainCircuit },
   { title: 'Retroalimentación Formativa', desc: 'Feedback específico e inmediato que explica qué pasos fueron correctos o erróneos durante el proceso razonado de diagnóstico.', icon: CheckCircle2 },
   { title: 'Simulación Clínica Digital', desc: 'Entorno de práctica sin riesgo para pacientes reales que replica el proceso cognitivo del diagnóstico clínico con repetición deliberada.', icon: Stethoscope }
@@ -79,9 +79,9 @@ const AGENT_PIPELINE = [
 
 const BUDGET_ITEMS = [
   { name: 'Recursos Humanos (Principal)', items: ['3 Investigadores-Estudiantes de Ingeniería UNAB', 'Dirección y Co-dirección Académica UNAB', 'Validación por médicos expertos Clínica Foscal'], accent: true, icon: Users },
-  { name: 'Fine-Tuning Open-Weights', items: ['Modelos base open-weights (Llama 3.1 / Mistral / Qwen 2.5)', 'Técnica Unsloth: reduce uso de VRAM un 70%', 'Google Colab Pro+ para entrenamiento GPU'], icon: Cpu },
-  { name: 'Despliegue y Hosting', items: ['Vercel: Frontend React + TypeScript (capa gratuita)', 'Render: Backend FastAPI + LangGraph (capa gratuita)', 'Costo estimado por caso simulado: $0.02 - $0.51'], icon: Cloud },
-  { name: 'Corpus Clínico GI', items: ['PMC Open Access, MedCaseReasoning (Stanford 14k)', 'MedQA-ES, corpus E3C y GPC colombianas', 'Validación de viabilidad y curación por expertos'], icon: Database }
+  { name: 'Modelo de lenguaje (API de Gemini)', items: ['Modelos Gemini Flash y Flash-Lite vía API', 'Nivel gratuito en desarrollo; plan de pago recomendado para operar con estudiantes', 'Sin entrenamiento ni ajuste fino de modelos'], icon: Cpu },
+  { name: 'Despliegue y Hosting', items: ['Vercel: Frontend React + TypeScript (capa gratuita)', 'Google Cloud Run: backend Flask (Python)', 'Costo estimado por consulta completa: entre US$ 0,03 y 0,09 (Gemini 3.6 Flash)'], icon: Cloud },
+  { name: 'Referencias clínicas GI', items: ['Referencias curadas por subtema (herramienta de carga lista)', 'Contenido por cargar y validar con docentes expertos', 'Sin corpus indexado ni búsqueda vectorial'], icon: Database }
 ];
 
 const REFERENCES = [
@@ -348,7 +348,7 @@ export default function ProyectoPage() {
             <p className="lp-sec-pretitle">Arquitectura del Sistema</p>
             <h2 className="lp-sec-title">Pipeline de 3 Agentes de IA</h2>
             <p className="lp-sec-desc">
-              Orquestación inteligente con LangGraph en el dominio Gastrointestinal (GI) para garantizar fidelidad médica y evaluación objetiva.
+              Tres agentes coordinados por el backend en el dominio Gastrointestinal (GI), con reglas programadas para cuidar la fidelidad clínica y una evaluación reproducible.
             </p>
           </div>
 
@@ -394,7 +394,7 @@ export default function ProyectoPage() {
           <p className="lp-sec-pretitle">Viabilidad Financiera</p>
           <h2 className="lp-sec-title">Estructura de Costos</h2>
           <p className="lp-sec-desc">
-            Optimizado mediante modelos open-weights con Unsloth y capas gratuitas de infraestructura sin costo de licenciamiento.
+            Basado en la API de Gemini (nivel gratuito durante el desarrollo) y en capas gratuitas de infraestructura, sin costo de licenciamiento.
           </p>
         </div>
 

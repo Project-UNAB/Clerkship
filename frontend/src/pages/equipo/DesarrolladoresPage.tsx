@@ -22,7 +22,7 @@ const devs = [
     name: 'Camilo Andres Bueno Rey',
     role: 'Desarrollador',
     program: 'Ingeniería de Sistemas',
-    focus: 'Backend · Node.js · API REST · Conexión del Sistema',
+    focus: 'Backend · Flask · API REST · Conexión del Sistema',
   },
 ];
 
