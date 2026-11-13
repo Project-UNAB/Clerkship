@@ -461,8 +461,7 @@ export default function PortalExpertoPage() {
                 <span>
                   Acepto participar como experto evaluador. Entiendo que mis respuestas y mis datos profesionales se usarán
                   solo con fines académicos para validar esta plataforma, que en los informes se presentan de forma agregada
-                  y que puedo retirarme en cualquier momento antes de finalizar. Entiendo también que revisaré casos
-                  clínicos simulados y conversaciones de estudiantes sin los datos que los identifican.
+                  y que puedo retirarme en cualquier momento antes de finalizar.
                 </span>
               </label>
 

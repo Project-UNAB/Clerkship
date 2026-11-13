@@ -33,18 +33,12 @@ def _sin_nombres(texto: str, nombres: list[str]) -> str:
     return texto
 
 
-# Partículas de apellidos y palabras comunes: no identifican a nadie y reemplazarlas
-# dañaría el texto clínico ("dolor del abdomen" → "dolor [Estudiante] abdomen").
-PARTICULAS = {"del", "los", "las", "san", "santa", "van", "von", "dos", "das", "con", "por", "sin"}
-
-
 def nombres_a_ocultar(*valores) -> list[str]:
-    """Nombre, apellidos y usuario del estudiante (cada palabra de 3 letras o más,
-    sin las partículas de apellido como «del» o «los»)."""
+    """Nombre, apellidos y usuario del estudiante (cada palabra de 3 letras o más)."""
     partes = set()
     for v in valores:
         for p in re.split(r"[\s._@-]+", v or ""):
-            if len(p) >= 3 and p.lower() not in PARTICULAS:
+            if len(p) >= 3:
                 partes.add(p)
     return sorted(partes, key=len, reverse=True)
 
@@ -112,32 +106,6 @@ def vista_caso(consultation, doc: dict, ocultar: list[str] | None = None) -> dic
 
 def _r(x, d=2):
     return None if x is None else round(x, d)
-
-
-# Definición operativa del indicador «referencia de evaluación adecuada» (meta ≥ 80 %):
-# el experto califica con 3 o 4 la coherencia clínica del caso (diagnóstico real y
-# rúbrica) y la precisión de la evaluación automática. Documentada en la tesis.
-CRITERIOS_REFERENCIA = ("coherencia_clinica", "precision_evaluacion")
-META_REFERENCIA_ADECUADA = 0.8
-META_FAVORABLES = 0.7
-
-
-def referencia_adecuada(respuestas: list[dict]) -> dict:
-    """respuestas: las `respuestas` ({criterio: 1..4}) de cada revisión enviada."""
-    n = len(respuestas)
-    adecuadas = sum(1 for r in respuestas
-                    if all(isinstance(r.get(k), int) and r[k] >= 3 for k in CRITERIOS_REFERENCIA))
-    return {"n": n, "adecuadas": adecuadas, "proporcion": _r(adecuadas / n, 3) if n else None,
-            "meta": META_REFERENCIA_ADECUADA, "cumple": (adecuadas / n >= META_REFERENCIA_ADECUADA) if n else None}
-
-
-def valoraciones_favorables(calificaciones: list[int]) -> dict:
-    """Proporción de valoraciones en 3 o 4 (meta ≥ 70 %)."""
-    validas = [x for x in calificaciones if isinstance(x, int) and 1 <= x <= 4]
-    n = len(validas)
-    favorables = sum(1 for x in validas if x >= 3)
-    return {"n": n, "favorables": favorables, "proporcion": _r(favorables / n, 3) if n else None,
-            "meta": META_FAVORABLES, "cumple": (favorables / n >= META_FAVORABLES) if n else None}
 
 
 def concordancia(pares: list[tuple[float, float]]) -> dict:

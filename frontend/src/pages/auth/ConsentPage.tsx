@@ -43,7 +43,7 @@ const sections: ConsentSection[] = [
       'Retroalimentación generada por el sistema de IA',
     ],
     alert:
-      'No se almacenan datos clínicos reales de pacientes. Todos los casos son ficticios y generados por IA. Los datos recopilados serán usados únicamente con fines de evaluación académica del prototipo. Para generar los casos, simular al paciente y evaluar, el contenido de las consultas (lo que usted escribe y las respuestas del sistema) se procesa mediante la API de Google Gemini: no se envían a ese proveedor su nombre, su correo ni otros datos personales, pero, según el plan contratado, el proveedor puede usar ese contenido para mejorar sus productos.',
+      'No se almacenan datos clínicos reales de pacientes. Todos los casos son ficticios y generados por IA. Los datos recopilados serán usados únicamente con fines de evaluación académica del prototipo.',
   },
   {
     Icon: Shield,

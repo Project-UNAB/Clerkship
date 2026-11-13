@@ -14,7 +14,7 @@ from app.routes.validacion import MODELOS_VALIDACION, caso_para_revision, items_
 from app.schemas import validate_body
 from app.schemas.validacion import ActualizarInvitacionRequest, AsignarCasosRequest, CrearInvitacionRequest
 from app.services import auditoria
-from app.services.revision_casos import CRITERIOS_CASO, concordancia, referencia_adecuada, valoraciones_favorables
+from app.services.revision_casos import CRITERIOS_CASO, concordancia
 from app.services.validez_contenido import resumen_seccion
 from app.utils import get_current_user, role_required
 
@@ -185,7 +185,6 @@ def calcular_resultados(invitaciones, filas_formulario: dict) -> dict:
                         "observaciones": {k: v for k, v in observaciones.items() if v}}
 
     glob = resumen_seccion(todos)
-    favorables = valoraciones_favorables([v for lista in todos.values() for v in lista])
     aplicabilidad = {"APLICABLE": 0, "APLICABLE_CON_CAMBIOS": 0, "NO_APLICABLE": 0}
     for e in expertos:
         if e["aplicabilidad"] in aplicabilidad:
@@ -193,7 +192,7 @@ def calcular_resultados(invitaciones, filas_formulario: dict) -> dict:
     return {
         "expertos": expertos,
         "secciones": secciones,
-        "global": {**{k: glob[k] for k in ("v_promedio", "s_cvi_ave", "s_cvi_ua")}, "favorables": favorables},
+        "global": {k: glob[k] for k in ("v_promedio", "s_cvi_ave", "s_cvi_ua")},
         "aplicabilidad": aplicabilidad,
     }
 
@@ -344,9 +343,6 @@ def calcular_resultados_casos(revisiones, consultas: dict, invitaciones: dict) -
         "criterios": criterios,
         "casos": casos,
         "concordancia": concordancia(pares),
-        # Indicadores de éxito de la tesis (sección 7.5): referencia adecuada y valoraciones favorables.
-        "referencia_adecuada": referencia_adecuada([r.respuestas or {} for r in validas]),
-        "favorables": valoraciones_favorables([v for r in validas for v in (r.respuestas or {}).values()]),
         "pares": [{"ia": a, "experto": b} for a, b in pares if a is not None],
         "observaciones": observaciones,
     }

@@ -7,18 +7,18 @@ import InnerLayout from '../../components/shared/InnerLayout';
 
 const stack = [
   { Icon: Monitor, label: 'Frontend', value: 'React 18 + TypeScript + Vite · Framer Motion · React Router v6' },
-  { Icon: Server, label: 'Backend', value: 'Python (Flask) · API REST · Autenticación con JWT' },
-  { Icon: BrainCircuit, label: 'IA / LLM', value: 'Google Gemini (API) con instrucciones de sistema y salida estructurada' },
-  { Icon: Database, label: 'Conocimiento clínico', value: 'Referencias clínicas por subtema (sin búsqueda vectorial) · en carga' },
-  { Icon: Layers, label: 'Dominio clínico', value: 'Sistema gastrointestinal · Casos simulados · validación experta en curso' },
-  { Icon: GitBranch, label: 'Metodología', value: 'Kanban · desarrollo tecnológico aplicado · meta TRL 4 sujeta a validación experta' },
+  { Icon: Server, label: 'Backend', value: 'Node.js · API REST · Autenticación institucional' },
+  { Icon: BrainCircuit, label: 'IA / LLM', value: 'Modelo de lenguaje grande (LLM) con prompts Chain-of-Thought' },
+  { Icon: Database, label: 'RAG', value: 'Arquitectura Retrieval-Augmented Generation · Bibliografía médica curada' },
+  { Icon: Layers, label: 'Dominio clínico', value: 'Sistema gastrointestinal · Casos validados por aliado clínico' },
+  { Icon: GitBranch, label: 'Metodología', value: 'Scrum + PHVA · TRL 3–4 · Ciclos iterativos de desarrollo' },
 ];
 
 const phases = [
   {
     num: '01',
     title: 'Generación del caso clínico',
-    desc: 'El sistema recibe una solicitud de simulación y construye una viñeta clínica única con el modelo de lenguaje, apoyándose en referencias clínicas por subtema cuando existen, y la valida con reglas programadas. La adecuación clínica de los casos aún está en proceso de validación por expertos.',
+    desc: 'El sistema recibe una solicitud de simulación y construye una viñeta clínica única usando el LLM con contexto RAG extraído de bibliografía gastrointestinal curada. El caso garantiza coherencia clínica, variedad de presentaciones y alineación con guías de práctica.',
   },
   {
     num: '02',
@@ -33,7 +33,7 @@ const phases = [
   {
     num: '04',
     title: 'Retroalimentación formativa con IA',
-    desc: 'Al concluir la sesión, el evaluador clasifica el desempeño del estudiante por dimensión (anamnesis, razonamiento clínico, hallazgos, examen físico y paraclínicos, comunicación), lo compara con la rúbrica de referencia del caso y redacta la retroalimentación. La detección de sesgos cognitivos aún no está implementada.',
+    desc: 'Al concluir la sesión, el sistema analiza el razonamiento del estudiante: identifica sesgos cognitivos (anclaje, cierre prematuro, disponibilidad), compara con un razonamiento experto de referencia y genera retroalimentación personalizada paso a paso.',
   },
 ];
 
@@ -56,7 +56,9 @@ export default function DocumentacionPage() {
           </span>
           <h1 className="inner-title">Arquitectura del prototipo</h1>
           <p className="inner-sub">
-            Clerkship usa tres agentes sobre la API de Gemini (generador de casos, paciente virtual y evaluador), coordinados por el backend con reglas programadas, para generar simulaciones clínicas interactivas con retroalimentación formativa automatizada.
+            Clerkship combina un modelo de lenguaje grande (LLM), arquitectura RAG
+            y prompts Chain-of-Thought para generar simulaciones clínicas
+            interactivas con retroalimentación formativa automatizada.
           </p>
         </motion.div>
 
@@ -95,54 +97,54 @@ export default function DocumentacionPage() {
           <p className="inner-section-title">Flujo de datos</p>
           <motion.div className="prose-card" {...fadeUp(0.1)}>
             <div className="prose">
-              <h2>Arquitectura de tres agentes</h2>
+              <h2>Arquitectura RAG + LLM</h2>
               <p>
-                El núcleo del sistema son <strong>tres agentes</strong> que usan la
-                API de Gemini y que el backend coordina con funciones propias y
-                reglas programadas: un generador de casos, un paciente virtual y un
-                evaluador. El modelo no se entrena ni se ajusta; su comportamiento
-                se define con instrucciones de sistema y salidas estructuradas que
-                el backend valida. El prototipo no usa búsqueda vectorial.
+                El núcleo del sistema emplea una arquitectura{' '}
+                <strong>Retrieval-Augmented Generation (RAG)</strong> que combina
+                un índice vectorial de bibliografía médica curada con un modelo
+                de lenguaje grande para garantizar que los casos clínicos
+                generados estén anclados en conocimiento médico validado.
               </p>
               <p>El flujo general de una sesión de simulación es el siguiente:</p>
               <ol>
                 <li>
-                  <strong>Generación del caso:</strong> El generador construye la
-                  viñeta clínica, el perfil del paciente virtual, el diagnóstico
-                  de referencia y la rúbrica, apoyándose en referencias clínicas
-                  por subtema cuando existen. El backend valida el caso antes de
-                  usarlo.
+                  <strong>Recuperación (Retrieval):</strong> El sistema consulta
+                  el índice vectorial y recupera fragmentos relevantes de
+                  bibliografía gastrointestinal según el tipo de caso solicitado.
                 </li>
                 <li>
-                  <strong>Sesión interactiva:</strong> El estudiante entrevista al
-                  paciente virtual, lo examina y solicita paraclínicos. Las guardas
-                  del backend evitan que el paciente revele el diagnóstico o salga
-                  de su papel.
+                  <strong>Generación del contexto (Augmentation):</strong> Los
+                  fragmentos recuperados se inyectan en el prompt del LLM como
+                  contexto clínico de referencia.
                 </li>
                 <li>
-                  <strong>Diagnóstico:</strong> El estudiante formula su hipótesis,
-                  sus diagnósticos diferenciales y su plan.
+                  <strong>Generación del caso (Generation):</strong> El LLM, guiado
+                  por prompts Chain-of-Thought, construye la viñeta clínica,
+                  define el perfil del paciente virtual y establece el diagnóstico
+                  de referencia para la retroalimentación posterior.
                 </li>
                 <li>
-                  <strong>Evaluación y retroalimentación:</strong> El evaluador
-                  clasifica el desempeño por dimensión y redacta la
-                  retroalimentación; el puntaje lo calcula una fórmula fija y
-                  auditable.
+                  <strong>Sesión interactiva:</strong> El estudiante interactúa
+                  con el sistema. El LLM mantiene el contexto de la sesión y
+                  actúa como paciente virtual con coherencia clínica.
+                </li>
+                <li>
+                  <strong>Retroalimentación:</strong> Al finalizar, el sistema
+                  analiza las decisiones del estudiante frente al razonamiento
+                  experto de referencia y genera retroalimentación formativa.
                 </li>
               </ol>
 
-              <h2>Alcance de la evaluación</h2>
+              <h2>Prompts Chain-of-Thought</h2>
               <p>
-                El puntaje refleja sobre todo la exhaustividad de la información
-                recolectada (anamnesis, hallazgos, examen físico y paraclínicos) y
-                la concordancia del diagnóstico final con el del caso. El
-                prototipo no registra las hipótesis intermedias del estudiante ni
-                la justificación de su diagnóstico, y no detecta sesgos cognitivos.
+                Los prompts del sistema están diseñados bajo el paradigma{' '}
+                <strong>Chain-of-Thought (CoT)</strong>, instruyendo al LLM a
+                razonar paso a paso antes de generar respuestas. Esto garantiza:
               </p>
               <ul>
-                <li>Las instrucciones de sistema fijan el rol y las restricciones de cada agente.</li>
-                <li>La salida estructurada permite validar cada respuesta campo por campo.</li>
-                <li>Los casos son simulados y su validación clínica por expertos está en curso.</li>
+                <li>Mayor coherencia clínica en los casos generados.</li>
+                <li>Respuestas del paciente virtual consistentes con la viñeta.</li>
+                <li>Retroalimentación estructurada que sigue el razonamiento diagnóstico clásico (anamnesis → hipótesis → pruebas → diagnóstico diferencial → conclusión).</li>
               </ul>
             </div>
           </motion.div>

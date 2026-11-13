@@ -12,7 +12,7 @@ import InteractiveBackgroundCanvas from '../../components/shared/InteractiveBack
 ══════════════════════════════════════════════════════ */
 const STATS = [
   { n: '100%',        label: 'Formativo' },
-  { n: 'Gemini', label: 'Motor de IA' },
+  { n: 'Fine-Tuning', label: 'Motor de IA' },
   { n: '3',           label: 'Agentes Especializados' },
   { n: 'GI',          label: 'Dominio Clínico' },
 ];
@@ -20,11 +20,11 @@ const STATS = [
 const DEVS = [
   { initials: 'JR', name: 'Juan Camilo Rojas', seed: 'Leo', color: '#EC4899',
     focus: 'Agentes de IA · Multi-Agente · CoT · Arquitectura IA',
-    desc: 'Especialista en agentes inteligentes. Diseña el flujo de los tres agentes, la simulación del paciente virtual y la evaluación con puntaje por fórmula.',
+    desc: 'Especialista en agentes inteligentes. Orquesta el flujo multi-agente, la simulación del paciente virtual y el análisis automatizado de sesgos cognitivos.',
     skills: [
       { label: 'Agentes IA', icon: <BrainCircuit size={13} /> },
       { label: 'Multi-Agente', icon: <Network size={13} /> },
-      { label: 'Prompts', icon: <Sparkles size={13} /> },
+      { label: 'Fine-Tuning', icon: <Sparkles size={13} /> },
     ]
   },
   { initials: 'SA', name: 'Santiago Steven Arias Estupiñán', seed: 'Aneka', color: '#10B981',
@@ -37,10 +37,10 @@ const DEVS = [
     ]
   },
   { initials: 'CB', name: 'Camilo Andrés Bueno Rey', seed: 'Jasper', color: '#8B5CF6',
-    focus: 'Backend · Flask · API REST · Conexión del Sistema',
-    desc: 'Líder de arquitectura Backend. Construye el servidor API REST en Flask (Python), la gestión de datos y la infraestructura de conexión entre sistemas.',
+    focus: 'Backend · Node.js · API REST · Conexión del Sistema',
+    desc: 'Líder de arquitectura Backend. Construye el servidor API REST en Node.js, la gestión de datos y la infraestructura de conexión entre sistemas.',
     skills: [
-      { label: 'Flask', icon: <Cloud size={13} /> },
+      { label: 'Node.js', icon: <Cloud size={13} /> },
       { label: 'API REST', icon: <Database size={13} /> },
       { label: 'Backend', icon: <Network size={13} /> },
     ]
@@ -263,7 +263,7 @@ export default function LandingPage() {
               </div>
               <div className="lp-ab-stat-text">
                 <span className="lp-ab-stat-val">RETROALIMENTACIÓN FORMATIVA</span>
-                <span className="lp-ab-stat-label">Retroalimentación por dimensión del desempeño</span>
+                <span className="lp-ab-stat-label">Detecta sesgos cognitivos y vacíos diagnósticos</span>
                 <button className="lp-ab-link" onClick={() => scrollTo('tecnologia')}>Ver ejemplo</button>
               </div>
             </div>
@@ -276,10 +276,21 @@ export default function LandingPage() {
               </div>
               <div className="lp-ab-stat-text">
                 <span className="lp-ab-stat-val">DESPLIEGUE PROPIO</span>
-                <span className="lp-ab-stat-label">React · Flask · Gemini</span>
+                <span className="lp-ab-stat-label">React · FastAPI · LangGraph</span>
                 <button className="lp-ab-link" onClick={() => scrollTo('tecnologia')}>Ver stack</button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Bottom Row: Logos */}
+        <div className="lp-ab-logos">
+          <p className="lp-ab-logos-header">CONSTRUIDO SOBRE TECNOLOGÍA ABIERTA</p>
+          <div className="lp-ab-logos-row">
+            <div className="lp-ab-logo-box"><img src="/apps/huggingface.svg" alt="HuggingFace" className="lp-ab-logo-img" /></div>
+            <div className="lp-ab-logo-box"><img src="/apps/langgraph.svg"   alt="LangGraph"   className="lp-ab-logo-img" /></div>
+            <div className="lp-ab-logo-box"><img src="/apps/fastapi.svg"     alt="FastAPI"     className="lp-ab-logo-img" /></div>
+            <div className="lp-ab-logo-box"><img src="/apps/pytorch.svg"     alt="PyTorch"     className="lp-ab-logo-img" /></div>
           </div>
         </div>
       </div>
@@ -420,7 +431,9 @@ export default function LandingPage() {
             Explora nuestra arquitectura<br />y únete a la experiencia
           </h2>
           <p className="lp-tec-main-desc-img">
-            CLERKSHIP USA TRES AGENTES SOBRE LA API DE GEMINI, COORDINADOS POR EL BACKEND CON REGLAS PROGRAMADAS, PARA PRODUCIR SIMULACIONES CLÍNICAS Y RETROALIMENTACIÓN FORMATIVA AUTOMATIZADA.
+            CLERKSHIP COMBINA LLM, RAG Y CHAIN-OF-THOUGHT PARA PRODUCIR
+            SIMULACIONES CLÍNICAS PRECISAS Y RETROALIMENTACIÓN FORMATIVA
+            AUTOMATIZADA.
           </p>
         </div>
 
