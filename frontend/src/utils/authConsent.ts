@@ -7,7 +7,7 @@
 
 import { getStoredUser } from '../data/mainAuth';
 
-export const VERSION_CONSENTIMIENTO = '2026-10b';
+export const VERSION_CONSENTIMIENTO = '2026-11';
 
 export function getActiveUserEmail(): string | null {
   if (typeof window === 'undefined') return null;
